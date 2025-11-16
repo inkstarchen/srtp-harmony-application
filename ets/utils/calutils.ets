@@ -4,10 +4,60 @@ import { Queue } from '@kit.ArkTS';
 
 
 
-import { Vec2, Vec3, Quaternion, Node, Aabb } from '@kit.ArkGraphics3D';
-import { Ray,rayCastResult, slabResult} from './BaseClass';
+import { Vec2, Vec3, Quaternion, Node, Aabb, Camera } from '@kit.ArkGraphics3D';
+import { Ray,rayCastResult, slabResult} from '../models/BaseClass';
 
 export class CalcUtils {
+
+  static Vec3Mul(v:Vec3, num:number):Vec3{
+    return { x: v.x * num, y: v.y * num, z: v.z * num};
+  }
+
+  static Vec3ToColor(v:Vec3):string{
+    let color:string = 'rgba(' + v.x + ',' + v.y + ',' + v.z + ', 1.0)';
+    return color;
+  }
+
+  static normalizeVector3(v: Vec3): Vec3 {
+    const length = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+    if (length === 0) return ({x:0,y:0,z:0} as Vec3);
+
+    return {x: v.x / length, y: v.y / length, z:v.z / length};
+  }
+
+  static CalRayFromCam(cam:Camera, aspect:number, Px: number, Py: number): Ray{
+    let ray = new Ray();
+    ray.o = { x:cam.position.x, y:cam.position.y, z:cam.position.z};
+    let tanA = Math.tan(cam.fov / 2);
+    console.info('camera Info | fov' + cam.fov * 180 / Math.PI + '/ tanA: ' + tanA);
+    let FB = CalcUtils.normalizeVector3({
+      x: 2 * ( cam.rotation.x * cam.rotation.z + cam.rotation.w * cam.rotation.y),
+      y: 2 * ( cam.rotation.y * cam.rotation.z - cam.rotation.w * cam.rotation.x),
+      z: 1 - 2 * (cam.rotation.x * cam.rotation.x + cam.rotation.y * cam.rotation.y)
+    } as Vec3);
+    if(cam.rotation.x == 0 && cam.rotation.y == 0 && cam.rotation.z == 0){
+      FB = {x:0,y:0,z:-1};
+    }
+
+    let RL:Vec3 = CalcUtils.NormVec3(CalcUtils.crossMul(FB,{x:0,y:1,z:0}));
+    let UD:Vec3 = CalcUtils.NormVec3(CalcUtils.crossMul(RL,FB));
+    console.info('Direction FB:' + FB.x + '/' + FB.y + '/' + FB.z + '\n');
+    console.info('Direction UD:' + UD.x + '/' + UD.y + '/' + UD.z + '\n');
+    console.info('Direction RL:' + RL.x + '/' + RL.y + '/' + RL.z + '\n');
+    let t1 = 10;
+    let h = t1 * tanA;
+    let w = h * aspect;
+    let t2 = h * Py;
+    let t3 = w * Px;
+    let dot = {x: ray.o.x + t1 * FB.x + t2 * UD.x + t3 * RL.x,
+      y: ray.o.y + t1 * FB.y + t2 * UD.y + t3 * RL.y,
+      z: ray.o.z + t1 * FB.z + t2 * UD.z + t3 * RL.y,} as Vec3;
+    console.info('dot position: ' + dot.x + '/' + dot.y + '/' + dot.z);
+    ray.d = CalcUtils.NormVec3({x:dot.x - ray.o.x,
+      y:dot.y - ray.o.y,
+      z:dot.z - ray.o.z})
+    return ray;
+  }
 
   static pxToNormal(v2:Vec2, screenWidth:number, screenHeight:number):Vec2{
     let result:Vec2 = {x:0,y:0};
@@ -286,6 +336,4 @@ export class CalcUtils {
   static genRandom(): number {
     return Math.random() * 2 - 1;
   }
-
-
 }

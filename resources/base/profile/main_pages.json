@@ -1,9 +1,9 @@
 {
   "src": [
     "pages/Index",
-    "pages/test",
-    "pages/drawNote",
-    "pages/Books",
-    "pages/GraphicsController"
+    "pages/Card",
+    "pages/Note",
+    "pages/BannerPage",
+    "pages/lightTest"
   ]
 }

@@ -1,0 +1,106 @@
+
+import {
+  BloomSettings,
+  Camera, Color, Quaternion, SceneResourceFactory,
+  ToneMappingSettings,
+  ToneMappingType,
+  Vec3} from "@kit.ArkGraphics3D";
+import { Helper } from "../utils/Helper";
+import { NodeInfo } from "./BaseClass";
+
+export class CameraInfo extends NodeInfo{
+
+  constructor(name:string,position:Vec3,rotation:Quaternion,scaleV:number,fov:number,nearPlane:number,
+    farPlane:number,enabled:boolean,clearColor:Color,toneMapping:ToneMappingSettings | undefined = undefined,
+    bloom:BloomSettings | undefined = undefined) {
+    super(name,position,rotation,scaleV)
+    this.fov = fov;
+    this.nearPlane = nearPlane;
+    this.farPlane = farPlane;
+    this.enabled = enabled;
+    this.clearColor = clearColor;
+    if(toneMapping) {
+      this.toneMapping = toneMapping
+    }
+    if(bloom){
+      this.bloom = bloom;
+    }
+  }
+
+  copyFromNode(node:Camera){
+    this.name = node.name;
+    this.position = node.position;
+    this.rotation = node.rotation;
+    this.scale = node.scale.x;
+    this.fov = node.fov;
+    this.nearPlane = node.nearPlane;
+    this.farPlane = node.farPlane
+    this.enabled = node.enabled;
+  }
+
+  name:string = '';
+  position:Vec3 = {x:0,y:0,z:0}
+  rotation:Quaternion = {x:0,y:1,z:0,w:0}
+  scale:number = 1;
+  fov:number = 90;
+  nearPlane:number = 0;
+  farPlane:number = 0;
+  enabled:boolean = false;
+  clearColor:Color = {r:0,g:0,b:0,a:0}
+  toneMapping:ToneMappingSettings = {type:undefined,exposure:undefined}
+  bloom:BloomSettings = {thresholdHard:0,thresholdSoft:0,scaleFactor:0,scatter:0}
+
+  toString():string {
+    let nodeInfo = '';
+    nodeInfo += 'Name: ' + this.name + '\n';
+    nodeInfo += 'Position | x: ' + this.position.x + ' / y: ' + this.position.y + ' / z: ' + this.position.z + '\n';
+    nodeInfo += 'Rotation | x: ' + this.rotation.x + ' / y: ' + this.rotation.y + ' / z: ' + this.rotation.z + ' / w: ' + this.rotation.w + '\n';
+    nodeInfo += 'fov: ' + this.fov + ' | nearPlane: ' + this.nearPlane + ' | farPlane: ' + this.farPlane + '\n';
+    nodeInfo += 'enabled: ' + (this.enabled ? 'true' : 'false') + '\n';
+    return nodeInfo;
+  }
+
+}
+
+@ObservedV2
+export class CameraManager{
+
+  cameraInfo:CameraInfo | undefined = undefined;
+  @Trace realTimeInfo: string = '';
+
+  cam:Camera | undefined = undefined;
+  rf:SceneResourceFactory | undefined = undefined;
+
+  async init(rf:SceneResourceFactory){
+    this.rf = rf;
+    this.cameraInfo = new CameraInfo('name',{x:0,y:0,z:0},{x:0,y:0,z:0,w:0},1,90,0,0,false,{r:0,g:0,b:0,a:0});
+    this.cam = await this.rf.createCamera({name:'Camera'});
+    this.cam.fov = Math.PI / 4;
+    this.cam.clearColor = {r:255,g:255,b:255,a:1} ;
+
+    this.cam.enabled = true;
+    this.cam.postProcess = {toneMapping:{
+      exposure:1,
+      type:ToneMappingType.ACES
+    }};
+    this.startInfoTrace();
+  }
+
+  /* 0:Info, 1:move, 2:rotation */
+  intervalArray:number[] = new Array(2).fill(0)
+
+  startInfoTrace(){
+    if(this.intervalArray[0] != 0) return;
+    this.intervalArray[0] = setInterval(() => {
+      if(!this.cameraInfo || !this.cam) return;
+      this.cameraInfo.copyFromNode(this.cam)
+      this.realTimeInfo = this.cameraInfo.toString()
+      console.info(this.realTimeInfo)
+    },1000)
+  }
+
+  stopInfoTrace(){
+    Helper.clearIntervalArray(this.intervalArray,0)
+  }
+
+}
