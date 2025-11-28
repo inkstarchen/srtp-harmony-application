@@ -6,15 +6,12 @@ import { Queue } from '@kit.ArkTS';
 
 import { Vec2, Vec3, Quaternion, Node, Aabb, Camera } from '@kit.ArkGraphics3D';
 import { Ray,rayCastResult, slabResult} from '../models/BaseClass';
+import { CameraManager } from '../models/CameraManager';
 
 export class CalcUtils {
 
-  static Vec3Mul(v:Vec3, num:number):Vec3{
-    return { x: v.x * num, y: v.y * num, z: v.z * num};
-  }
-
   static Vec3ToColor(v:Vec3):string{
-    let color:string = 'rgba(' + v.x + ',' + v.y + ',' + v.z + ', 1.0)';
+    let color:string = 'rgba(' + v.x.toFixed(0) + ',' + v.y.toFixed(0) + ',' + v.z.toFixed(0) + ', 1.0)';
     return color;
   }
 
@@ -25,22 +22,21 @@ export class CalcUtils {
     return {x: v.x / length, y: v.y / length, z:v.z / length};
   }
 
-  static CalRayFromCam(cam:Camera, aspect:number, Px: number, Py: number): Ray{
+  static CalRayFromCam(camM:CameraManager, aspect:number, Px: number, Py: number): Ray{
     let ray = new Ray();
-    ray.o = { x:cam.position.x, y:cam.position.y, z:cam.position.z};
-    let tanA = Math.tan(cam.fov / 2);
-    console.info('camera Info | fov' + cam.fov * 180 / Math.PI + '/ tanA: ' + tanA);
-    let FB = CalcUtils.normalizeVector3({
-      x: 2 * ( cam.rotation.x * cam.rotation.z + cam.rotation.w * cam.rotation.y),
-      y: 2 * ( cam.rotation.y * cam.rotation.z - cam.rotation.w * cam.rotation.x),
-      z: 1 - 2 * (cam.rotation.x * cam.rotation.x + cam.rotation.y * cam.rotation.y)
-    } as Vec3);
-    if(cam.rotation.x == 0 && cam.rotation.y == 0 && cam.rotation.z == 0){
-      FB = {x:0,y:0,z:-1};
+    if(!camM.cam) return ray;
+    ray.o = camM.getPosition() as Vec3;
+    let fov = camM.getFov() as number;
+    let tanA = Math.tan( fov / 2);
+    console.info('camera Info | fov' + fov * 180 / Math.PI + '/ tanA: ' + tanA);
+    let FB = camM.getForward() as Vec3;
+    let rotation = camM.getRotation() as Quaternion;
+    if(rotation.x == 0 && rotation.y == 0 && rotation.z == 0){
+      FB = camM.getDefaultForward();
     }
 
-    let RL:Vec3 = CalcUtils.NormVec3(CalcUtils.crossMul(FB,{x:0,y:1,z:0}));
-    let UD:Vec3 = CalcUtils.NormVec3(CalcUtils.crossMul(RL,FB));
+    let RL:Vec3 = CalcUtils.NormVec3(CalcUtils.cross(FB,camM.getDefaultUp()));
+    let UD:Vec3 = CalcUtils.NormVec3(CalcUtils.cross(RL,FB));
     console.info('Direction FB:' + FB.x + '/' + FB.y + '/' + FB.z + '\n');
     console.info('Direction UD:' + UD.x + '/' + UD.y + '/' + UD.z + '\n');
     console.info('Direction RL:' + RL.x + '/' + RL.y + '/' + RL.z + '\n');
@@ -101,12 +97,7 @@ export class CalcUtils {
     return distanceSpace;
   }
 
-  static crossMul(v1:Vec3, v2:Vec3):Vec3{
-    let result:Vec3 = {x: v1.y * v2.z - v1.z * v2.y,
-                  y: v1.z * v2.x - v1.x * v2.z,
-                  z: v1.x * v2.y - v1.y * v2.x}
-    return result;
-  }
+
 
   static NormVec3(v:Vec3):Vec3{
     let length = Math.sqrt(Math.pow(v.x,2) + Math.pow(v.y,2) + Math.pow(v.z,2));
@@ -236,6 +227,17 @@ export class CalcUtils {
     return Math.sqrt(Math.pow(v1.x - v2.x,2) + Math.pow(v1.y-v2.y,2))
   }
 
+  static rotate_Vec3_Quaternion(v:Vec3, q:Quaternion){
+    let s = q.w;
+    let r:Vec3 = {x:q.x, y:q.y, z:q.z} as Vec3;
+    let t:Vec3 = CalcUtils.Vec3Mul(CalcUtils.cross(r,
+      CalcUtils.add(
+        CalcUtils.Vec3Mul(v,s),
+        CalcUtils.cross(r,v))
+    ),2.0);
+    return CalcUtils.add(v,t);
+  }
+
   static qMul(q1:Quaternion,q2:Quaternion):Quaternion{
     let result = {
       w: q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z,
@@ -254,12 +256,20 @@ export class CalcUtils {
     return point.x < rightX && point.x > leftX && point.y < bottom && point.y > ceil;
   }
 
+  static add(l:Vec3, r:Vec3): Vec3 {
+    return { x: l.x + r.x, y:l.y + r.y, z: l.z + r.z };
+  }
+
   static sub(l: Vec3, r: Vec3): Vec3 {
     return { x: l.x - r.x, y: l.y - r.y, z: l.z - r.z };
   }
 
   static dot(l: Vec3, r: Vec3): number {
     return l.x * r.x + l.y * r.y + r.z * l.z;
+  }
+
+  static Vec3Mul(v:Vec3, s:number): Vec3{
+    return { x: v.x * s, y: v.y * s, z: v.z * s};
   }
 
   static normalize(l: Vec3): Vec3 {

@@ -1,7 +1,9 @@
 import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { window } from '@kit.ArkUI';
+import { display, window } from '@kit.ArkUI';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { preferences } from '@kit.ArkData'
+import { PreferencesUtil } from '../utils/PreferencesUtil';
 
 const DOMAIN = 0x0000;
 
@@ -17,6 +19,15 @@ export default class EntryAbility extends UIAbility {
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
     // Main window is created, set main page for this ability
+    try{
+      PreferencesUtil.getAppPreferences(this.context);
+      let DisplaySync = display.getDefaultDisplaySync();
+      let ScreenSize:Size = {width:DisplaySync.width, height: DisplaySync.height};
+      PreferencesUtil.saveScreenData(ScreenSize);
+    }catch (error){
+      hilog.error(DOMAIN,"testTag",error,'get data preferences');
+    }
+
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageCreate');
     let windowClass: window.Window | null = null;
     windowStage.getMainWindow((err: BusinessError, data) => {

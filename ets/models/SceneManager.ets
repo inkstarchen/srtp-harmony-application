@@ -6,7 +6,8 @@ import { Aabb, EnvironmentBackgroundType, Scene, SceneResourceFactory ,Node, Geo
   Vec3,
   Image,
   ToneMappingType,
-  Vec2} from "@kit.ArkGraphics3D";
+  Vec2,
+  Camera} from "@kit.ArkGraphics3D";
 import { NodeManager } from "./NodeManager";
 import { LightManager } from "./LightManager";
 import { CameraManager } from "./CameraManager";
@@ -15,13 +16,13 @@ import { CalcUtils } from "../utils/calutils";
 import { AnimationOp, AnimOption, nodeListInfo, rayCastResult } from "./BaseClass";
 import { NodeInfo } from "../models/BaseClass";
 import { Helper } from "../utils/Helper";
-import { display, window } from "@kit.ArkUI";
+import { Animator, AnimatorResult, display, window } from "@kit.ArkUI";
 import { touchManager } from './BaseClass';
 
 
 @ObservedV2
 export class SceneManager{
-
+  @Trace scaleUp: boolean = false;
   uiContext: UIContext | undefined = undefined;
   screenWidth:number = 0;
   screenHeight:number = 0;
@@ -61,6 +62,9 @@ export class SceneManager{
   envImage:Image | null = null;
   radianceMap:Image | null = null;
 
+  scaleUpAnim: AnimatorResult | undefined = undefined;
+  scaleDownAnim: AnimatorResult | undefined = undefined;
+
   constructor(uiContext:UIContext) {
     this.uiContext = uiContext;
     this.init();
@@ -68,8 +72,8 @@ export class SceneManager{
 
   scaleBlock(node:Node){
     if(!this.cameraManager.cam) return;
-    node.scale.y = 0.38 * 8 * Math.tan(this.cameraManager.cam?.fov / 2);
-    node.scale.x = 0.38 * 8 * Math.tan(this.cameraManager.cam?.fov / 2) * this.aspect;
+    node.scale.y = 0.78 * 8 * Math.tan(this.cameraManager.cam?.fov / 2);
+    node.scale.x = 0.78 * 8 * Math.tan(this.cameraManager.cam?.fov / 2) * this.aspect;
   }
 
   GetNode(name:string):Node |undefined |null{
@@ -79,6 +83,41 @@ export class SceneManager{
     console.info('root.child:' + this.scene?.root?.children.get(0)?.name);
     console.info('getNode Path:' + nodeInfo.path);
     return node;
+  }
+
+  initAnim(){
+    if(!this.uiContext) return;
+    this.scaleDownAnim = this.uiContext.createAnimator({
+      duration:500,
+      delay:0,
+      direction:'normal',
+      fill:'forwards',
+      easing:'ease-in-out',
+      iterations:1,
+      begin:0,
+      end:1
+    })
+    this.scaleUpAnim = this.uiContext.createAnimator({
+      duration:500,
+      delay:0,
+      direction:'normal',
+      fill:'forwards',
+      easing:'ease-in-out',
+      iterations:1,
+      begin:0,
+      end:1
+    })
+    this.scaleUpAnim.onFrame = (progress) => {
+      if(this.nodeManager.node){
+        this.nodeManager.moveToScreen_vp({x:0,y:200 * progress},this.cameraManager);
+        this.nodeManager.scaleTo(progress);
+      }
+    }
+    this.scaleDownAnim.onFrame = (progress) => {
+      if(this.nodeManager.node){
+        this.nodeManager.scaleTo(2 - progress );
+      }
+    }
   }
 
   Rotate(result: rayCastResult[] | undefined){
@@ -151,11 +190,27 @@ export class SceneManager{
 
   HandleTouch(event: TouchEvent){
     if (event.type == TouchType.Down) {
+      // this.cameraManager.enableCamera_name('Perspective Camera');
+      this.cameraManager.enableCamera_name('Perspective Camera 1');
       this.touchM?.touchDown(event);
       let returnList = this.rayCast(event);
       this.Drag(returnList);
       this.Rotate(returnList);
     }else if(event.type == TouchType.Move) {
+      let returnList = this.rayCast(event);
+
+        returnList?.forEach((value,key) => {
+          if(value.node?.name == '球体'){
+            if(!this.scaleUp){
+              this.scaleUp = !this.scaleUp;
+              let node = this.GetNode('球体');
+              if(node){
+                this.nodeManager.node = node;
+                this.scaleUpAnim?.play();
+              }
+            }
+          }
+        })
       this.touchM?.touchMove(event);
       if(this.rotateFlag && this.rotateNode && this.cameraManager.cam?.fov){
         let oPos = CalcUtils.SpaceToPlane(this.rotateNode.position,this.cameraManager.cam.fov,this.aspect);
@@ -185,6 +240,12 @@ export class SceneManager{
         }
       }
     }else if(event.type == TouchType.Up){
+      // this.cameraManager.enableCamera_name('Perspective Camera 1');
+      // this.cameraManager.enableCamera_name('Perspective Camera')
+      if(this.scaleUp){
+        this.scaleUp = !this.scaleUp;
+        // this.scaleDownAnim?.play();
+      }
       let index = this.animationMap.get('rotate');
       index?.forEach((value,i) => {
         let anim = this.scene?.animations[value];
@@ -202,14 +263,23 @@ export class SceneManager{
       let child = node.children.get(i);
       if(child){
         children.push(child.name);
-        if(child.nodeType == NodeType.GEOMETRY){
-          let geom = child as Geometry;
-          LogUtil.AabbLog(geom);
-          if(geom.mesh.aabb){
-            console.info('AABB Info | node ' + child.name + ' registered');
-            this.aabbListMap.set(child.name, [geom.mesh.aabb,geom.mesh.aabb])
-            this.reCalAabb(child)
+        switch (child.nodeType) {
+          case NodeType.GEOMETRY:{
+            let geom = child as Geometry;
+            LogUtil.AabbLog(geom);
+            if(geom.mesh.aabb){
+              console.info('AABB Info | node ' + child.name + ' registered');
+              this.aabbListMap.set(child.name, [geom.mesh.aabb,geom.mesh.aabb])
+              this.reCalAabb(child)
+            }
+            break;
           }
+          case NodeType.CAMERA:{
+            this.cameraManager.addCamera(child as Camera);
+            break;
+          }
+          default : break;
+
         }
         let nodePath = path + '/' + child.name;
         console.info('Traversal Info | ' + node.name + ' -> ' + child.name + '/ path: ' + nodePath);
@@ -225,6 +295,7 @@ export class SceneManager{
       displayClass = data;
       this.screenWidth = displayClass[0].width;
       this.screenHeight = displayClass[0].height;
+      this.cameraManager.screenSize = {width: displayClass[0].width, height: displayClass[0].height};
       this.aspect = displayClass[0].width / displayClass[0].height;
       console.info('SceneManager Init Info : ScreenWidth:' + this.screenWidth + ' | ScreenHeight :' + this.screenHeight + ' | aspect: ' + this.aspect);
       const errCode: number = err.code;
@@ -239,15 +310,16 @@ export class SceneManager{
   LightRotate(angle:number){
     if(!this.lightManager.light) return;
     let position: Vec3 = {
-      x: 2 * Math.cos(-angle),
-      y: 2 * Math.sin(-angle),
-      z:3
+      x: 4 * Math.cos(-angle),
+      y: 4 * Math.sin(-angle),
+      z: 3
     }
     CalcUtils.lookAt(this.lightManager.light,position,{x:0,y:0,z:0},{x:0,y:1,z:0});
   }
 
   async init(file:string = 'undefined'){
     this.initScreenData();
+    this.initAnim();
     this.touchM = new touchManager(0);
     let common = this.uiContext?.getHostContext();
     if(common){
@@ -258,11 +330,13 @@ export class SceneManager{
     scene3d.Scene.load(resource).then(async (scene: Scene) => {
       this.scene = scene;
       this.cameraManager.cam = this.scene.root?.getNodeByPath("Perspective Camera") as scene3d.Camera;
+      this.cameraManager.uiContext = this.uiContext;
       this.cameraManager.cam.enabled = true;
       this.cameraManager.cam.postProcess = {toneMapping:{
         exposure:1,
         type:ToneMappingType.ACES
       }};
+
       this.cameraManager.cameraInfo?.copyFromNode(this.cameraManager.cam);
       this.lightManager.light = this.scene.root?.getNodeByPath("Spot Light") as scene3d.SpotLight;
       this.lightManager.light.enabled = true;
@@ -281,7 +355,6 @@ export class SceneManager{
       if(this.scene.root){
         this.TraverseAll(this.scene.root, '');
       }
-
       this.createAnimationMap();
       this.dragAbleMap.set('block',true);
       this.rotateAbleMap.set('旋钮',true);
@@ -327,16 +400,14 @@ export class SceneManager{
   }
 
   rayCast(event:TouchEvent):rayCastResult[] | undefined{
-    console.info('rayCast 1');
     if(!this.uiContext || !this.cameraManager.cam) return;
-    console.info('rayCast 2');
     let Px = this.uiContext.vp2px(event.touches[0].windowX) / this.screenWidth * 2 - 1;
     let Py = 1 - this.uiContext.vp2px(event.touches[0].windowY) / this.screenHeight * 2;
 
     // console.info('RayCast Info : Dot position Px: ' + Px + '/Py :' + Py);
     console.info('camera Info : ' +this.cameraManager.cam.rotation.x + '/' + this.cameraManager.cam.rotation.y + '/' +
     this.cameraManager.cam.rotation.z + '/' + this.cameraManager.cam.rotation.w);
-    let ray = CalcUtils.CalRayFromCam(this.cameraManager.cam, this.aspect, Px, Py);
+    let ray = CalcUtils.CalRayFromCam(this.cameraManager, this.aspect, Px, Py);
     let results: rayCastResult[] = new Array();
     this.aabbListMap.forEach((value:Aabb[],key:string) => {
       // console.info('raycast Info | check node : ' + key);
@@ -405,6 +476,10 @@ export class SceneManager{
       })
     }
   }
+
+
+
+
 
   createAnimationMap(){
     if(this.scene && this.scene.animations.length != 0){

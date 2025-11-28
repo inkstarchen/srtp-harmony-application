@@ -114,21 +114,17 @@ export struct CalendarPage {
         }
         .columnsTemplate('1fr 1fr 1fr 1fr 1fr 1fr 1fr')
         .rowsTemplate('1fr 1fr 1fr 1fr 1fr 1fr')
-        .height('80%')
-        .width('100%')
+        .margin({left:10,right:10,bottom:10})
+        .height(400)
+        .width(LayoutPolicy.wrapContent)
       }
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
-      .width('90%')
-      .height('60%')
+      .width(LayoutPolicy.wrapContent)
+      .height(LayoutPolicy.wrapContent)
       .border({ radius: '20px', width: 1, color: '#fff' })
       .backgroundColor('#ffffffff')
-      .shadow({
-        offsetX: 10,
-        offsetY: 10,
-        radius: 15,
-        color: '#68888888'
-      })
+      .shadow({color:'#2d8c8c8c',radius:10,offsetX:8,offsetY:8})
     }
       .width('100%')
       .height('100%')
@@ -148,7 +144,7 @@ export struct CalendarPage {
 
       // 年月显示
       Text(`${this.currentDate.getFullYear()}年${this.currentDate.getMonth() + 1}月`)
-        .fontSize(20)
+        .fontSize(30)
         .fontWeight(FontWeight.Bold)
         .layoutWeight(1)
         .textAlign(TextAlign.Center)
@@ -163,6 +159,7 @@ export struct CalendarPage {
         .backgroundColor('#fff')
     }
     .padding(10)
+    .margin({top:10})
     .width('100%')
     .backgroundColor('#ffffffff')
   }
@@ -179,7 +176,8 @@ export struct CalendarPage {
       }, (weekday: string) => weekday)
     }
     .padding({ top: 10, bottom: 10 })
-    .width('100%')
+    .margin({left:10,right:10})
+    .width(LayoutPolicy.wrapContent)
     .backgroundColor('#ffffffff')
   }
 

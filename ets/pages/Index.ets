@@ -3,9 +3,32 @@ import {mainPage} from './mainpage'
 @Entry
 @ComponentV2
 struct MainApplication {
+
+  @Local CoverX:number = 0;
+
   build() {
-    Column() {
-      mainPage()
+    Stack() {
+      mainPage({
+        FinishInit:(screenWidth:number) => {
+          this.CoverX = -screenWidth;
+          console.info('yes' + this.CoverX)
+        }
+      })
+
+      Column(){
+
+      }
+      .width('100%')
+      .height('100%')
+      .translate({x:this.CoverX})
+      .animation({
+        duration:1000,
+        iterations:1,
+        delay:0,
+        curve:Curve.EaseInOut
+      })
+      .backgroundColor('#fff')
+
     }
   }
 }

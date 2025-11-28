@@ -1,0 +1,6 @@
+# Lume Resource Index Version 1
+"材质" "project://assets/default.scene - project://assets/models/Ball.glb (1)" "" 5003b616-910c-4ea9-960b-1b193265de63 
+"材质" "project://assets/default.scene - project://assets/models/Ball.glb" "" 5003b616-910c-4ea9-960b-1b193265de63 
+"klippad_dawn_2_2k" "project://assets/default.scene" "" 35d42f80-82e3-4eba-a5de-b9c888821ab2 eyIkbWV0YSI6eyJtZXRhLXZlcnNpb24iOiIyLjAiLCJ2ZXJzaW9uIjoiMS4wIiwidHlwZSI6Ik9iamVjdFJlc291cmNlT3B0aW9ucyJ9LCIkcm9vdCI6eyIkY2xhc3NJZCI6IjE5NjIxM2I2LWViNjMtNGEyOS04OWJlLTFlYzEwZWQ2ODU5NiIsIiRjbGFzc05hbWUiOiJPYmplY3RSZXNvdXJjZU9wdGlvbnMiLCIkaW5zdGFuY2VJZCI6IjAwMDAwMjAxLWIxZWEtMTNlOC1lNDhjLWQ1M2I5NzIyNzhjYyIsIl9fYXR0YWNobWVudHMiOltdLCJiYXNlUmVzb3VyY2UubmFtZSI6InByb2plY3Q6Ly9hc3NldHMvZW52aXJvbm1lbnQva2xpcHBhZF9kYXduXzJfMmsuZW52aXJvbm1lbnQiLCJiYXNlUmVzb3VyY2UuZ3JvdXAiOiIifX0=
+"材质.001" "project://assets/default.scene - project://assets/models/lighttest.glb" "" 5003b616-910c-4ea9-960b-1b193265de63 
+"back" "project://assets/default.scene - project://assets/models/lighttest.glb" "" 5003b616-910c-4ea9-960b-1b193265de63 
