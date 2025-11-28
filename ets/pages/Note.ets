@@ -13,7 +13,7 @@ const DOMAIN_NUMBER: number = 0xFF00;
 struct NotePage {
 
   @Local message: string = '我的富文本笔记';
-  @Local noteTitle: string = '未命名笔记';
+  @Local noteTitle: string = '未命名笔记' ;
   @Local isEditingTitle: boolean = false;
 
   @Local notesController: NotesController = new NotesController(this.getUIContext());
@@ -38,6 +38,7 @@ struct NotePage {
     NotesController.ensureNotesDirectoryExists(this.notesController.notesDir);
     // 加载最近编辑的笔记（如果有）
     this.notesController.loadRecentNote(this.notesController.notesDir);
+
   }
 
   build() {

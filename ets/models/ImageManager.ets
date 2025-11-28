@@ -17,6 +17,54 @@ export class ImagePersistenceManager {
   private imageQuality: number = 85;
   private maxImageSize: number = 2048;
 
+
+  async uriToPixelMapByFd(uri: string): Promise<image.PixelMap | null> {
+    let file: fs.File | null = null;
+    let imageSource: image.ImageSource | null = null;
+
+    try {
+      hilog.info(DOMAIN_NUMBER, TAG, '通过文件描述符创建ImageSource');
+
+      file = await fs.open(uri, fs.OpenMode.READ_ONLY);
+      hilog.info(DOMAIN_NUMBER, TAG, `文件打开成功，fd: ${file.fd}`);
+
+      imageSource = image.createImageSource(file.fd);
+      hilog.info(DOMAIN_NUMBER, TAG, 'ImageSource创建完成');
+
+      // 使用固定的尺寸
+      //const desiredSize_width = 800;
+      //const desiredSize_height = 600;
+
+
+      const imageInfo = await imageSource.getImageInfo();
+      //const desiredSize = this.calculateDesiredSize(imageInfo.size);
+
+      const decodingOptions: image.DecodingOptions = {
+        //desiredSize: desiredSize,
+        desiredPixelFormat: image.PixelMapFormat.RGBA_8888,
+        editable: true
+
+      }
+
+      const pixelMap = await imageSource.createPixelMap(decodingOptions);
+      return pixelMap;
+    } catch (error) {
+      hilog.error(DOMAIN_NUMBER, TAG, `图片解码失败: ${error.message}`);
+      return null;
+    } finally {
+      if (imageSource) {
+        imageSource.release();
+        hilog.info(DOMAIN_NUMBER, TAG, 'ImageSource已释放');
+      }
+      if (file) {
+        await fs.close(file);
+        hilog.info(DOMAIN_NUMBER, TAG, '文件已关闭');
+      }
+    }
+  }
+
+
+  // 用不了
   async uriToPixelMap(uri: string): Promise<image.PixelMap| null> {
     const imageSource = image.createImageSource(uri);
 
