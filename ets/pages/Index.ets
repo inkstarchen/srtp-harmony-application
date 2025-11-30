@@ -15,19 +15,19 @@ struct MainApplication {
         }
       })
 
-      Column(){
-
-      }
-      .width('100%')
-      .height('100%')
-      .translate({x:this.CoverX})
-      .animation({
-        duration:1000,
-        iterations:1,
-        delay:0,
-        curve:Curve.EaseInOut
-      })
-      .backgroundColor('#fff')
+      // Column(){
+      //
+      // }
+      // .width('100%')
+      // .height('100%')
+      // .translate({x:this.CoverX})
+      // .animation({
+      //   duration:1000,
+      //   iterations:1,
+      //   delay:0,
+      //   curve:Curve.EaseInOut
+      // })
+      // .backgroundColor('#fff')
 
     }
   }

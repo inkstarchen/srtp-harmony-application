@@ -3,6 +3,7 @@ import { AnimatorResult, matrix4 } from '@kit.ArkUI';
 import { preferences } from '@kit.ArkData';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { PreferencesUtil } from '../utils/PreferencesUtil';
+import display from '@ohos.display';
 
 let dataPreferences: preferences.Preferences | null = null;
 @Entry
@@ -10,6 +11,8 @@ let dataPreferences: preferences.Preferences | null = null;
 export struct mainPage {
   @Event FinishInit:(screenWidth:number) => void;
   @Local ScreenSize?:Size;
+  @Local screenWidth:number = (display.getDefaultDisplaySync().width == 0) ? 1200 : display.getDefaultDisplaySync().width
+  @Local screenHeight:number = (display.getDefaultDisplaySync().height == 0) ? 2340 : display.getDefaultDisplaySync().height
   // @Local day: string = ''
   @Local hour: string = ''
   @Local minutes: string = ''
@@ -35,14 +38,14 @@ export struct mainPage {
   @Local translateY: number = 0;
   @Local scaleV: number = 0;
 
-  aboutToAppear(): void {
+  async aboutToAppear() {
 
     this.update_time();
     this.uiContext = this.getUIContext();
-    this.ScreenSize = PreferencesUtil.getScreenData();
-    this.FinishInit(this.ScreenSize.width);
+    // this.ScreenSize = PreferencesUtil.getScreenData();
+    // this.FinishInit(this.ScreenSize.width);
     this.initAnim();
-    // this.make_path();
+    this.make_path();
   }
 
   initAnim(){
@@ -95,29 +98,30 @@ export struct mainPage {
   }
 
   make_path(): void {
-    if(!this.ScreenSize) return;
-    let width = (this.ScreenSize.width * 0.3);
-    let height = this.ScreenSize.height;
-    let radius_1 = height * 0.08;
-    let radius_2 = height * 0.08;
-    this.path = 'M0 0 ' +
-      'L' + width.toFixed(0)  + ' 0' +
+    let width = (this.screenWidth * 0.3);
+    let height = this.screenHeight;
+    let radius_1 = height * 0.1;
+    let radius_2 = height * 0.1;
+    let pi = 3.14159265;
+    console.log("width = " + width + " height = " + height)
+    this.path = 'M-' + width * 0.5 + ' -' + height * 0.1 +
+      'L' + width.toFixed(0)  + ' -' + height * 0.1 +
       // 'L250 -500' +
-      'L' + width + ' ' + (height * 0.40).toFixed(0) +
+      'L' + width.toFixed(0) + ' ' + (height * 0.33).toFixed(0) +
       // 'L250 0' +
       // 'L250 750' +
-      'A' + radius_1.toFixed(0) + ' ' + radius_1.toFixed(0) + ' 0 0 1 ' + (width - radius_1).toFixed(0) + ' ' + (height * 0.45).toFixed(0) +
-      'A' + radius_2.toFixed(0) + ' ' + radius_2.toFixed(0) + ' 0 0 0 ' + (width - radius_1).toFixed(0) + ' ' + (height * 0.55).toFixed(0) +
-      'A' + radius_1.toFixed(0) + ' ' + radius_1.toFixed(0) + ' 0 0 1 ' + width.toFixed(0) + ' ' + (height * 0.6).toFixed(0) +
+      'A' + radius_1.toFixed(0) + ' ' + radius_1.toFixed(0) + ' 0 0 1 ' + (width - radius_1 * (1 - Math.cos(pi / 3))).toFixed(0) + ' ' + (height * 0.33 + radius_1 * Math.sin(pi / 3)).toFixed(0) +
+      'A' + radius_2.toFixed(0) + ' ' + radius_2.toFixed(0) + ' 0 0 0 ' + (width - radius_1 * (1 - Math.cos(pi / 3))).toFixed(0) + ' ' + (height * 0.33 + radius_1 * Math.sin(pi / 3) + 2 * radius_2 * Math.sin(pi / 3)).toFixed(0) +
+      'A' + radius_1.toFixed(0) + ' ' + radius_1.toFixed(0) + ' 0 0 1 ' + width.toFixed(0) + ' ' + (height * 0.33 + radius_1 * Math.sin(pi / 3) * 2 + 2 * radius_2 * Math.sin(pi / 3)).toFixed(0) +
       // 'A100 100 0 0 1 170 850' +
       // 'A200 200 0 0 0 170 1200' +
       // 'A100 100 0 0 1 250 1300' +
       // 'L250 2500' +
       'L' + width.toFixed(0) + ' ' + height.toFixed(0) +
-      'L0 ' + height.toFixed(0);
-      // 'L-100 2500'
+      'L-' + width * 0.5 + ' ' + height.toFixed(0);
+    // 'L-100 2500'
     ;
-    this.cyc1 = 'M' + radius_1.toFixed(0) + ' ' + (height / 2 - 525).toFixed(2) + 'A525 525 0 0 1 '+ radius_1.toFixed(0) +  ' ' + (height / 2 + 525).toFixed(0);
+    this.cyc1 = 'M' + width.toFixed(0) + ' ' + (height / 2 - 525).toFixed(2) + 'A525 525 0 0 1 '+ width.toFixed(0) +  ' ' + (height / 2 + 525).toFixed(0);
   }
 
   async hide_calendar() {
@@ -183,37 +187,29 @@ export struct mainPage {
 
   build() {
     Stack({ alignContent: Alignment.TopStart }) {
-
-      // Column()
-      //   .width('100%')
-      //   .height('112%')
-      //   .backgroundImage($r('app.media.bk'))
-      //   .backgroundImageSize(ImageSize.Cover)
-      //   .backgroundImagePosition(Alignment.Center)
-      //   .offset({ y: -50 })
       Stack({ alignContent: Alignment.Center }) {
-        Column(){
-
-        }
-        .width(150 - this.Width)
-        .height(150 - this.Height)
-        .borderRadius(150)
-        .translate({x:0,y:this.translateY})
-        .scale({x:this.scaleV,y:this.scaleV})
-        .backgroundColor('#ff0f9be9')
-        Column(){
-
-        }
-        .width(this.Width2)
-        .height(this.Height2)
-        .borderRadius(150)
-        .backgroundColor('#ff0f9be9')
-        .transform3D(matrix4.identity().rotate({x:1,angle:70}))
+        // Column(){
+        //
+        // }
+        // .width(150 - this.Width)
+        // .height(150 - this.Height)
+        // .borderRadius(150)
+        // .translate({x:0,y:this.translateY})
+        // .scale({x:this.scaleV,y:this.scaleV})
+        // .backgroundColor('#ff0f9be9')
+        // Column(){
+        //
+        // }
+        // .width(this.Width2)
+        // .height(this.Height2)
+        // .borderRadius(150)
+        // .backgroundColor('#ff0f9be9')
+        // .transform3D(matrix4.identity().rotate({x:1,angle:70}))
         Image($r('app.media.img1'))
-          .width(this.Width)
-          .height(this.Height)
-          .borderRadius(50)
-          // .offset({ x: -270, y: 115 })
+          .width(this.screenHeight * 0.055)
+          .height(this.screenHeight * 0.055)
+          .borderRadius(this.screenHeight * 0.0275)
+          .offset({ x: - this.screenWidth * 0.03, y: this.screenHeight * 0.005 })
           .onClick(() => {
             if(this.animResult){
               this.getUIContext().getPromptAction().showToast({message:'yes'})
@@ -222,11 +218,6 @@ export struct mainPage {
             }
             this.animResult?.play();
           })
-
-        if(this.show_calendar){
-          CalendarPage()
-            .scale({ x: this.calendar_scaleX, y: this.calendar_scaleY })
-        }
       }
       .width('100%')
       .height('100%')
@@ -234,24 +225,24 @@ export struct mainPage {
       Column() {
         Row() {
           Stack() {
-          //   Path()
-          //     .width(300)
-          //     .height(450)
-          //     .strokeWidth(2)
-          //     .stroke('#ffffff')
-          //     .strokeDashArray([3, 3])
-          //     .commands(this.cyc1)
-          //     .fill(Color.Transparent)
-          //
-          //   Path()
-          //     .width(300)
-          //     .height(450)
-          //     .strokeWidth(0)
-          //     .commands(this.path)
-          //     .fill('#ffd7d193')
-          //     // .stroke(Color.Black)
-          //     .position({x:0,y:0})
-          //     .opacity(0.8)
+              Path()
+                .width('100%')
+                .height('100%')
+                .strokeWidth(2)
+                .stroke('#ffffff')
+                // .strokeDashArray([3, 3])
+                .commands(this.cyc1)
+                .fill(Color.Transparent)
+
+              Path()
+                .width('100%')
+                .height('100%')
+                .strokeWidth(0)
+                .commands(this.path)
+                .fill('#ffd7d193')
+                // .stroke(Color.Black)
+                // .position({x:0,y:0})
+                .opacity(0.8)
             Column() {
               Text(this.hour)
                 .fontSize(48)
@@ -268,11 +259,13 @@ export struct mainPage {
                 .margin({bottom:20})
             }
             .height(LayoutPolicy.wrapContent)
-            .border({radius:10,color:'#00ffffff',width:1})
-            .shadow({color:'#2d8c8c8c',radius:10,offsetX:8,offsetY:8})
-            .backgroundColor('#fff')
+            // .border({radius:10,color:'#00ffffff',width:1})
+            // .shadow({color:'#2d8c8c8c',radius:10,offsetX:8,offsetY:8})
+            // .backgroundColor('#ffd7d193')
             .alignItems(HorizontalAlign.Start)
             .padding({ left: 30 })
+            .scale({x: 1.5, y: 1.5})
+            .offset({x: -this.screenWidth * 0.09, y: -this.screenHeight * 0.1})
 
             Column() {
               Column() {
@@ -289,7 +282,7 @@ export struct mainPage {
               .width(50)
               .height(50)
               .transform3D(matrix4.identity().translate({x:-40,y:1440}))
-              .backgroundColor('#ffffffff')
+              // .backgroundColor('#ffffffff')
               .onClick(() => {
                 if(this.show_calendar) {
                   this.hide_calendar();
@@ -299,12 +292,12 @@ export struct mainPage {
               })
 
               Column() {
-                  Image($r('app.media.notebook'))
-                    .width(30)
-                    .height(30)
-                  Text("记事本")
-                    .margin({top:2})
-                    .fontSize(10)
+                Image($r('app.media.notebook'))
+                  .width(30)
+                  .height(30)
+                Text("记事本")
+                  .margin({top:2})
+                  .fontSize(10)
               }
               .justifyContent(FlexAlign.Center)
               .border({radius:10,color:'#00ffffff',width:1})
@@ -317,7 +310,7 @@ export struct mainPage {
                 }).catch()
               })
               .transform3D(matrix4.identity().translate({x:-40,y:1480}))
-              .backgroundColor('#ffffffff')
+              // .backgroundColor('#ffffffff')
 
               Column() {
 
@@ -336,14 +329,14 @@ export struct mainPage {
                 })
               })
               .transform3D(matrix4.identity().translate({x:-40,y:1500}))
-              .backgroundColor('#ffffffff')
+              // .backgroundColor('#ffffffff')
 
 
               Column() {
 
-                  Text("Banner")
-                    .margin({top:2})
-                    .fontSize(10)
+                Text("Banner")
+                  .margin({top:2})
+                  .fontSize(10)
               }
               .justifyContent(FlexAlign.Center)
               .border({radius:10,color:'#00ffffff',width:1})
@@ -356,8 +349,9 @@ export struct mainPage {
                 })
               })
               .transform3D(matrix4.identity().translate({x:-40,y:1540}))
-              .backgroundColor('#ffffffff')
+              // .backgroundColor('#ffffffff')
             }
+            .offset({x: -this.screenWidth * 0.09, y: -this.screenHeight * 0.12})
           }
         }
         .justifyContent(FlexAlign.Start)
@@ -366,9 +360,16 @@ export struct mainPage {
 
 
       }
+      if(this.show_calendar){
+        CalendarPage()
+          .scale({ x: this.calendar_scaleX, y: this.calendar_scaleY })
+      }
     }
+    .backgroundImage($r('app.media.bk'))
+    .backgroundImageSize(ImageSize.Cover)
+    .backgroundImagePosition(Alignment.Center)
     .linearGradient({colors:[['#ffe1f5fd',0.0],['#ffdcf2fd',1.0]],direction:GradientDirection.LeftBottom})
     .width('100%')
-    .height('100%')
+    .height('112%')
   }
 }
