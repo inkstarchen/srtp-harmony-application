@@ -18,11 +18,11 @@ export class NotesController{
 
   // 图片管理器
   notesDir: string = '';
-
+  @Trace tempTitle: string = '';
   private imageManager: ImagePersistenceManager = new ImagePersistenceManager();
   controller: RichEditorController = new RichEditorController();
   private currentNoteId: string = '';
-  private note: Note | undefined = undefined;
+  @Trace private note: Note | undefined = undefined;
   @Trace saveStatus: string = '';
   uiContext:UIContext
 
@@ -60,7 +60,6 @@ export class NotesController{
       throw new Error(`无法创建存储目录: ${(error as BusinessError).message}`);
     }
   }
-
 
   // 加载最近编辑的笔记
   async loadRecentNote(notesDir:string): Promise<void> {
@@ -195,7 +194,6 @@ export class NotesController{
 
     return persistentData;
   }
-
 
   // 处理图片Span的持久化
   private async processImageSpanForPersistence(span: RichEditorImageSpanResult): Promise<NoteSpanData | null> {
@@ -371,6 +369,7 @@ export class NotesController{
       Prompt.showToast({ message: '插入图片失败', duration: 2000 });
     }
   }
+
   // 显示图片操作选项
   private showImageOptions(): void {
     Prompt.showDialog({
@@ -394,10 +393,6 @@ export class NotesController{
     });
   }
 
-
-
-
-
   // 删除选中的图片
   deleteSelectedImage(): void {
     Prompt.showToast({ message: '删除功能待实现', duration: 1500 });
@@ -412,8 +407,6 @@ export class NotesController{
   private generateSpanId(): string {
     return 'span_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
   }
-
-
 
   // 存储时：RichEditorTextStyleResult to NoteSpanStyle
   private simplifyTextStyle(textStyle: RichEditorTextStyleResult | undefined): NoteSpanStyle {
@@ -432,8 +425,6 @@ export class NotesController{
     };
   }
 
-
-
   // 恢复时：NoteSpanStyle to RichEditorTextStyle
   private restoreTextStyle(style: NoteSpanStyle | undefined): RichEditorTextStyle {
     if (!style) {
@@ -449,5 +440,16 @@ export class NotesController{
       fontStyle: StyleConversionUtils.stringToFontStyle(style.fontStyle),
       fontFamily: style.fontFamily,
     };
+  }
+
+  // -------- Note 交互函数 ---------
+
+  getTitle():string{
+    return this.note ? this.note.noteTitle : '未命名的笔记';
+  }
+
+  setTitle(title: string) {
+    if(!this.note) return;
+    this.note.noteTitle = title;
   }
 }

@@ -5,10 +5,11 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 const TAG: string = '[NoteApp]';
 const DOMAIN_NUMBER: number = 0xFF00;
 
+@ObservedV2
 export class Note{
   noteId:string = ''
   notesDir:string = ''
-  noteTitle:string = ''
+  @Trace noteTitle:string = ''
   noteData: NoteData | undefined = undefined;
 
   constructor(Dir:string, Id:string) {

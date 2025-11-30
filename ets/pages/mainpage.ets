@@ -1,5 +1,5 @@
 import {CalendarPage} from './CalendarPage'
-import { AnimatorResult, matrix4 } from '@kit.ArkUI';
+import { AnimatorResult, matrix4, router } from '@kit.ArkUI';
 import { preferences } from '@kit.ArkData';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { PreferencesUtil } from '../utils/PreferencesUtil';
@@ -91,6 +91,14 @@ export struct mainPage {
     let day1 = date.getDate() < 10 ? '0' + date.getDate().toString() : date.getDate().toString();
     this.hour = date.getHours() < 10 ? '0' + date.getHours().toString() : date.getHours().toString();
     this.minutes = date.getMinutes() < 10 ? '0' + date.getMinutes().toString() : date.getMinutes().toString();
+    let id = setInterval(() => {
+      let date = new Date();
+      let year = date.getFullYear();
+      let month = date.getMonth() < 10 ? '0' + date.getMonth().toString() : date.getMonth().toString();
+      let day1 = date.getDate() < 10 ? '0' + date.getDate().toString() : date.getDate().toString();
+      this.hour = date.getHours() < 10 ? '0' + date.getHours().toString() : date.getHours().toString();
+      this.minutes = date.getMinutes() < 10 ? '0' + date.getMinutes().toString() : date.getMinutes().toString();
+    },1000)
     // this.day = `${year}-${month}-${day1}`;
   }
 
@@ -225,6 +233,7 @@ export struct mainPage {
 
         if(this.show_calendar){
           CalendarPage()
+            .translate({x:50,y:200})
             .scale({ x: this.calendar_scaleX, y: this.calendar_scaleY })
         }
       }
@@ -260,6 +269,7 @@ export struct mainPage {
                 .margin({top:10})
                 .translate({x:-20,y:0})
 
+
               Text(this.minutes)
                 .fontSize(32)
                 .fontWeight(FontWeight.Medium)
@@ -273,6 +283,7 @@ export struct mainPage {
             .backgroundColor('#fff')
             .alignItems(HorizontalAlign.Start)
             .padding({ left: 30 })
+
 
             Column() {
               Column() {
@@ -314,7 +325,7 @@ export struct mainPage {
               .onClick(() => {
                 this.getUIContext().getRouter().pushUrl({
                   url:'pages/Note'
-                }).catch()
+                },router.RouterMode.Single).catch()
               })
               .transform3D(matrix4.identity().translate({x:-40,y:1480}))
               .backgroundColor('#ffffffff')
@@ -331,9 +342,9 @@ export struct mainPage {
               .width(50)
               .height(50)
               .onClick(() => {
-                this.getUIContext().getRouter().pushUrl({
-                  url:"pages/lightTest"
-                })
+                this.uiContext?.getRouter().pushUrl({
+                  url:'pages/TextPage'
+                }, router.RouterMode.Single)
               })
               .transform3D(matrix4.identity().translate({x:-40,y:1500}))
               .backgroundColor('#ffffffff')
@@ -353,7 +364,7 @@ export struct mainPage {
               .onClick(() => {
                 this.getUIContext().getRouter().pushUrl({
                   url:"pages/BannerPage"
-                })
+                },router.RouterMode.Single)
               })
               .transform3D(matrix4.identity().translate({x:-40,y:1540}))
               .backgroundColor('#ffffffff')

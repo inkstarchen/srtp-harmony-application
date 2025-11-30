@@ -37,6 +37,7 @@ export class NodeManager{
       return;
     }
     let depth = camM.CalDepth(this.node.position) as number;
+
     this.node.position.y = camM.Distance2to3_vp(v.y, depth);
     this.node.position.x = camM.Distance2to3_vp(v.x, depth);
   }

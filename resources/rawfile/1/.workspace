@@ -47,7 +47,7 @@
             "floating-window-resource-uri": "project://assets/default.scene",
             "floating-window-class-id": "com.huawei.editor.View3DWindowDockContainer",
             "floating-window-instance-id": "com.huawei.editor.View3DWindowDockContainer#oPCfes44kf",
-            "floating-window-title": "3D View [default.scene *]",
+            "floating-window-title": "3D View [default.scene]",
             "floating-window-state": "docked",
             "panes": [
               {
