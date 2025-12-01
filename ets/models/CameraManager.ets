@@ -4,6 +4,7 @@ import {
   Camera, Color, Quaternion, SceneResourceFactory,
   ToneMappingSettings,
   ToneMappingType,
+  Vec2,
   Vec3} from "@kit.ArkGraphics3D";
 import { CalcUtils } from "../utils/calutils";
 import { Helper } from "../utils/Helper";
@@ -74,6 +75,7 @@ const NEG_X:Vec3 = {x:-1,y:0,z:0};
 export class CameraManager{
 
   cameraInfo:CameraInfo | undefined = undefined;
+  ScreenZ: number = 4;
   @Trace realTimeInfo: string = '';
   screenSize: Size = {width: 1000, height: 2000};
   cam:Camera | undefined = undefined;
@@ -106,6 +108,67 @@ export class CameraManager{
   addCamera(cam:Camera){
     this.cameraIndex.set(cam.name, this.cams.length);
     this.cams.push(cam);
+  }
+
+  Position3to2(pos:Vec3): Vec2 | undefined{
+    let depth = this.CalDepth(pos) as number;
+    let camToPos = CalcUtils.sub(pos, this.getPosition() as Vec3);
+    let Right = CalcUtils.dot(camToPos,this.getRight() as Vec3);
+    let Up = CalcUtils.dot(camToPos, this.getUp() as Vec3);
+    return {
+      x: this.Distance3to2_px(Right,depth) + this.screenSize.width / 2,
+      y: this.screenSize.height / 2 - this.Distance3to2_px(Up,depth)
+    };
+  }
+
+  Position2to3_vp(v:Vec2): Vec3 | undefined{
+    if(!this.uiContext) return undefined;
+    let v_px = { x:this.uiContext.vp2px(v.x), y: this.uiContext.vp2px(v.y)} as Vec2;
+    return this.Position2to3_px(v_px);
+  }
+
+  Position2to3_px(v:Vec2): Vec3 | undefined{
+    let Px = v.x / this.screenSize.width * 2 - 1;
+    let Py = 1 - v.y / this.screenSize.height * 2;
+
+
+    let camPosition = this.getPosition() as Vec3;
+    let fov = this.getFov() as number;
+    let tanA = Math.tan( fov / 2);
+
+    let FB = this.getForward() as Vec3;
+    let rotation = this.getRotation() as Quaternion;
+    if(rotation.x == 0 && rotation.y == 0 && rotation.z == 0){
+      FB = this.getDefaultForward();
+    }
+
+    let RL:Vec3 = CalcUtils.NormVec3(CalcUtils.cross(FB,this.getDefaultUp()));
+    let UD:Vec3 = CalcUtils.NormVec3(CalcUtils.cross(RL,FB));
+    // console.info('Direction FB:' + FB.x + '/' + FB.y + '/' + FB.z + '\n');
+    // console.info('Direction UD:' + UD.x + '/' + UD.y + '/' + UD.z + '\n');
+    // console.info('Direction RL:' + RL.x + '/' + RL.y + '/' + RL.z + '\n');
+    let h = this.ScreenZ * tanA;
+    let w = h * this.screenSize.width / this.screenSize.height;
+    let t2 = h * Py;
+    let t3 = w * Px;
+    let dot = {x: camPosition.x + this.ScreenZ * FB.x + t2 * UD.x + t3 * RL.x,
+      y: camPosition.y + this.ScreenZ * FB.y + t2 * UD.y + t3 * RL.y,
+      z: camPosition.z + this.ScreenZ * FB.z + t2 * UD.z + t3 * RL.z,} as Vec3;
+    console.info('dot position: ' + dot.x + '/' + dot.y + '/' + dot.z);
+    return dot;
+  }
+
+  Distance3to2_vp(d:number, depth:number):number {
+    if(!this.uiContext) return 0;
+    let px = this.Distance3to2_px(d,depth);
+    return this.uiContext.px2vp(px);
+  }
+
+  Distance3to2_px(d:number, depth:number):number {
+    let fov = this.getFov() as number;
+    let tanY = Math.tan(fov / 2);
+    let h = tanY * depth * 2;
+    return (d / h) * this.screenSize.height;
   }
 
   Distance2to3_vp(d:number,depth:number): number{

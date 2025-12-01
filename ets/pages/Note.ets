@@ -13,9 +13,7 @@ const DOMAIN_NUMBER: number = 0xFF00;
 struct NotePage {
 
   @Local message: string = '我的富文本笔记';
-  @Local noteTitle: string = '未命名笔记' ;
   @Local isEditingTitle: boolean = false;
-
   @Local notesController: NotesController = new NotesController(this.getUIContext());
 
   // RichEditor 控制器和选项
@@ -48,16 +46,28 @@ struct NotePage {
         // 标题编辑
         Row() {
           if (this.isEditingTitle) {
-            TextInput({ text: this.noteTitle })
-              .onChange((value: string) => {
-                this.noteTitle = value;
+            TextInput({ text: this.notesController.getTitle() })
+              .id('titleInput')
+              .onAppear(() => {
+                focusControl.requestFocus('titleInput');
+              })
+              .fontSize(20)
+              .fontWeight(FontWeight.Bold)
+              .backgroundColor("#fff")
+              .onChange((value:string) =>{
+                this.notesController.tempTitle = value;
+              })
+              .onBlur(() => {
+                this.notesController.setTitle(this.notesController.tempTitle);
+                this.isEditingTitle = false;
               })
               .onSubmit(() => {
+                this.notesController.setTitle(this.notesController.tempTitle);
                 this.isEditingTitle = false;
               })
               .width('70%')
           } else {
-            Text(this.noteTitle)
+            Text(this.notesController.getTitle())
               .fontSize(20)
               .fontWeight(FontWeight.Bold)
               .width('70%')

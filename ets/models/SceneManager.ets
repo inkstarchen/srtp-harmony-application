@@ -13,7 +13,7 @@ import { LightManager } from "./LightManager";
 import { CameraManager } from "./CameraManager";
 import { LogUtil } from "../utils/LogUtil";
 import { CalcUtils } from "../utils/calutils";
-import { AnimationOp, AnimOption, nodeListInfo, rayCastResult } from "./BaseClass";
+import { AnimationOp, AnimOption, nodeListInfo, Ray, rayCastResult } from "./BaseClass";
 import { NodeInfo } from "../models/BaseClass";
 import { Helper } from "../utils/Helper";
 import { Animator, AnimatorResult, display, window } from "@kit.ArkUI";
@@ -65,9 +65,9 @@ export class SceneManager{
   scaleUpAnim: AnimatorResult | undefined = undefined;
   scaleDownAnim: AnimatorResult | undefined = undefined;
 
-  constructor(uiContext:UIContext) {
+  constructor(uiContext:UIContext,resource:Resource) {
     this.uiContext = uiContext;
-    this.init();
+    this.init(resource);
   }
 
   scaleBlock(node:Node){
@@ -306,7 +306,7 @@ export class SceneManager{
       console.info(`Succeeded in obtaining all the display objects. Data: ${JSON.stringify(data)}`);
     });
   }
-
+  
   LightRotate(angle:number){
     if(!this.lightManager.light) return;
     let position: Vec3 = {
@@ -317,7 +317,7 @@ export class SceneManager{
     CalcUtils.lookAt(this.lightManager.light,position,{x:0,y:0,z:0},{x:0,y:1,z:0});
   }
 
-  async init(file:string = 'undefined'){
+  async init(resource:Resource){
     this.initScreenData();
     this.initAnim();
     this.touchM = new touchManager(0);
@@ -325,7 +325,7 @@ export class SceneManager{
     if(common){
       this.rM = common.resourceManager
     }
-    const resource = $rawfile('1/assets/default.scene');
+
 
     scene3d.Scene.load(resource).then(async (scene: Scene) => {
       this.scene = scene;
@@ -350,8 +350,9 @@ export class SceneManager{
         name: 'envImg',
         uri: $rawfile('quarry_02_2k_skybox.ktx')
       });
-      this.scene.environment.backgroundType = EnvironmentBackgroundType.BACKGROUND_CUBEMAP;
-      this.scene.environment.environmentImage = this.envImg;
+      this.scene.environment.backgroundType = EnvironmentBackgroundType.BACKGROUND_NONE;
+      // this.scene.environment.backgroundType = EnvironmentBackgroundType.BACKGROUND_CUBEMAP;
+      // this.scene.environment.environmentImage = this.envImg;
       if(this.scene.root){
         this.TraverseAll(this.scene.root, '');
       }
@@ -401,13 +402,11 @@ export class SceneManager{
 
   rayCast(event:TouchEvent):rayCastResult[] | undefined{
     if(!this.uiContext || !this.cameraManager.cam) return;
-    let Px = this.uiContext.vp2px(event.touches[0].windowX) / this.screenWidth * 2 - 1;
-    let Py = 1 - this.uiContext.vp2px(event.touches[0].windowY) / this.screenHeight * 2;
+    let dot = this.cameraManager.Position2to3_px({x:event.touches[0].windowX, y:event.touches[0].windowY}) as Vec3;
+    let ray = new Ray();
+    ray.o = this.cameraManager.getPosition() as Vec3;
+    ray.d = {x: dot.x - ray.o.x, y: dot.y - ray.o.y, z: dot.z - ray.o.z} as Vec3;
 
-    // console.info('RayCast Info : Dot position Px: ' + Px + '/Py :' + Py);
-    console.info('camera Info : ' +this.cameraManager.cam.rotation.x + '/' + this.cameraManager.cam.rotation.y + '/' +
-    this.cameraManager.cam.rotation.z + '/' + this.cameraManager.cam.rotation.w);
-    let ray = CalcUtils.CalRayFromCam(this.cameraManager, this.aspect, Px, Py);
     let results: rayCastResult[] = new Array();
     this.aabbListMap.forEach((value:Aabb[],key:string) => {
       // console.info('raycast Info | check node : ' + key);

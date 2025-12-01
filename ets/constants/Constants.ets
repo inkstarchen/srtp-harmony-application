@@ -1,4 +1,6 @@
 export class Constants{
+  static readonly default = $rawfile('1/assets/default.scene');
+  static readonly NewProject = $rawfile('NewProject/assets/default.scene');
   /*
   BOOK_BOX_WIDTH
    */

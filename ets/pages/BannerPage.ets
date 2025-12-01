@@ -2,6 +2,8 @@ import picker from '@ohos.file.picker';
 
 import { AnimatorResult, matrix4 } from '@kit.ArkUI';
 import { BannerClass, BannerDisplay } from '../models/BannerClass';
+import { SceneManager } from '../models/SceneManager';
+import { Constants } from '../constants/Constants';
 
 
 @CustomDialog
@@ -79,7 +81,7 @@ struct Banner {
   translateLastArray: number[] = [0,0,0,0,0]
   @Local currentIndex: number = 0;
   set:boolean = false;
-
+  @Local sceneManager:SceneManager | undefined = undefined;
   @Local title: string = '我们的明天会更好';
   @Local date: string = '九月廿十';
   @Local TextArray: string[] = ['桃树、杏树、梨树，你不让我，我不让你，都开满了花赶趟儿。红的像火，粉的像霞，白的像雪。花里带着甜味儿；闭了眼，树上仿佛已经满是桃儿、杏儿、梨儿。花下成千成百的蜜蜂嗡嗡地闹着，大小的蝴...','不知情权是当今社会的宝贵权利','在行动前，先沉思','智慧产生于独处之中']
@@ -100,6 +102,9 @@ struct Banner {
   private autoPlayInterval: number = 0;
 
   aboutToAppear() {
+    if(!this.sceneManager){
+      this.sceneManager = new SceneManager(this.getUIContext(),Constants.NewProject);
+    }
     this.perspective = matrix4.init([
       1, 0, 0, 0,
       0, 1, 0, 0,
@@ -162,17 +167,17 @@ struct Banner {
         this.set = true;
         this.init_bannerDisplay();
       }
-      this.bannerDisplays[this.index].zIndex = (2 - progress) < 1.5 ? 1 : 2;
+      this.bannerDisplays[this.index].zIndex = (2 - progress) < 1.5 ? 2 : 2;
       this.bannerDisplays[this.index].angle = -60 * progress;
-      this.bannerDisplays[this.index + 1].zIndex = (1 - progress) < 0.5 ? 0 : 1;
+      this.bannerDisplays[this.index + 1].zIndex = (1 - progress) < 0.5 ? 0 : 0;
       this.bannerDisplays[this.index + 1].angle = -60 - 60 * progress;
-      this.bannerDisplays[this.index + 2].zIndex = (progress > 0.5) ? 1 : 0;
+      this.bannerDisplays[this.index + 2].zIndex = (progress > 0.5) ? 0 : 0;
       this.bannerDisplays[this.index + 2].angle = 0 - 60 * progress;
       this.bannerDisplays[this.index + 3].zIndex = 0;
       this.bannerDisplays[this.index + 3].angle = 180 - 60 * progress;
-      this.bannerDisplays[this.index - 1].zIndex = (1 + progress) > 1.5 ? 2 : 1;
+      this.bannerDisplays[this.index - 1].zIndex = (1 + progress) > 1.5 ? 2 : 2;
       this.bannerDisplays[this.index - 1].angle = 60 - 60 * progress;
-      this.bannerDisplays[this.index - 2].zIndex = (progress > 0.5) ? 1 : 0;
+      this.bannerDisplays[this.index - 2].zIndex = (progress > 0.5) ? 0 : 0;
       this.bannerDisplays[this.index - 2].angle = 120 - 60 * progress;
       if(progress == 1){
         this.currentIndex = (this.currentIndex + 1) % this.bannerList.length;
@@ -218,8 +223,34 @@ struct Banner {
   }
 
   build() {
-    Column() {
+    Stack({alignContent:Alignment.TopStart}) {
+
       Stack({ alignContent: Alignment.Center }) {
+        if (this.sceneManager?.sceneOption) {
+          Stack() {
+            Column(){
+              Component3D(this.sceneManager?.sceneOption)
+                .renderWidth('100%')
+                .renderHeight('100%')
+                .onTouch((event) => {
+                  this.sceneManager?.HandleTouch(event);
+                })
+
+            }
+            .zIndex(1)
+            .position({x:0,y:0})
+            .width(this.uiContext?.px2vp(this.sceneManager.screenWidth))
+            .height(this.uiContext?.px2vp(this.sceneManager.screenHeight))
+
+          }
+          .position({x:0,y:0})
+          .zIndex(1)
+          .width(this.uiContext?.px2vp(this.sceneManager.screenWidth))
+          .height(this.uiContext?.px2vp(this.sceneManager.screenHeight))
+        }
+        else {
+          Text('loading...');
+        }
         ForEach(this.bannerDisplays,(Item:BannerDisplay) => {
           Stack(){
             Column(){}
@@ -283,7 +314,7 @@ struct Banner {
           .zIndex(Item.zIndex)
           .transform3D(matrix4.identity()
             .rotate({angle:-Item.angle,y:1,x:0})
-            .translate({x:600 * Math.sin(Math.PI * Item.angle / 180),y:0,z:600 - 600 * Math.cos(Math.PI * Item.angle / 180)})
+            .translate({x:700 * Math.sin(Math.PI * Item.angle / 180),y:200,z:700 - 700 * Math.cos(Math.PI * Item.angle / 180)})
             .combine(this.perspective)
           )
           // Column() {
@@ -314,6 +345,8 @@ struct Banner {
       .height(200)
       .margin({ bottom: 20 })
     }
+    .width('100%')
+    .height('100%')
   }
 }
 

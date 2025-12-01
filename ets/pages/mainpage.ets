@@ -1,5 +1,5 @@
 import {CalendarPage} from './CalendarPage'
-import { AnimatorResult, matrix4 } from '@kit.ArkUI';
+import { AnimatorResult, matrix4, router } from '@kit.ArkUI';
 import { preferences } from '@kit.ArkData';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { PreferencesUtil } from '../utils/PreferencesUtil';
@@ -11,8 +11,6 @@ let dataPreferences: preferences.Preferences | null = null;
 export struct mainPage {
   @Event FinishInit:(screenWidth:number) => void;
   @Local ScreenSize?:Size;
-  @Local screenWidth:number = (display.getDefaultDisplaySync().width == 0) ? 1200 : display.getDefaultDisplaySync().width
-  @Local screenHeight:number = (display.getDefaultDisplaySync().height == 0) ? 2340 : display.getDefaultDisplaySync().height
   // @Local day: string = ''
   @Local hour: string = ''
   @Local minutes: string = ''
@@ -38,12 +36,12 @@ export struct mainPage {
   @Local translateY: number = 0;
   @Local scaleV: number = 0;
 
-  async aboutToAppear() {
+  aboutToAppear(): void {
 
     this.update_time();
     this.uiContext = this.getUIContext();
-    // this.ScreenSize = PreferencesUtil.getScreenData();
-    // this.FinishInit(this.ScreenSize.width);
+    this.ScreenSize = PreferencesUtil.getScreenData();
+    this.FinishInit(this.ScreenSize.width);
     this.initAnim();
     this.make_path();
   }
@@ -94,12 +92,20 @@ export struct mainPage {
     let day1 = date.getDate() < 10 ? '0' + date.getDate().toString() : date.getDate().toString();
     this.hour = date.getHours() < 10 ? '0' + date.getHours().toString() : date.getHours().toString();
     this.minutes = date.getMinutes() < 10 ? '0' + date.getMinutes().toString() : date.getMinutes().toString();
+    let id = setInterval(() => {
+      let date = new Date();
+      let year = date.getFullYear();
+      let month = date.getMonth() < 10 ? '0' + date.getMonth().toString() : date.getMonth().toString();
+      let day1 = date.getDate() < 10 ? '0' + date.getDate().toString() : date.getDate().toString();
+      this.hour = date.getHours() < 10 ? '0' + date.getHours().toString() : date.getHours().toString();
+      this.minutes = date.getMinutes() < 10 ? '0' + date.getMinutes().toString() : date.getMinutes().toString();
+    },1000)
     // this.day = `${year}-${month}-${day1}`;
   }
 
   make_path(): void {
-    let width = (this.screenWidth * 0.35);
-    let height = this.screenHeight;
+    let width = (this.ScreenSize.width * 0.35);
+    let height = this.ScreenSize.height;
     let radius_1 = height * 0.1;
     let radius_2 = height * 0.1;
     let pi = 3.14159265;
@@ -182,23 +188,23 @@ export struct mainPage {
   build() {
     Stack({ alignContent: Alignment.TopStart }) {
       Stack({ alignContent: Alignment.Center }) {
-        // Column(){
-        //
-        // }
-        // .width(150 - this.Width)
-        // .height(150 - this.Height)
-        // .borderRadius(150)
-        // .translate({x:0,y:this.translateY})
-        // .scale({x:this.scaleV,y:this.scaleV})
-        // .backgroundColor('#ff0f9be9')
-        // Column(){
-        //
-        // }
-        // .width(this.Width2)
-        // .height(this.Height2)
-        // .borderRadius(150)
-        // .backgroundColor('#ff0f9be9')
-        // .transform3D(matrix4.identity().rotate({x:1,angle:70}))
+        Column(){
+
+        }
+        .width(150 - this.Width)
+        .height(150 - this.Height)
+        .borderRadius(150)
+        .translate({x:0,y:this.translateY})
+        .scale({x:this.scaleV,y:this.scaleV})
+        .backgroundColor('#ff0f9be9')
+        Column(){
+
+        }
+        .width(this.Width2)
+        .height(this.Height2)
+        .borderRadius(150)
+        .backgroundColor('#ff0f9be9')
+        .transform3D(matrix4.identity().rotate({x:1,angle:70}))
         Image($r('app.media.img1'))
           .width(this.screenHeight * 0.055)
           .height(this.screenHeight * 0.055)
@@ -212,6 +218,12 @@ export struct mainPage {
             }
             this.animResult?.play();
           })
+
+        if(this.show_calendar){
+          CalendarPage()
+            .translate({x:50,y:200})
+            .scale({ x: this.calendar_scaleX, y: this.calendar_scaleY })
+        }
       }
       .width('100%')
       .height('100%')
@@ -245,6 +257,7 @@ export struct mainPage {
                 .margin({top:10})
                 .translate({x:-20,y:0})
 
+
               Text(this.minutes)
                 .fontSize(32)
                 .fontWeight(FontWeight.Medium)
@@ -253,13 +266,11 @@ export struct mainPage {
                 .margin({bottom:20})
             }
             .height(LayoutPolicy.wrapContent)
-            // .border({radius:10,color:'#00ffffff',width:1})
-            // .shadow({color:'#2d8c8c8c',radius:10,offsetX:8,offsetY:8})
-            // .backgroundColor('#ffd7d193')
+            .border({radius:10,color:'#00ffffff',width:1})
+            .shadow({color:'#2d8c8c8c',radius:10,offsetX:8,offsetY:8})
+            .backgroundColor('#fff')
             .alignItems(HorizontalAlign.Start)
-            .padding({ left: 40,top:30 })
-            .scale({x: 1.5, y: 1.5})
-
+            .padding({ left: 30 })
 
             Column() {
               Column() {
@@ -276,7 +287,7 @@ export struct mainPage {
               .width(50)
               .height(50)
               .transform3D(matrix4.identity().translate({x:-40,y:1440}))
-              // .backgroundColor('#ffffffff')
+              .backgroundColor('#ffffffff')
               .onClick(() => {
                 if(this.show_calendar) {
                   this.hide_calendar();
@@ -301,10 +312,10 @@ export struct mainPage {
               .onClick(() => {
                 this.getUIContext().getRouter().pushUrl({
                   url:'pages/Note'
-                }).catch()
+                },router.RouterMode.Single).catch()
               })
               .transform3D(matrix4.identity().translate({x:-40,y:1480}))
-              // .backgroundColor('#ffffffff')
+              .backgroundColor('#ffffffff')
 
               Column() {
 
@@ -318,12 +329,12 @@ export struct mainPage {
               .width(50)
               .height(50)
               .onClick(() => {
-                this.getUIContext().getRouter().pushUrl({
-                  url:"pages/lightTest"
-                })
+                this.uiContext?.getRouter().pushUrl({
+                  url:'pages/TextPage'
+                }, router.RouterMode.Single)
               })
               .transform3D(matrix4.identity().translate({x:-40,y:1500}))
-              // .backgroundColor('#ffffffff')
+              .backgroundColor('#ffffffff')
 
 
               Column() {
@@ -340,35 +351,23 @@ export struct mainPage {
               .onClick(() => {
                 this.getUIContext().getRouter().pushUrl({
                   url:"pages/BannerPage"
-                })
+                },router.RouterMode.Single)
               })
               .transform3D(matrix4.identity().translate({x:-40,y:1540}))
-              // .backgroundColor('#ffffffff')
+              .backgroundColor('#ffffffff')
             }
           }
           .width('100%')
           .height('100%')
         }
         .justifyContent(FlexAlign.Start)
-        // .alignItems(VerticalAlign.Top)
         .width('100%')
         .height('100%')
         .padding(20)
 
 
       }
-      if(this.show_calendar){
-        CalendarPage()
-          .scale({ x: this.calendar_scaleX, y: this.calendar_scaleY })
-      }
     }
-    .onTouch((event) => {
-      const info = this.getUIContext().getComponentUtils().getRectangleById('test');
-      console.info('rectinfo :' + info.screenOffset.x + '/' + info.screenOffset.y);
-    })
-    .backgroundImage($r('app.media.bk'))
-    .backgroundImageSize(ImageSize.Cover)
-    .backgroundImagePosition(Alignment.Center)
     .linearGradient({colors:[['#ffe1f5fd',0.0],['#ffdcf2fd',1.0]],direction:GradientDirection.LeftBottom})
     .width('100%')
     .height('100%')

@@ -62,9 +62,23 @@
                 "media-type": "application/object-instance/toolkit/scene"
               }
             ]
+          },
+          {
+            "floating-window-resource-uri": "project://assets/default.scene",
+            "floating-window-class-id": "com.huawei.editor.ResourceWindowDockContainer",
+            "floating-window-instance-id": "com.huawei.editor.ResourceWindowDockContainer#l6vRrC5UQR",
+            "floating-window-title": "Resource View [default.scene]",
+            "floating-window-state": "docked",
+            "panes": [
+              {
+                "pane-class-id": "com.huawei.editor.ResourceViewPane",
+                "pane-instance-id": "com.huawei.editor.ResourceViewPane#PpnlwmoBh9",
+                "resource-uri": "project://assets/default.scene"
+              }
+            ]
           }
         ],
-        "docking-layout": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPFF0QWR2YW5jZWREb2NraW5nU3lzdGVtIFZlcnNpb249IjEiIFVzZXJWZXJzaW9uPSIwIiBDb250YWluZXJzPSIxIiBDZW50cmFsV2lkZ2V0PSJDZW50cmFsV2lkZ2V0Ij4KICAgIDxDb250YWluZXIgRmxvYXRpbmc9IjAiPgogICAgICAgIDxTcGxpdHRlciBPcmllbnRhdGlvbj0iLSIgQ291bnQ9IjIiPgogICAgICAgICAgICA8U3BsaXR0ZXIgT3JpZW50YXRpb249InwiIENvdW50PSIyIj4KICAgICAgICAgICAgICAgIDxBcmVhIFRhYnM9IjIiIEN1cnJlbnQ9ImNvbS5odWF3ZWkuZWRpdG9yLlZpZXczRFdpbmRvd0RvY2tDb250YWluZXIjb1BDZmVzNDRrZiIgRmxhZ3M9IjEiPgogICAgICAgICAgICAgICAgICAgIDxXaWRnZXQgTmFtZT0iQ2VudHJhbFdpZGdldCIgQ2xvc2VkPSIwIi8+CiAgICAgICAgICAgICAgICAgICAgPFdpZGdldCBOYW1lPSJjb20uaHVhd2VpLmVkaXRvci5WaWV3M0RXaW5kb3dEb2NrQ29udGFpbmVyI29QQ2ZlczQ0a2YiIENsb3NlZD0iMCIvPgogICAgICAgICAgICAgICAgPC9BcmVhPgogICAgICAgICAgICAgICAgPEFyZWEgVGFicz0iMSIgQ3VycmVudD0iY29tLmh1YXdlaS5lZGl0b3IuSW5zcGVjdG9yV2luZG93RG9ja0NvbnRhaW5lciNXYkhFbGppcVJhIj4KICAgICAgICAgICAgICAgICAgICA8V2lkZ2V0IE5hbWU9ImNvbS5odWF3ZWkuZWRpdG9yLkluc3BlY3RvcldpbmRvd0RvY2tDb250YWluZXIjV2JIRWxqaXFSYSIgQ2xvc2VkPSIwIi8+CiAgICAgICAgICAgICAgICA8L0FyZWE+CiAgICAgICAgICAgICAgICA8U2l6ZXM+MTE0OSA1NTUgPC9TaXplcz4KICAgICAgICAgICAgPC9TcGxpdHRlcj4KICAgICAgICAgICAgPEFyZWEgVGFicz0iMiIgQ3VycmVudD0iY29tLmh1YXdlaS5lZGl0b3IuUHJvamVjdFdpbmRvd0RvY2tDb250YWluZXIjYnFkaHRtMFlEZCI+CiAgICAgICAgICAgICAgICA8V2lkZ2V0IE5hbWU9ImNvbS5odWF3ZWkuZWRpdG9yLlByb2plY3RXaW5kb3dEb2NrQ29udGFpbmVyI2JxZGh0bTBZRGQiIENsb3NlZD0iMCIvPgogICAgICAgICAgICAgICAgPFdpZGdldCBOYW1lPSJjb20uaHVhd2VpLmVkaXRvci5Mb2dXaW5kb3dEb2NrQ29udGFpbmVyI0NueldiUnFoWnEiIENsb3NlZD0iMCIvPgogICAgICAgICAgICA8L0FyZWE+CiAgICAgICAgICAgIDxTaXplcz43MDMgMjYyIDwvU2l6ZXM+CiAgICAgICAgPC9TcGxpdHRlcj4KICAgIDwvQ29udGFpbmVyPgo8L1F0QWR2YW5jZWREb2NraW5nU3lzdGVtPgo="
+        "docking-layout": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPFF0QWR2YW5jZWREb2NraW5nU3lzdGVtIFZlcnNpb249IjEiIFVzZXJWZXJzaW9uPSIwIiBDb250YWluZXJzPSIxIiBDZW50cmFsV2lkZ2V0PSJDZW50cmFsV2lkZ2V0Ij4KICAgIDxDb250YWluZXIgRmxvYXRpbmc9IjAiPgogICAgICAgIDxTcGxpdHRlciBPcmllbnRhdGlvbj0iLSIgQ291bnQ9IjIiPgogICAgICAgICAgICA8U3BsaXR0ZXIgT3JpZW50YXRpb249InwiIENvdW50PSIyIj4KICAgICAgICAgICAgICAgIDxBcmVhIFRhYnM9IjMiIEN1cnJlbnQ9ImNvbS5odWF3ZWkuZWRpdG9yLlZpZXczRFdpbmRvd0RvY2tDb250YWluZXIjb1BDZmVzNDRrZiIgRmxhZ3M9IjEiPgogICAgICAgICAgICAgICAgICAgIDxXaWRnZXQgTmFtZT0iQ2VudHJhbFdpZGdldCIgQ2xvc2VkPSIwIi8+CiAgICAgICAgICAgICAgICAgICAgPFdpZGdldCBOYW1lPSJjb20uaHVhd2VpLmVkaXRvci5WaWV3M0RXaW5kb3dEb2NrQ29udGFpbmVyI29QQ2ZlczQ0a2YiIENsb3NlZD0iMCIvPgogICAgICAgICAgICAgICAgICAgIDxXaWRnZXQgTmFtZT0iY29tLmh1YXdlaS5lZGl0b3IuUmVzb3VyY2VXaW5kb3dEb2NrQ29udGFpbmVyI2w2dlJyQzVVUVIiIENsb3NlZD0iMCIvPgogICAgICAgICAgICAgICAgPC9BcmVhPgogICAgICAgICAgICAgICAgPEFyZWEgVGFicz0iMSIgQ3VycmVudD0iY29tLmh1YXdlaS5lZGl0b3IuSW5zcGVjdG9yV2luZG93RG9ja0NvbnRhaW5lciNXYkhFbGppcVJhIj4KICAgICAgICAgICAgICAgICAgICA8V2lkZ2V0IE5hbWU9ImNvbS5odWF3ZWkuZWRpdG9yLkluc3BlY3RvcldpbmRvd0RvY2tDb250YWluZXIjV2JIRWxqaXFSYSIgQ2xvc2VkPSIwIi8+CiAgICAgICAgICAgICAgICA8L0FyZWE+CiAgICAgICAgICAgICAgICA8U2l6ZXM+MTE0OSA1NTUgPC9TaXplcz4KICAgICAgICAgICAgPC9TcGxpdHRlcj4KICAgICAgICAgICAgPEFyZWEgVGFicz0iMiIgQ3VycmVudD0iY29tLmh1YXdlaS5lZGl0b3IuUHJvamVjdFdpbmRvd0RvY2tDb250YWluZXIjYnFkaHRtMFlEZCI+CiAgICAgICAgICAgICAgICA8V2lkZ2V0IE5hbWU9ImNvbS5odWF3ZWkuZWRpdG9yLlByb2plY3RXaW5kb3dEb2NrQ29udGFpbmVyI2JxZGh0bTBZRGQiIENsb3NlZD0iMCIvPgogICAgICAgICAgICAgICAgPFdpZGdldCBOYW1lPSJjb20uaHVhd2VpLmVkaXRvci5Mb2dXaW5kb3dEb2NrQ29udGFpbmVyI0NueldiUnFoWnEiIENsb3NlZD0iMCIvPgogICAgICAgICAgICA8L0FyZWE+CiAgICAgICAgICAgIDxTaXplcz43MDMgMjYyIDwvU2l6ZXM+CiAgICAgICAgPC9TcGxpdHRlcj4KICAgIDwvQ29udGFpbmVyPgo8L1F0QWR2YW5jZWREb2NraW5nU3lzdGVtPgo="
       }
     },
     {

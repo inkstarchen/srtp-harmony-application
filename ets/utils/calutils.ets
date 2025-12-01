@@ -22,39 +22,6 @@ export class CalcUtils {
     return {x: v.x / length, y: v.y / length, z:v.z / length};
   }
 
-  static CalRayFromCam(camM:CameraManager, aspect:number, Px: number, Py: number): Ray{
-    let ray = new Ray();
-    if(!camM.cam) return ray;
-    ray.o = camM.getPosition() as Vec3;
-    let fov = camM.getFov() as number;
-    let tanA = Math.tan( fov / 2);
-    console.info('camera Info | fov' + fov * 180 / Math.PI + '/ tanA: ' + tanA);
-    let FB = camM.getForward() as Vec3;
-    let rotation = camM.getRotation() as Quaternion;
-    if(rotation.x == 0 && rotation.y == 0 && rotation.z == 0){
-      FB = camM.getDefaultForward();
-    }
-
-    let RL:Vec3 = CalcUtils.NormVec3(CalcUtils.cross(FB,camM.getDefaultUp()));
-    let UD:Vec3 = CalcUtils.NormVec3(CalcUtils.cross(RL,FB));
-    console.info('Direction FB:' + FB.x + '/' + FB.y + '/' + FB.z + '\n');
-    console.info('Direction UD:' + UD.x + '/' + UD.y + '/' + UD.z + '\n');
-    console.info('Direction RL:' + RL.x + '/' + RL.y + '/' + RL.z + '\n');
-    let t1 = 10;
-    let h = t1 * tanA;
-    let w = h * aspect;
-    let t2 = h * Py;
-    let t3 = w * Px;
-    let dot = {x: ray.o.x + t1 * FB.x + t2 * UD.x + t3 * RL.x,
-      y: ray.o.y + t1 * FB.y + t2 * UD.y + t3 * RL.y,
-      z: ray.o.z + t1 * FB.z + t2 * UD.z + t3 * RL.y,} as Vec3;
-    console.info('dot position: ' + dot.x + '/' + dot.y + '/' + dot.z);
-    ray.d = CalcUtils.NormVec3({x:dot.x - ray.o.x,
-      y:dot.y - ray.o.y,
-      z:dot.z - ray.o.z})
-    return ray;
-  }
-
   static pxToNormal(v2:Vec2, screenWidth:number, screenHeight:number):Vec2{
     let result:Vec2 = {x:0,y:0};
     result.x = v2.x / screenWidth;

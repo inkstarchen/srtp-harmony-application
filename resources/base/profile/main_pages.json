@@ -4,6 +4,6 @@
     "pages/Card",
     "pages/Note",
     "pages/BannerPage",
-    "pages/lightTest"
+    "pages/TextPage"
   ]
 }
