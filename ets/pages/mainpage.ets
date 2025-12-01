@@ -98,29 +98,23 @@ export struct mainPage {
   }
 
   make_path(): void {
-    let width = (this.screenWidth * 0.3);
+    let width = (this.screenWidth * 0.35);
     let height = this.screenHeight;
     let radius_1 = height * 0.1;
     let radius_2 = height * 0.1;
     let pi = 3.14159265;
     console.log("width = " + width + " height = " + height)
-    this.path = 'M-' + width * 0.5 + ' -' + height * 0.1 +
-      'L' + width.toFixed(0)  + ' -' + height * 0.1 +
-      // 'L250 -500' +
+    this.path = 'M 0' + ' 0' +
+      'L' + width.toFixed(0)  + ' 0' +
       'L' + width.toFixed(0) + ' ' + (height * 0.33).toFixed(0) +
-      // 'L250 0' +
-      // 'L250 750' +
       'A' + radius_1.toFixed(0) + ' ' + radius_1.toFixed(0) + ' 0 0 1 ' + (width - radius_1 * (1 - Math.cos(pi / 3))).toFixed(0) + ' ' + (height * 0.33 + radius_1 * Math.sin(pi / 3)).toFixed(0) +
       'A' + radius_2.toFixed(0) + ' ' + radius_2.toFixed(0) + ' 0 0 0 ' + (width - radius_1 * (1 - Math.cos(pi / 3))).toFixed(0) + ' ' + (height * 0.33 + radius_1 * Math.sin(pi / 3) + 2 * radius_2 * Math.sin(pi / 3)).toFixed(0) +
       'A' + radius_1.toFixed(0) + ' ' + radius_1.toFixed(0) + ' 0 0 1 ' + width.toFixed(0) + ' ' + (height * 0.33 + radius_1 * Math.sin(pi / 3) * 2 + 2 * radius_2 * Math.sin(pi / 3)).toFixed(0) +
-      // 'A100 100 0 0 1 170 850' +
-      // 'A200 200 0 0 0 170 1200' +
-      // 'A100 100 0 0 1 250 1300' +
-      // 'L250 2500' +
-      'L' + width.toFixed(0) + ' ' + height.toFixed(0) +
-      'L-' + width * 0.5 + ' ' + height.toFixed(0);
+      'L' + width.toFixed(0) + ' ' + (height * 1.0).toFixed(0) +
+      'L 0' + ' ' + height.toFixed(0);
     // 'L-100 2500'
     ;
+
     this.cyc1 = 'M' + width.toFixed(0) + ' ' + (height / 2 - 525).toFixed(2) + 'A525 525 0 0 1 '+ width.toFixed(0) +  ' ' + (height / 2 + 525).toFixed(0);
   }
 
@@ -224,25 +218,25 @@ export struct mainPage {
 
       Column() {
         Row() {
-          Stack() {
+          Stack({alignContent:Alignment.TopStart}) {
               Path()
                 .width('100%')
                 .height('100%')
                 .strokeWidth(2)
                 .stroke('#ffffff')
-                // .strokeDashArray([3, 3])
                 .commands(this.cyc1)
                 .fill(Color.Transparent)
 
               Path()
                 .width('100%')
                 .height('100%')
+                .id('test')
                 .strokeWidth(0)
                 .commands(this.path)
                 .fill('#ffd7d193')
-                // .stroke(Color.Black)
-                // .position({x:0,y:0})
                 .opacity(0.8)
+                .translate({x:-20,y:-20})
+
             Column() {
               Text(this.hour)
                 .fontSize(48)
@@ -263,9 +257,9 @@ export struct mainPage {
             // .shadow({color:'#2d8c8c8c',radius:10,offsetX:8,offsetY:8})
             // .backgroundColor('#ffd7d193')
             .alignItems(HorizontalAlign.Start)
-            .padding({ left: 30 })
+            .padding({ left: 40,top:30 })
             .scale({x: 1.5, y: 1.5})
-            .offset({x: -this.screenWidth * 0.09, y: -this.screenHeight * 0.1})
+
 
             Column() {
               Column() {
@@ -351,11 +345,14 @@ export struct mainPage {
               .transform3D(matrix4.identity().translate({x:-40,y:1540}))
               // .backgroundColor('#ffffffff')
             }
-            .offset({x: -this.screenWidth * 0.09, y: -this.screenHeight * 0.12})
           }
+          .width('100%')
+          .height('100%')
         }
         .justifyContent(FlexAlign.Start)
+        // .alignItems(VerticalAlign.Top)
         .width('100%')
+        .height('100%')
         .padding(20)
 
 
@@ -365,11 +362,15 @@ export struct mainPage {
           .scale({ x: this.calendar_scaleX, y: this.calendar_scaleY })
       }
     }
+    .onTouch((event) => {
+      const info = this.getUIContext().getComponentUtils().getRectangleById('test');
+      console.info('rectinfo :' + info.screenOffset.x + '/' + info.screenOffset.y);
+    })
     .backgroundImage($r('app.media.bk'))
     .backgroundImageSize(ImageSize.Cover)
     .backgroundImagePosition(Alignment.Center)
     .linearGradient({colors:[['#ffe1f5fd',0.0],['#ffdcf2fd',1.0]],direction:GradientDirection.LeftBottom})
     .width('100%')
-    .height('112%')
+    .height('100%')
   }
 }
