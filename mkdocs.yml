@@ -1,0 +1,67 @@
+site_name: SRTP项目文档
+repo_name: inkstarchen/srtp-harmony-application
+repo_url: https://github.com/inkstarchen/srtp-harmony-application
+use_directory_urls: true
+nav:
+  - 首页: index.md
+  - 接口文档: interface.md
+  - 一些Bug: bug.md
+  - 参考: reference.md
+
+markdown_extensions:
+  - md_in_html  
+  - attr_list
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true 
+  - pymdownx.mark
+  - attr_list
+  - admonition
+  - pymdownx.details
+  - pymdownx.arithmatex:
+      generic: true
+
+theme: 
+  name: material
+  palette:
+    primary: blue
+  features:
+    - search.suggest
+    - content.code.annotate
+    - content.code.select #付费功能
+    - content.code.annotate
+    - content.code.copy
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.indexes
+    - navigation.top
+    - content.code.annotate
+  icon:
+    admonition:
+      note: octicons/tag-16
+      abstract: octicons/checklist-16
+      info: octicons/info-16
+      tip: octicons/squirrel-16
+      success: octicons/check-16
+      question: octicons/question-16
+      warning: octicons/alert-16
+      failure: octicons/x-circle-16
+      danger: octicons/zap-16
+      bug: octicons/bug-16
+      example: octicons/beaker-16
+      quote: octicons/quote-16
+extra_javascript:
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+plugins:
+  - search
+  

@@ -1,9 +1,0 @@
-{
-  "src": [
-    "pages/Index",
-    "pages/Card",
-    "pages/Note",
-    "pages/BannerPage",
-    "pages/lightTest"
-  ]
-}
