@@ -10,7 +10,7 @@ let dataPreferences: preferences.Preferences | null = null;
 @ComponentV2
 export struct mainPage {
   @Event FinishInit:(screenWidth:number) => void;
-  @Local ScreenSize?:Size;
+  @Local ScreenSize:Size = {width:1200,height:2400};
   // @Local day: string = ''
   @Local hour: string = ''
   @Local minutes: string = ''
@@ -206,10 +206,10 @@ export struct mainPage {
         .backgroundColor('#ff0f9be9')
         .transform3D(matrix4.identity().rotate({x:1,angle:70}))
         Image($r('app.media.img1'))
-          .width(this.screenHeight * 0.055)
-          .height(this.screenHeight * 0.055)
-          .borderRadius(this.screenHeight * 0.0275)
-          .offset({ x: - this.screenWidth * 0.03, y: this.screenHeight * 0.005 })
+          .width(this.ScreenSize.height * 0.055)
+          .height(this.ScreenSize.height * 0.055)
+          .borderRadius(this.ScreenSize.height * 0.0275)
+          .offset({ x: - this.ScreenSize.width * 0.03, y: this.ScreenSize.height * 0.005 })
           .onClick(() => {
             if(this.animResult){
               this.getUIContext().getPromptAction().showToast({message:'yes'})
@@ -219,11 +219,7 @@ export struct mainPage {
             this.animResult?.play();
           })
 
-        if(this.show_calendar){
-          CalendarPage()
-            .translate({x:50,y:200})
-            .scale({ x: this.calendar_scaleX, y: this.calendar_scaleY })
-        }
+
       }
       .width('100%')
       .height('100%')
@@ -237,6 +233,7 @@ export struct mainPage {
                 .strokeWidth(2)
                 .stroke('#ffffff')
                 .commands(this.cyc1)
+                .translate({x:-20,y:-20})
                 .fill(Color.Transparent)
 
               Path()
@@ -245,7 +242,7 @@ export struct mainPage {
                 .id('test')
                 .strokeWidth(0)
                 .commands(this.path)
-                .fill('#ffd7d193')
+                .fill('#ff70fcd4')
                 .opacity(0.8)
                 .translate({x:-20,y:-20})
 
@@ -286,7 +283,7 @@ export struct mainPage {
               .shadow({color:'#2d8c8c8c',radius:10,offsetX:8,offsetY:8})
               .width(50)
               .height(50)
-              .transform3D(matrix4.identity().translate({x:-40,y:1440}))
+              .transform3D(matrix4.identity().translate({x:0,y:1800}))
               .backgroundColor('#ffffffff')
               .onClick(() => {
                 if(this.show_calendar) {
@@ -314,7 +311,7 @@ export struct mainPage {
                   url:'pages/Note'
                 },router.RouterMode.Single).catch()
               })
-              .transform3D(matrix4.identity().translate({x:-40,y:1480}))
+              .transform3D(matrix4.identity().translate({x:0,y:1840}))
               .backgroundColor('#ffffffff')
 
               Column() {
@@ -333,7 +330,7 @@ export struct mainPage {
                   url:'pages/TextPage'
                 }, router.RouterMode.Single)
               })
-              .transform3D(matrix4.identity().translate({x:-40,y:1500}))
+              .transform3D(matrix4.identity().translate({x:0,y:1880}))
               .backgroundColor('#ffffffff')
 
 
@@ -353,7 +350,7 @@ export struct mainPage {
                   url:"pages/BannerPage"
                 },router.RouterMode.Single)
               })
-              .transform3D(matrix4.identity().translate({x:-40,y:1540}))
+              .transform3D(matrix4.identity().translate({x:0,y:1920}))
               .backgroundColor('#ffffffff')
             }
           }
@@ -367,6 +364,12 @@ export struct mainPage {
 
 
       }
+      if(this.show_calendar){
+        CalendarPage()
+          .translate({x:50,y:200})
+          .scale({ x: this.calendar_scaleX, y: this.calendar_scaleY })
+      }
+
     }
     .linearGradient({colors:[['#ffe1f5fd',0.0],['#ffdcf2fd',1.0]],direction:GradientDirection.LeftBottom})
     .width('100%')

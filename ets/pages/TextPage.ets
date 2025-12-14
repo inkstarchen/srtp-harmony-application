@@ -96,6 +96,7 @@ export struct TextPage{
 
     if(!this.sceneManager){
       this.sceneManager = new SceneManager(this.getUIContext(),Constants.default);
+      // this.getUIContext().getPromptAction().showToast({message:'yes'})
     }
 
     if(!this.initFlag){
@@ -154,7 +155,7 @@ export struct TextPage{
 
     this.linearColor.push([CalcUtils.Vec3ToColor(vColor),0.0])
 
-    this.linearColor.push([CalcUtils.Vec3ToColor(CalcUtils.Vec3Mul(vColor,0.95)),1.0]);
+    this.linearColor.push([CalcUtils.Vec3ToColor(CalcUtils.Vec3Mul(vColor,0.80)),1.0]);
   }
 
   async init(){
@@ -331,10 +332,9 @@ export struct TextPage{
       // }
       if(!this.uiContext) return;
       if(event.touches[0].type == TouchType.Down){
-
         this.touchM.touchDown(event)
         if(this.downFlag == false){
-          this.getUIContext().getPromptAction().showToast({message:'Down'})
+          // this.getUIContext().getPromptAction().showToast({message:'Down'})
           this.downFlag = true;
           this.touchDownX = this.uiContext.vp2px(event.touches[0].x)
           this.touchDownY = this.uiContext.vp2px(event.touches[0].y)
@@ -345,7 +345,7 @@ export struct TextPage{
         this.CalLight();
         this.touchM.touchMove(event)
         this.sceneManager?.LightRotate(this.touchM.angle);
-        this.uiContext.getPromptAction().showToast({message:'angle' + this.touchM.angle})
+        // this.uiContext.getPromptAction().showToast({message:'angle' + this.touchM.angle})
         this.command2 = '';
         this.command2 += 'M' + this.touchDownX.toFixed(0) + ' ' + (this.touchDownY - 70).toFixed(0);
         this.command2 += ' A70 70 0 1 1 ' ;
