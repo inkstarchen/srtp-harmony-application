@@ -1,9 +1,8 @@
 {
   "src": [
     "pages/Index",
-    "pages/Card",
-    "pages/Note",
-    "pages/BannerPage",
-    "pages/TextPage"
+    "pages/NotePage",
+    "pages/tes",
+    "pages/DiaryHomePage"
   ]
 }

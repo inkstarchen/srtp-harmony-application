@@ -7,8 +7,7 @@
     "deviceTypes": [
       "phone",
       "tablet",
-      "2in1",
-      "wearable"
+      "2in1"
     ],
     "deliveryWithInstall": true,
     "installationFree": false,
@@ -29,7 +28,7 @@
               "entity.system.home"
             ],
             "actions": [
-              "action.system.home"
+              "ohos.want.action.home"
             ]
           }
         ]
