@@ -12,13 +12,15 @@ const TAG = "SceneProxy"
 
 @ObservedV2
 export class SceneProxy{
+  @Trace renderId: number = 0;
   resMap: Map<string, Resource> = new Map();
   @Trace scene: Scene | undefined;
   @Trace options: SceneOptions | undefined;
   @Trace physicalSystem: PhysicsSystemManager = new PhysicsSystemManager();
 
   update(){
-    this.physicalSystem.update(0.1);
+    this.physicalSystem.update(0.01);
+    // this.scene?.renderFrame({alwaysRender: false});
   }
 
   constructor(ui: UIContext) {
@@ -74,6 +76,10 @@ export class SceneProxy{
     if(camera.enabled){
       Prompt.showToast({message:'test'});
     }
+    this.renderId = setInterval(() => {
+      this.update();
+      this.scene?.renderFrame({alwaysRender:false});
+    }, 20);
   }
 
   async addNode(res: string, name:string) {
