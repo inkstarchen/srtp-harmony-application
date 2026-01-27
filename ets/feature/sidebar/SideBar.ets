@@ -3,16 +3,16 @@ import { getScreenSize } from "../../shared/ui/uiUtils";
 import { SideBarButton } from "./component/button";
 import { ButtonData, SideBarState } from "./SideBarState"
 import { router } from "@kit.ArkUI";
+import { TouchManager } from "../../shared/utils/TouchManager";
 
 @ComponentV2
 export struct SideBar {
   @Local sideBarState: SideBarState = new SideBarState();
-
+  @Require @Param touchManager:TouchManager;
   @Event CalendarDisplay: () => void;
   // 回调映射表
   private buttonHandlers: Record<string, () => void> = {
     'calendar': () => this.Calendar(),
-    'notebook': () => this.navigateToNote(),
     '3D': () => this.navigateTo3D(),
     'Banner': () => this.navigateToBanner(),
   };
@@ -28,11 +28,6 @@ export struct SideBar {
     this.CalendarDisplay();
   }
 
-  navigateToNote(): void {
-    this.getUIContext().getRouter().pushUrl({
-      url:"pages/NotePage"
-    }, router.RouterMode.Single)
-  }
 
   navigateTo3D() : void{
     this.getUIContext().getRouter().pushUrl({
@@ -59,18 +54,18 @@ export struct SideBar {
         .width('100%')
         .height('100%')
         .id('test')
-        .strokeWidth(0)
+        .strokeWidth(1)
         .commands(this.sideBarState.path)
-        .fill('#ff70fcd4')
+        .fill('#ff000000')
         .opacity(0.8)
 
 
-      Column(){
+      Column({space:Alignment.Center}){
         Column() {
           Text(this.sideBarState.hour)
             .fontSize(48)
             .fontWeight(FontWeight.Bold)
-            .fontColor(Color.Black)
+            .fontColor('#00888888')
             .margin({top:10})
             .translate({x:-20,y:0})
 
@@ -78,7 +73,7 @@ export struct SideBar {
           Text(this.sideBarState.minutes)
             .fontSize(32)
             .fontWeight(FontWeight.Medium)
-            .fontColor('#888888')
+            .fontColor('#00888888')
             .translate({x:-10,y:0})
             .margin({bottom:20})
         }
@@ -95,7 +90,7 @@ export struct SideBar {
         }
         .width(40)
         .height(400)
-        .backgroundColor('#52bababa')
+        .backgroundColor('#00bababa')
 
         ForEach(this.sideBarState.buttonData, (item: ButtonData, index: number) => {
           SideBarButton({
@@ -105,6 +100,8 @@ export struct SideBar {
         })
       }
     }
+    .width("30%")
+    .height("100%")
     .ignoreLayoutSafeArea()
   }
 }

@@ -9,20 +9,18 @@ export struct SideBarButton{
 
   build() {
     Column(){
-      Image(this.state.imgSrc)
-        .width(30)
-        .width(30)
       Text(this.state.title)
-        .margin({ top:2 })
-        .fontSize(10)
+        .margin({ top:2,left:5 })
+        .fontColor("#fff")
+        .fontSize(20)
     }
     .justifyContent(FlexAlign.Center)
     .border({radius:10,color:'#00ffffff',width:1})
     .shadow({color:'#2d8c8c8c',radius:10,offsetX:8,offsetY:8})
-    .width(50)
+    .width(100)
     .height(50)
     .margin({ top: 20 })
-    .backgroundColor('#ffffffff')
+    .backgroundColor('#00ffffff')
     .onClick(() => {
       Prompt.showToast({message:'click'})
       this.Click();

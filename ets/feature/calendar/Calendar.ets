@@ -2,6 +2,13 @@ import { CalendarViewModel } from "./CalendarViewModel"
 import { CalendarDayState } from "./day/CalendarDayState";
 import { CalendarDayView } from "./day/CalendarDayView";
 import { AnimatorResult, matrix4, Prompt } from "@kit.ArkUI";
+import { Vec3 } from "@kit.ArkGraphics3D";
+import { sensor } from '@kit.SensorServiceKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { TraceVec3 } from "../../core/math/vec";
+
+const THRESHOLD_MAX = 0.5;
+const THRESHOLD_MIN = 0.1;
 
 @ComponentV2
 export struct CalendarComponent {
@@ -9,7 +16,12 @@ export struct CalendarComponent {
   @Local scaleX: number = 0;
   @Local scaleY: number = 0;
   anim1: AnimatorResult | undefined = undefined;
+  animTo: AnimatorResult | undefined = undefined;
+  @Local matrixCalendar: matrix4.Matrix4Transit = matrix4.identity();
   @Param showCalendar:boolean = false;
+  lastAngle: Vec3 = {x:0,y:0,z:0};
+  @Local rotation:TraceVec3 = new TraceVec3();
+  delta: Vec3 = {x:0,y:0,z:0};
   @Local perspective: Matrix4Transit | undefined;
 
   @Monitor('showCalendar')
@@ -41,6 +53,18 @@ export struct CalendarComponent {
       end:1,
       iterations:1
     });
+    this.animTo = uiContext.createAnimator({
+      duration:10,
+      delay:0,
+      direction:'normal',
+      fill:'forwards',
+      easing:'ease-out',
+      begin:0,
+      end:1,
+      iterations:1
+    })
+    this.animTo.onFrame = (progress) => {
+    }
   }
 
   async hide(){
@@ -64,6 +88,32 @@ export struct CalendarComponent {
   aboutToAppear(): void {
     this.calendarViewModel.updateDays();
     this.init();
+    try {
+      sensor.on(sensor.SensorId.ORIENTATION, (data: sensor.OrientationResponse) => {
+        this.delta = {
+          x: data.beta - this.lastAngle.x,
+          y: data.gamma - this.lastAngle.y,
+          z: data.alpha - this.lastAngle.z
+        };
+        if( Math.abs(this.delta.x) > THRESHOLD_MAX || Math.abs(this.delta.x) < THRESHOLD_MIN) this.delta.x = 0;
+        else this.rotation.x += this.delta.x;
+        if( Math.abs(this.delta.y) > THRESHOLD_MAX || Math.abs(this.delta.y) < THRESHOLD_MIN) this.delta.y = 0;
+        else this.rotation.y += this.delta.y;
+        if( Math.abs(this.delta.z) > THRESHOLD_MAX || Math.abs(this.delta.z) < THRESHOLD_MIN) this.delta.z = 0;
+        else this.rotation.z += this.delta.z;
+        this.rotation.clip(5.0);
+        this.lastAngle.x = data.beta;
+        this.lastAngle.y = data.gamma;
+        this.lastAngle.z = data.alpha;
+        // Prompt.showToast({message: "x: " + this.delta.x.toFixed(1) + '/y: ' + this.delta.y.toFixed(1) + "/z: " + this.delta.z.toFixed(1)});
+      }, { interval: 20 });
+      setTimeout(() => {
+        sensor.off(sensor.SensorId.ORIENTATION);
+      }, 1000000);
+    } catch (error) {
+      let e: BusinessError = error as BusinessError;
+      console.error(`Failed to invoke on. Code: ${e.code}, message: ${e.message}`);
+    }
   }
 
   build() {
@@ -91,14 +141,14 @@ export struct CalendarComponent {
     .alignItems(HorizontalAlign.Center)
     .width(400)
     .height(600)
-    .border({ radius: '20px', width: 1, color: '#fff' })
-    .backgroundColor('#ffffffff')
-    // .translate({x:50, y:200})
     .transform3D(matrix4.identity()
       .rotate({angle:10,y:1,x:0})
+      .rotate({angle:this.rotation.x, x:1})
+      .rotate({angle:this.rotation.z, y:1})
       .translate({x:50,y:200,z:100})
-      .combine(this.perspective)
-    )
+      .combine(this.perspective))
+    .border({ radius: '20px', width: 1, color: '#fff' })
+    .backgroundColor('#ffffffff')
     .scale({ x: this.scaleX, y: this.scaleY })
     .shadow({color:'#2d8c8c8c',radius:10,offsetX:8,offsetY:8})
   }
@@ -109,8 +159,8 @@ export struct CalendarComponent {
       // 上个月按钮
       Image($r('app.media.chevron_left'))
         .onClick(() => this.calendarViewModel.changeMonth(-1))
-        .width(30)
-        .height(30)
+        .width(50)
+        .height(50)
         .border({ radius: 20, width: 10, color: '#fff' })
         .shadow({
           offsetX: 5,
@@ -130,8 +180,8 @@ export struct CalendarComponent {
       // 下个月按钮
       Image($r('app.media.chevron_right'))
         .onClick(() => this.calendarViewModel.changeMonth(1))
-        .width(30)
-        .height(30)
+        .width(50)
+        .height(50)
         .border({ radius: 20, width: 10, color: '#fff' })
         .shadow({
           offsetX: 5,

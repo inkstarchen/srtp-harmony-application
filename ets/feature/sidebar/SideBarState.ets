@@ -20,7 +20,6 @@ export class SideBarState {
 
   buildButton(){
     this.buttonData.push(new ButtonData('Banner', $r('app.media.calendar'), "Banner"));
-    this.buttonData.push(new ButtonData('notebook', $r('app.media.notebook'), "记事本"));
     this.buttonData.push(new ButtonData('3D', $r('app.media.calendar'), "3D"));
     this.buttonData.push(new ButtonData('calendar', $r('app.media.calendar'), "日历"));
   }

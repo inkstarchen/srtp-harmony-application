@@ -118,10 +118,15 @@ export struct NotePage {
       }
       .layoutWeight(1)
       .padding({ top: 0, left: 10, right: 10, bottom: 10 })
-      .backgroundColor('#F5F5F5')
+      .backgroundColor('#ffffffff')
     }
     .padding(10)
-    .backgroundColor('#F5F5F5')
+    .backgroundColor('#ffffffff')
     .height('100%')
+  }
+
+  pageTransition() {
+    PageTransitionEnter({delay:1000, duration:1000,curve:Curve.Linear})
+      .slide(SlideEffect.Left)
   }
 }

@@ -34,6 +34,8 @@
         ]
       }
     ],
+    "requestPermissions": [
+    ],
     "extensionAbilities": [
       {
         "name": "EntryBackupAbility",
