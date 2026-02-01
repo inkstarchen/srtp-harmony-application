@@ -1,0 +1,321 @@
+#version 450
+#define SPIRV_CROSS_CONSTANT_ID_256 1u
+
+struct DefaultMaterialUnpackedTexTransformStruct
+{
+    vec4 rotateScale;
+    vec2 translate;
+};
+
+struct DefaultMaterialSingleMaterialStruct
+{
+    vec4 factors[15];
+    uvec4 indices;
+};
+
+struct DefaultMaterialMaterialStruct
+{
+    DefaultMaterialSingleMaterialStruct material[64];
+};
+
+#ifndef SPIRV_CROSS_CONSTANT_ID_1
+#define SPIRV_CROSS_CONSTANT_ID_1 0u
+#endif
+const uint CORE_MATERIAL_FLAGS = SPIRV_CROSS_CONSTANT_ID_1;
+const uint _140 = (CORE_MATERIAL_FLAGS & 8u);
+const bool _141 = (_140 == 8u);
+
+struct DefaultMaterialTransformSingleMaterialStruct
+{
+    uvec4 _packed[15];
+    uvec4 indices;
+};
+
+struct DefaultMaterialTransformMaterialStruct
+{
+    DefaultMaterialTransformSingleMaterialStruct material[64];
+};
+
+struct MyMaterialSampleStruct
+{
+    vec4 vec_1;
+    float time;
+    uint dof;
+    uint motionBlur;
+};
+
+#ifndef SPIRV_CROSS_CONSTANT_ID_256
+#define SPIRV_CROSS_CONSTANT_ID_256 0u
+#endif
+const uint CORE_BACKEND_TYPE = SPIRV_CROSS_CONSTANT_ID_256;
+uniform float CORE_FLIP_NDC ;
+
+struct DefaultCameraMatrixStruct
+{
+    mat4 view;
+    mat4 proj;
+    mat4 viewProj;
+    mat4 viewInv;
+    mat4 projInv;
+    mat4 viewProjInv;
+    mat4 viewPrevFrame;
+    mat4 projPrevFrame;
+    mat4 viewProjPrevFrame;
+    mat4 shadowViewProj;
+    mat4 shadowViewProjInv;
+    vec4 jitter;
+    vec4 jitterPrevFrame;
+    uvec4 indices;
+    uvec4 multiViewIndices;
+    vec4 frustumPlanes[6];
+    uvec4 counts;
+    uvec4 pad0;
+    mat4 matPad0;
+    mat4 matPad1;
+};
+
+struct DefaultMaterialGeneralDataStruct
+{
+    uvec4 indices;
+    vec4 viewportSizeInvViewportSize;
+    vec4 sceneTimingData;
+};
+
+struct DefaultMaterialEnvironmentStruct
+{
+    vec4 indirectSpecularColorFactor;
+    vec4 indirectDiffuseColorFactor;
+    vec4 envMapColorFactor;
+    vec4 values;
+    vec4 blendFactor;
+    mat4 envRotation;
+    uvec4 indices;
+    vec4 shIndirectCoefficients[9];
+    uvec4 multiEnvIndices;
+    vec4 packedSun;
+    vec4 packedRain;
+};
+
+struct DefaultMaterialFogStruct
+{
+    uvec4 indices;
+    vec4 firstLayer;
+    vec4 secondLayer;
+    vec4 baseFactors;
+    vec4 inscatteringColor;
+    vec4 envMapFactor;
+    vec4 additionalFactor;
+};
+
+struct DefaultMaterialSingleLightStruct
+{
+    vec4 pos;
+    vec4 dir;
+    vec4 color;
+    vec4 spotLightParams;
+    vec4 shadowFactors;
+    vec4 additionalFactor;
+    uvec4 flags;
+    uvec4 indices;
+};
+
+struct DefaultMaterialLightStruct
+{
+    uint directionalLightBeginIndex;
+    uint directionalLightCount;
+    uint pointLightBeginIndex;
+    uint pointLightCount;
+    uint spotLightBeginIndex;
+    uint spotLightCount;
+    uint pad0;
+    uint pad1;
+    uvec4 clusterSizes;
+    vec4 clusterFactors;
+    vec4 atlasSizeInvSize;
+    vec4 additionalFactors;
+    DefaultMaterialSingleLightStruct lights[64];
+};
+
+struct GlobalPostProcessStruct
+{
+    uvec4 flags;
+    vec4 renderTimings;
+    vec4 factors[14];
+    vec4 userFactors[16];
+};
+
+struct DefaultMaterialLightClusterData
+{
+    uint count;
+    uint lightIndices[15];
+};
+
+struct DefaultMaterialSingleMeshStruct
+{
+    mat4 world;
+    mat4 normalWorld;
+    mat4 prevWorld;
+    uvec4 indices;
+    uvec4 layers;
+    uvec4 customData[2];
+};
+
+struct DefaultMaterialMeshStruct
+{
+    DefaultMaterialSingleMeshStruct mesh[64];
+};
+
+struct DefaultMaterialSkinStruct
+{
+    mat4 jointMatrices[256];
+};
+
+struct DefaultMaterialSingleUserMaterialStruct
+{
+    uvec4 userData[16];
+};
+
+struct DefaultMaterialUserMaterialStruct
+{
+    DefaultMaterialSingleUserMaterialStruct material[64];
+};
+
+#ifndef SPIRV_CROSS_CONSTANT_ID_0
+#define SPIRV_CROSS_CONSTANT_ID_0 0u
+#endif
+const uint CORE_MATERIAL_TYPE = SPIRV_CROSS_CONSTANT_ID_0;
+#ifndef SPIRV_CROSS_CONSTANT_ID_2
+#define SPIRV_CROSS_CONSTANT_ID_2 0u
+#endif
+const uint CORE_LIGHTING_FLAGS = SPIRV_CROSS_CONSTANT_ID_2;
+#ifndef SPIRV_CROSS_CONSTANT_ID_3
+#define SPIRV_CROSS_CONSTANT_ID_3 0u
+#endif
+const uint CORE_POST_PROCESS_FLAGS = SPIRV_CROSS_CONSTANT_ID_3;
+#ifndef SPIRV_CROSS_CONSTANT_ID_4
+#define SPIRV_CROSS_CONSTANT_ID_4 0u
+#endif
+const uint CORE_CAMERA_FLAGS = SPIRV_CROSS_CONSTANT_ID_4;
+
+layout(std140) uniform s1_b2
+{
+    DefaultMaterialMaterialStruct uMaterialData;
+} _s1_b2;
+
+layout(std140) uniform s1_b3
+{
+    DefaultMaterialTransformMaterialStruct uMaterialTransformData;
+} _s1_b3;
+
+layout(std140) uniform s1_b4
+{
+    MyMaterialSampleStruct uMyData;
+} _s1_b4;
+
+uniform sampler2D s2_b0;
+
+layout(location = 4) in vec4 inUv;
+layout(location = 0) out vec4 outColor;
+
+uint GetUnpackTexCoordInfo()
+{
+    return floatBitsToUint(_s1_b2.uMaterialData.material[0].factors[11].y);
+}
+
+vec4 UnpackVec4Half2x16(uvec2 _packed)
+{
+    vec2 _44 = unpackHalf2x16(_packed.x);
+    vec4 up;
+    up.x = _44.x;
+    up.y = _44.y;
+    vec2 _52 = unpackHalf2x16(_packed.y);
+    up.z = _52.x;
+    up.w = _52.y;
+    return up;
+}
+
+DefaultMaterialUnpackedTexTransformStruct GetUnpackTextureTransform(uvec4 packedTexTransform)
+{
+    DefaultMaterialUnpackedTexTransformStruct dm;
+    dm.rotateScale = UnpackVec4Half2x16(packedTexTransform.xy);
+    dm.translate = UnpackVec4Half2x16(packedTexTransform.zw).xy;
+    return dm;
+}
+
+vec2 GetTransformedUV(DefaultMaterialUnpackedTexTransformStruct texTransform, vec2 uvInput)
+{
+    vec2 uv;
+    uv.x = dot(texTransform.rotateScale.xy, uvInput);
+    uv.y = dot(texTransform.rotateScale.zw, uvInput);
+    uv += texTransform.translate;
+    return uv;
+}
+
+vec2 GetFinalSamplingUV(vec4 inputUv, uint texCoordInfoBit, uint texCoordIdx)
+{
+    uint texCoordInfo = GetUnpackTexCoordInfo();
+    vec2 _120;
+    if (((texCoordInfo >> uint(16)) & texCoordInfoBit) == texCoordInfoBit)
+    {
+        _120 = inputUv.zw;
+    }
+    else
+    {
+        _120 = inputUv.xy;
+    }
+    vec2 uv = _120;
+    bool doTrans = ((texCoordInfo & 65535u) & texCoordInfoBit) == texCoordInfoBit;
+    if (_141 && doTrans)
+    {
+        DefaultMaterialUnpackedTexTransformStruct texTransform = GetUnpackTextureTransform(_s1_b3.uMaterialTransformData.material[0]._packed[texCoordIdx]);
+        uv = GetTransformedUV(texTransform, uv);
+    }
+    return uv;
+}
+
+vec4 GetBaseColorSample(vec4 uvInput)
+{
+    vec4 param = uvInput;
+    uint param_1 = 1u;
+    uint param_2 = 0u;
+    vec2 uv = GetFinalSamplingUV(param, param_1, param_2);
+    vec4 _177 = texture(s2_b0, uv);
+    return _177;
+}
+
+void main()
+{
+    vec4 baseColor = GetBaseColorSample(inUv);
+    float time = _s1_b4.uMyData.time / 100.0;
+    vec2 uv = inUv.xy;
+    float wave1 = (sin((uv.x * 8.0) + (time * 2.0)) * 0.5) + 0.5;
+    float wave2 = (sin((uv.y * 6.0) + (time * 1.5)) * 0.300000011920928955078125) + 0.5;
+    float wave3 = (sin(((uv.x + uv.y) * 10.0) + (time * 2.5)) * 0.4000000059604644775390625) + 0.5;
+    float wavePattern = ((wave1 * 0.5) + (wave2 * 0.300000011920928955078125)) + (wave3 * 0.20000000298023223876953125);
+    vec2 flowUV = uv;
+    flowUV.x += (sin((uv.y * 3.0) + (time * 1.2000000476837158203125)) * 0.100000001490116119384765625);
+    flowUV.y += (sin((uv.x * 2.5) + (time * 0.800000011920928955078125)) * 0.07999999821186065673828125);
+    float flowWave = (sin(((flowUV.x * 12.0) + (flowUV.y * 8.0)) + (time * 3.0)) * 0.5) + 0.5;
+    float waveValue = (wavePattern * 0.699999988079071044921875) + (flowWave * 0.300000011920928955078125);
+    vec3 oceanColor;
+    if (waveValue < 0.300000011920928955078125)
+    {
+        oceanColor = mix(vec3(0.0, 0.100000001490116119384765625, 0.300000011920928955078125), vec3(0.100000001490116119384765625, 0.300000011920928955078125, 0.60000002384185791015625), vec3(waveValue / 0.300000011920928955078125));
+    }
+    else
+    {
+        if (waveValue < 0.699999988079071044921875)
+        {
+            oceanColor = mix(vec3(0.100000001490116119384765625, 0.300000011920928955078125, 0.60000002384185791015625), vec3(0.300000011920928955078125, 0.60000002384185791015625, 0.89999997615814208984375), vec3((waveValue - 0.300000011920928955078125) / 0.4000000059604644775390625));
+        }
+        else
+        {
+            oceanColor = mix(vec3(0.300000011920928955078125, 0.60000002384185791015625, 0.89999997615814208984375), vec3(0.5, 0.800000011920928955078125, 1.0), vec3((waveValue - 0.699999988079071044921875) / 0.300000011920928955078125));
+        }
+    }
+    float foam = smoothstep(0.699999988079071044921875, 0.89999997615814208984375, waveValue) * (0.800000011920928955078125 + (0.20000000298023223876953125 * sin((time * 5.0) + (uv.x * 20.0))));
+    oceanColor += ((vec3(1.0) * foam) * 0.300000011920928955078125);
+    vec3 finalColor = mix(baseColor.xyz, oceanColor, vec3(0.699999988079071044921875));
+    outColor = vec4(finalColor, 1.0);
+}
+

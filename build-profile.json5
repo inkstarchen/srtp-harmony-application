@@ -1,0 +1,57 @@
+{
+  "app": {
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "C:\\Users\\11930\\.ohos\\config\\default_DayNote_i0ghTyMeQPls7Y-PHb3x1fnYvYIFb0-I9KZEeuqYoYI=.cer",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001B893CCB8B8A58FB5364D7E24E95880CE651B5BF02B2FB458F802D39C66EE8F61AD4CC1FD1211755",
+          "profile": "C:\\Users\\11930\\.ohos\\config\\default_DayNote_i0ghTyMeQPls7Y-PHb3x1fnYvYIFb0-I9KZEeuqYoYI=.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "C:\\Users\\11930\\.ohos\\config\\default_DayNote_i0ghTyMeQPls7Y-PHb3x1fnYvYIFb0-I9KZEeuqYoYI=.p12",
+          "storePassword": "0000001B7E45D95D369EC3B704E1C32E508584F524AA5DF6A7F732DE74BEEA876C5CBC51922E5B6BD54A69"
+        }
+      }
+    ],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "targetSdkVersion": "6.0.1(21)",
+        "compatibleSdkVersion": "6.0.0(20)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "nativeCompiler": "BiSheng",
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug",
+      },
+      {
+        "name": "release"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    }
+  ]
+}

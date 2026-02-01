@@ -1,0 +1,10 @@
+{
+  "src": [
+    "pages/Index",
+    "pages/NotePage",
+    "pages/NativePage",
+    "pages/TestPage",
+    "pages/tes",
+    "pages/DiaryHomePage"
+  ]
+}

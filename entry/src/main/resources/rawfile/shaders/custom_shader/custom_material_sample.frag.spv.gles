@@ -1,0 +1,446 @@
+#version 320 es
+#define SPIRV_CROSS_CONSTANT_ID_256 1u
+precision highp float;
+precision highp int;
+
+struct DefaultMaterialUnpackedTexTransformStruct
+{
+    vec4 rotateScale;
+    vec2 translate;
+};
+
+struct DefaultMaterialSingleMaterialStruct
+{
+    vec4 factors[15];
+    uvec4 indices;
+};
+
+struct DefaultMaterialMaterialStruct
+{
+    DefaultMaterialSingleMaterialStruct material[64];
+};
+
+#ifndef SPIRV_CROSS_CONSTANT_ID_1
+#define SPIRV_CROSS_CONSTANT_ID_1 0u
+#endif
+const uint CORE_MATERIAL_FLAGS = SPIRV_CROSS_CONSTANT_ID_1;
+const uint _162 = (CORE_MATERIAL_FLAGS & 8u);
+const bool _163 = (_162 == 8u);
+
+struct DefaultMaterialTransformSingleMaterialStruct
+{
+    uvec4 _packed[15];
+    uvec4 indices;
+};
+
+struct DefaultMaterialTransformMaterialStruct
+{
+    DefaultMaterialTransformSingleMaterialStruct material[64];
+};
+
+struct MyMaterialSampleStruct
+{
+    vec4 vec_1;
+    float time;
+    uint dof;
+    uint motionBlur;
+};
+
+#ifndef SPIRV_CROSS_CONSTANT_ID_256
+#define SPIRV_CROSS_CONSTANT_ID_256 0u
+#endif
+const uint CORE_BACKEND_TYPE = SPIRV_CROSS_CONSTANT_ID_256;
+uniform float CORE_FLIP_NDC ;
+
+struct DefaultCameraMatrixStruct
+{
+    mat4 view;
+    mat4 proj;
+    mat4 viewProj;
+    mat4 viewInv;
+    mat4 projInv;
+    mat4 viewProjInv;
+    mat4 viewPrevFrame;
+    mat4 projPrevFrame;
+    mat4 viewProjPrevFrame;
+    mat4 shadowViewProj;
+    mat4 shadowViewProjInv;
+    vec4 jitter;
+    vec4 jitterPrevFrame;
+    uvec4 indices;
+    uvec4 multiViewIndices;
+    vec4 frustumPlanes[6];
+    uvec4 counts;
+    uvec4 pad0;
+    mat4 matPad0;
+    mat4 matPad1;
+};
+
+struct DefaultMaterialGeneralDataStruct
+{
+    uvec4 indices;
+    vec4 viewportSizeInvViewportSize;
+    vec4 sceneTimingData;
+};
+
+struct DefaultMaterialEnvironmentStruct
+{
+    vec4 indirectSpecularColorFactor;
+    vec4 indirectDiffuseColorFactor;
+    vec4 envMapColorFactor;
+    vec4 values;
+    vec4 blendFactor;
+    mat4 envRotation;
+    uvec4 indices;
+    vec4 shIndirectCoefficients[9];
+    uvec4 multiEnvIndices;
+    vec4 packedSun;
+    vec4 packedRain;
+};
+
+struct DefaultMaterialFogStruct
+{
+    uvec4 indices;
+    vec4 firstLayer;
+    vec4 secondLayer;
+    vec4 baseFactors;
+    vec4 inscatteringColor;
+    vec4 envMapFactor;
+    vec4 additionalFactor;
+};
+
+struct DefaultMaterialSingleLightStruct
+{
+    vec4 pos;
+    vec4 dir;
+    vec4 color;
+    vec4 spotLightParams;
+    vec4 shadowFactors;
+    vec4 additionalFactor;
+    uvec4 flags;
+    uvec4 indices;
+};
+
+struct DefaultMaterialLightStruct
+{
+    uint directionalLightBeginIndex;
+    uint directionalLightCount;
+    uint pointLightBeginIndex;
+    uint pointLightCount;
+    uint spotLightBeginIndex;
+    uint spotLightCount;
+    uint pad0;
+    uint pad1;
+    uvec4 clusterSizes;
+    vec4 clusterFactors;
+    vec4 atlasSizeInvSize;
+    vec4 additionalFactors;
+    DefaultMaterialSingleLightStruct lights[64];
+};
+
+struct GlobalPostProcessStruct
+{
+    uvec4 flags;
+    vec4 renderTimings;
+    vec4 factors[14];
+    vec4 userFactors[16];
+};
+
+struct DefaultMaterialLightClusterData
+{
+    uint count;
+    uint lightIndices[15];
+};
+
+struct DefaultMaterialSingleMeshStruct
+{
+    mat4 world;
+    mat4 normalWorld;
+    mat4 prevWorld;
+    uvec4 indices;
+    uvec4 layers;
+    uvec4 customData[2];
+};
+
+struct DefaultMaterialMeshStruct
+{
+    DefaultMaterialSingleMeshStruct mesh[64];
+};
+
+struct DefaultMaterialSkinStruct
+{
+    mat4 jointMatrices[256];
+};
+
+struct DefaultMaterialSingleUserMaterialStruct
+{
+    uvec4 userData[16];
+};
+
+struct DefaultMaterialUserMaterialStruct
+{
+    DefaultMaterialSingleUserMaterialStruct material[64];
+};
+
+#ifndef SPIRV_CROSS_CONSTANT_ID_0
+#define SPIRV_CROSS_CONSTANT_ID_0 0u
+#endif
+const uint CORE_MATERIAL_TYPE = SPIRV_CROSS_CONSTANT_ID_0;
+#ifndef SPIRV_CROSS_CONSTANT_ID_2
+#define SPIRV_CROSS_CONSTANT_ID_2 0u
+#endif
+const uint CORE_LIGHTING_FLAGS = SPIRV_CROSS_CONSTANT_ID_2;
+#ifndef SPIRV_CROSS_CONSTANT_ID_3
+#define SPIRV_CROSS_CONSTANT_ID_3 0u
+#endif
+const uint CORE_POST_PROCESS_FLAGS = SPIRV_CROSS_CONSTANT_ID_3;
+#ifndef SPIRV_CROSS_CONSTANT_ID_4
+#define SPIRV_CROSS_CONSTANT_ID_4 0u
+#endif
+const uint CORE_CAMERA_FLAGS = SPIRV_CROSS_CONSTANT_ID_4;
+
+layout(std140) uniform s1_b2
+{
+    DefaultMaterialMaterialStruct uMaterialData;
+} _s1_b2;
+
+layout(std140) uniform s1_b3
+{
+    DefaultMaterialTransformMaterialStruct uMaterialTransformData;
+} _s1_b3;
+
+layout(std140) uniform s1_b4
+{
+    MyMaterialSampleStruct uMyData;
+} _s1_b4;
+
+uniform mediump sampler2D s2_b0;
+
+layout(location = 4) in vec4 inUv;
+layout(location = 0) out vec4 outColor;
+
+float hash12(vec2 p)
+{
+    float v = dot(p, vec2(1.86720001697540283203125, 1.37230002880096435546875));
+    return fract(sin(v) * 5723.26220703125);
+}
+
+float stepNoise(float x, float n)
+{
+    float i = floor(x);
+    float s = 0.100000001490116119384765625;
+    float u = smoothstep(0.5 - s, 0.5 + s, fract(x));
+    return mix(floor(fract(sin(i) * 5723.26220703125) * n), floor(fract(sin(i + 1.0) * 5723.26220703125) * n), u);
+}
+
+mat2 rot(float a)
+{
+    float s = sin(a);
+    float c = cos(a);
+    return mat2(vec2(c, s), vec2(-s, c));
+}
+
+float perlin1d(float x)
+{
+    float i = floor(x);
+    float f = fract(x);
+    float u = (f * f) * (3.0 - (2.0 * f));
+    return mix(f * ((fract(sin(i) * 5723.26220703125) * 2.0) - 1.0), (f - 1.0) * ((fract(sin(i + 1.0) * 5723.26220703125) * 2.0) - 1.0), u);
+}
+
+float fiberShape(float x, float time)
+{
+    float s = 0.02999999932944774627685546875;
+    float curve = smoothstep(0.25 - s, 0.25 + s, abs(fract(time * 0.10999999940395355224609375) - 0.5));
+    float param = x;
+    return (perlin1d(param) * 0.939999997615814208984375) * curve;
+}
+
+uint GetUnpackTexCoordInfo()
+{
+    return floatBitsToUint(_s1_b2.uMaterialData.material[0].factors[11].y);
+}
+
+vec4 UnpackVec4Half2x16(uvec2 _packed)
+{
+    vec2 _68 = unpackHalf2x16(_packed.x);
+    vec4 up;
+    up.x = _68.x;
+    up.y = _68.y;
+    vec2 _75 = unpackHalf2x16(_packed.y);
+    up.z = _75.x;
+    up.w = _75.y;
+    return up;
+}
+
+DefaultMaterialUnpackedTexTransformStruct GetUnpackTextureTransform(uvec4 packedTexTransform)
+{
+    DefaultMaterialUnpackedTexTransformStruct dm;
+    dm.rotateScale = UnpackVec4Half2x16(packedTexTransform.xy);
+    dm.translate = UnpackVec4Half2x16(packedTexTransform.zw).xy;
+    return dm;
+}
+
+vec2 GetTransformedUV(DefaultMaterialUnpackedTexTransformStruct texTransform, vec2 uvInput)
+{
+    vec2 uv;
+    uv.x = dot(texTransform.rotateScale.xy, uvInput);
+    uv.y = dot(texTransform.rotateScale.zw, uvInput);
+    uv += texTransform.translate;
+    return uv;
+}
+
+vec2 GetFinalSamplingUV(vec4 inputUv, uint texCoordInfoBit, uint texCoordIdx)
+{
+    uint texCoordInfo = GetUnpackTexCoordInfo();
+    vec2 _142;
+    if (((texCoordInfo >> uint(16)) & texCoordInfoBit) == texCoordInfoBit)
+    {
+        _142 = inputUv.zw;
+    }
+    else
+    {
+        _142 = inputUv.xy;
+    }
+    vec2 uv = _142;
+    bool doTrans = ((texCoordInfo & 65535u) & texCoordInfoBit) == texCoordInfoBit;
+    if (_163 && doTrans)
+    {
+        DefaultMaterialUnpackedTexTransformStruct texTransform = GetUnpackTextureTransform(_s1_b3.uMaterialTransformData.material[0]._packed[texCoordIdx]);
+        uv = GetTransformedUV(texTransform, uv);
+    }
+    return uv;
+}
+
+vec4 GetBaseColorSample(vec4 uvInput)
+{
+    vec4 param = uvInput;
+    uint param_1 = 1u;
+    uint param_2 = 0u;
+    vec2 uv = GetFinalSamplingUV(param, param_1, param_2);
+    vec4 _199 = texture(s2_b0, uv);
+    return _199;
+}
+
+void main()
+{
+    vec2 uv = (inUv.xy - vec2(0.5)) * 2.0;
+    vec2 fragCoord = inUv.xy;
+    vec3 col = vec3(0.0);
+    vec3 ac = vec3(0.0);
+    float t;
+    vec2 id;
+    vec2 q;
+    for (float j = 0.0; j < 2.0; j += 1.0)
+    {
+        float time = _s1_b4.uMyData.time;
+        vec2 seed = (fragCoord + vec2(fract(time) * 500.0)) + vec2(j * 31.3528308868408203125);
+        if (_s1_b4.uMyData.motionBlur != 0u)
+        {
+            vec2 param = seed;
+            time += (hash12(param) * 0.0500000007450580596923828125);
+        }
+        vec3 ro = vec3(0.0, 1.0, -time);
+        vec3 ta = vec3(0.0, -0.5, (-time) - 0.5);
+        float param_1 = ro.z;
+        float param_2 = 5.0;
+        ro.x += ((stepNoise(param_1, param_2) - 2.0) * 0.5);
+        float param_3 = ro.z - 500.0;
+        float param_4 = 5.0;
+        ro.y += (stepNoise(param_3, param_4) * 0.5);
+        vec3 dir = normalize(ta - ro);
+        vec3 side = normalize(cross(dir, vec3(0.0, 1.0, 0.0)));
+        vec3 up = normalize(cross(side, dir));
+        float fov = 40.0;
+        float param_5 = ro.z - 1000.0;
+        float param_6 = 2.0;
+        fov += (((stepNoise(param_5, param_6) * 2.0) - 1.0) * 20.0);
+        vec3 rd = normalize(((side * uv.x) + (up * uv.y)) + (dir / vec3(tan((fov / 360.0) * 3.1415927410125732421875))));
+        float L = length(ta - ro);
+        vec3 fp = ro + (rd * L);
+        vec3 ros = ro;
+        if (_s1_b4.uMyData.dof != 0u)
+        {
+            vec2 param_7 = seed * 1.10000002384185791015625;
+            float r = sqrt(hash12(param_7));
+            vec2 param_8 = seed * 1.2000000476837158203125;
+            float theta = hash12(param_8) * 6.283185482025146484375;
+            vec3 _516 = ros;
+            vec2 _518 = _516.xy + (((vec2(cos(theta), sin(theta)) * r) * L) * 0.02500000037252902984619140625);
+            ros.x = _518.x;
+            ros.y = _518.y;
+        }
+        vec3 rds = normalize(fp - ros);
+        bool hit = false;
+        for (float i = 0.0; i < 50.0; i += 1.0)
+        {
+            t = (-(ros.y + (i * 0.0500000007450580596923828125))) / rds.y;
+            vec2 p = ros.xz + (rds.xz * t);
+            p.x += (fract(sin(i) * 5723.26220703125) * 500.0);
+            float param_9 = i * 2.0;
+            p *= rot(param_9);
+            id = vec2(i, floor(p.x));
+            p.x = fract(p.x) - 0.5;
+            vec2 param_10 = id;
+            p.y += (hash12(param_10) * 500.0);
+            float param_11 = p.y;
+            float param_12 = time;
+            p.x -= fiberShape(param_11, param_12);
+            bool _602 = t > 0.0;
+            bool _609;
+            if (_602)
+            {
+                _609 = abs(p.x) < 0.02999999932944774627685546875;
+            }
+            else
+            {
+                _609 = _602;
+            }
+            if (_609)
+            {
+                q = p;
+                hit = true;
+                break;
+            }
+        }
+        if (hit)
+        {
+            vec3 add = vec3(1.0);
+            vec3 lightDir = vec3(-0.8703882694244384765625, 0.348155319690704345703125, -0.348155319690704345703125);
+            vec3 normal = normalize(vec3(q.x, sqrt(0.000899999984540045261383056640625 - (q.x * q.x)), 0.0));
+            float e = 9.9999997473787516355514526367188e-05;
+            float param_13 = q.y + e;
+            float param_14 = time;
+            float param_15 = q.y - e;
+            float param_16 = time;
+            float grad = (fiberShape(param_13, param_14) - fiberShape(param_15, param_16)) / (e * 2.0);
+            float a = atan(grad);
+            float param_17 = ((-id.x) * 2.0) + a;
+            vec3 _675 = normal;
+            vec2 _677 = _675.xz * rot(param_17);
+            normal.x = _677.x;
+            normal.z = _677.y;
+            float diff = max(dot(normal, lightDir), 0.0);
+            float spec = pow(max(dot(reflect(lightDir, normal), rds), 0.0), 20.0);
+            float m = 0.5;
+            float lp = 3.0;
+            add *= ((((diff * (1.0 - m)) * lp) + ((spec * m) * lp)) + 0.20000000298023223876953125);
+            q.y = fract((q.y * 0.02999999932944774627685546875) - (time * 0.20000000298023223876953125)) - 0.5;
+            add += vec3(smoothstep(0.00999999977648258209228515625, 0.0, abs(q.y)) * 3.0);
+            vec2 param_18 = id;
+            float T = time + hash12(param_18);
+            vec2 param_19 = (id * 1.10000002384185791015625) + vec2(floor(T));
+            add += vec3((step(hash12(param_19), 0.0500000007450580596923828125) * step(fract(T * 3.0), 0.800000011920928955078125)) * 3.0);
+            add *= exp((((-t) * t) * 0.100000001490116119384765625) - ((id.x * id.x) * 0.001000000047497451305389404296875));
+            ac += add;
+        }
+    }
+    col += (ac / vec3(2.0));
+    float a_1 = _s1_b4.uMyData.vec_1.w;
+    col *= _s1_b4.uMyData.vec_1.xyz;
+    col = pow(col, vec3(0.4545454680919647216796875));
+    mediump vec4 baseColor = GetBaseColorSample(inUv);
+    col *= baseColor.xyz;
+    outColor = vec4(col, a_1);
+}
+
