@@ -7,9 +7,23 @@ import { ImageUtils } from "../../shared/utils/ImageUtils";
 
 const TAG: string = '[NoteApp]';
 const DOMAIN_NUMBER: number = 0xFF00;
+const FONT_WEIGHT_BOLD_LEVEL: number = 9;
+
+interface SpanRange {
+  start: number;
+  end: number;
+}
+
+interface BoldStats {
+  hasText: boolean;
+  anyBold: boolean;
+  allBold: boolean;
+}
 @ObservedV2
 export class EditorController{
   @Trace controller: RichEditorController = new RichEditorController();
+  private selectionStart: number = 0;
+  private selectionEnd: number = 0;
 
   getAllSpans(): (RichEditorImageSpanResult | RichEditorTextSpanResult)[] {
     return this.controller.getSpans();
@@ -18,6 +32,116 @@ export class EditorController{
   cleanAll(){
     this.controller.deleteSpans({start: 0, end: -1});
   }
+
+  setSelection(start: number, end: number): void {
+    this.selectionStart = Math.max(0, start);
+    this.selectionEnd = Math.max(0, end);
+  }
+
+  private getSpanRange(span: RichEditorImageSpanResult | RichEditorTextSpanResult): SpanRange {
+    const range = span.spanPosition.spanRange;
+    return { start: range[0], end: range[1] };
+  }
+
+  private isTextSpan(span: RichEditorImageSpanResult | RichEditorTextSpanResult): boolean {
+    return typeof (span as RichEditorTextSpanResult)['textStyle'] !== 'undefined';
+  }
+
+  private isImageSpan(span: RichEditorImageSpanResult | RichEditorTextSpanResult): boolean {
+    return typeof (span as RichEditorImageSpanResult)['imageStyle'] !== 'undefined';
+  }
+
+  private isBoldWeight(weight: number | undefined): boolean {
+    if (weight === undefined || weight === null) return false;
+    return weight <= FONT_WEIGHT_BOLD_LEVEL;
+  }
+
+  getBoldStateForSelection(): boolean {
+    const start = Math.min(this.selectionStart, this.selectionEnd);
+    const end = Math.max(this.selectionStart, this.selectionEnd);
+    const stats = this.getBoldStatsForRange(start, end);
+    return stats.anyBold;
+  }
+
+  private getBoldStatsForRange(start: number, end: number): BoldStats {  // 分析指定范围内文本的加粗统计信息
+    const spans = this.getAllSpans();
+    if (spans.length === 0) {
+      return { hasText: false, anyBold: false, allBold: false };
+    }
+    let foundText = false;
+    let anyBold = false;
+    let allBold = true;
+    for (const span of spans) {
+      if (this.isImageSpan(span)) {
+        continue;
+      }
+
+      if (!this.isTextSpan(span)) {
+        continue;
+      }
+
+      const range = this.getSpanRange(span);
+      const overlaps = end > start && range.end > start && range.start < end;
+      if (!overlaps) {
+        continue;
+      }
+
+      foundText = true;
+      const textSpan = span as RichEditorTextSpanResult;
+      const isBold = this.isBoldWeight(textSpan.textStyle.fontWeight);
+      if (isBold) {
+        anyBold = true;
+      } else {
+        allBold = false;
+      }
+    }
+
+    if (!foundText) {
+      return { hasText: false, anyBold: false, allBold: false };
+    }
+    return { hasText: true, anyBold: anyBold, allBold: allBold };
+  }
+
+  toggleBold(): boolean {
+    const selection = this.controller.getSelection();
+    if (!selection || selection.selection[0]=== undefined || selection.selection[1]=== undefined) {
+      return false;
+    }
+
+    const start:number = selection.selection[0];
+    const end:number = selection.selection[1];
+    this.setSelection(start, end);
+    if (start === end) {
+      return false;
+    }
+
+    const stats = this.getBoldStatsForRange(start, end);
+    if (!stats.hasText) {
+      return false;
+    }
+    const shouldBold = !stats.anyBold;
+    if (stats.anyBold && !stats.allBold) {
+      // 混合样式 -> 统一变细体
+      this.controller.updateSpanStyle({
+        start,
+        end,
+        textStyle: {
+          fontWeight: FontWeight.Normal
+        }
+      });
+      return false;
+    }
+    this.controller.updateSpanStyle({
+      start,
+      end,
+      textStyle: {
+        fontWeight: shouldBold ? FontWeight.Bold : FontWeight.Normal
+      }
+    });
+    return shouldBold;
+  }
+
+
   // 插入图片到编辑器
   async insertImageToEditor(imageUri: string): Promise<void> {
     try {

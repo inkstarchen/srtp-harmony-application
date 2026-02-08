@@ -19,6 +19,7 @@ export class NoteViewModel {
   @Trace saveStatus: string = '';
   noteService: NoteService = new NoteService();
   @Trace editorController = new EditorController();
+  @Trace isBoldActive: boolean = false;
 
   async loadCurrentNote(){
     let filePath = this.noteState.getFilePath();
@@ -140,6 +141,15 @@ export class NoteViewModel {
 
   getController(): RichEditorController {
     return this.editorController.controller;
+  }
+
+  updateSelection(start: number, end: number): void {
+    this.editorController.setSelection(start, end);
+    this.isBoldActive = this.editorController.getBoldStateForSelection();
+  }
+
+  toggleBold(): void {
+    this.isBoldActive = this.editorController.toggleBold();
   }
 
   getTitle(){

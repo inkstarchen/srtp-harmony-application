@@ -5,12 +5,18 @@ interface ToolBarButtonParams {
   action: () => void;
 }
 
+interface ToolBarButtonStateParams extends ToolBarButtonParams {
+  isActive?: boolean;
+}
+
 @ComponentV2
 export struct ToolBarComponent{
 
   @Require @Param newNote:() => void;
   @Require @Param selectImage:() => void;
   @Require @Param saveNote:() => void;
+  @Require @Param toggleBold:() => void;
+  @Require @Param isBoldActive: boolean;
   build(){
     // 格式工具栏
     Scroll( ) {
@@ -29,9 +35,11 @@ export struct ToolBarComponent{
 
         Divider().vertical(true).height(20).margin({ left: 4, right: 4 })
 
-        this.ToolBarButton({ icon: $r('sys.symbol.bold'), action: () => {
-          Prompt.showToast({ message: '加粗功能待实现', duration: 1500 });
-        } })
+        this.ToolBarButton({
+          icon: $r('sys.symbol.bold'),
+          action: () => this.toggleBold(),
+          isActive: this.isBoldActive
+        })
         this.ToolBarButton({ icon: $r('sys.symbol.italic'), action: () => {
           Prompt.showToast({ message: '斜体功能待实现', duration: 1500 });
         } })
@@ -52,11 +60,11 @@ export struct ToolBarComponent{
   }
 
   @Builder
-  ToolBarButton(params: ToolBarButtonParams) {
+  ToolBarButton(params: ToolBarButtonStateParams) {
     Button({ type: ButtonType.Circle }) {
       SymbolGlyph(params.icon)
         .fontSize(18)
-        .fontColor([Color.Black ])   //?
+        .fontColor([params.isActive ? Color.Blue : Color.Black])
     }
     .width(36)
     .height(36)

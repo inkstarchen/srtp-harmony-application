@@ -76,7 +76,11 @@ export struct NotePage {
           },
           saveNote: () => {
             this.noteViewModel.saveNote();
-          }
+          },
+          toggleBold: () => {
+            this.noteViewModel.toggleBold();
+          },
+          isBoldActive: this.noteViewModel.isBoldActive
         })
       }
       .width('100%')
@@ -91,8 +95,14 @@ export struct NotePage {
           .onReady(() => {
             hilog.info(DOMAIN_NUMBER, TAG, 'RichEditor准备就绪');
           })
-          .onSelect((value: RichEditorSelection) => {
-            hilog.debug(DOMAIN_NUMBER, TAG, `选中范围: [${value.selection[0]}, ${value.selection[1]}]`);
+          .onSelectionChange((range: RichEditorRange) => {
+            if (range.start === undefined || range.end === undefined) {
+              return;
+            }
+            const start = range.start;
+            const end = range.end;
+            hilog.debug(DOMAIN_NUMBER, TAG, `选中范围: [${start}, ${end}]`);
+            this.noteViewModel.updateSelection(start, end);
           })
           .aboutToIMEInput((value: RichEditorInsertValue) => {
             hilog.debug(DOMAIN_NUMBER, TAG, `即将输入: ${value.insertValue}`);

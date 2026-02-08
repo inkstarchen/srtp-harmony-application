@@ -19,11 +19,10 @@ export class NoteState{
     this.content = data.content;
   }
 
-  printNoteData
-
-  (): string {
+  printNoteData(): string {
     return `{ "id": "${this.id}", "title": "${this.title}", "content": ${JSON.stringify(this.content)} }`;
   }
+
   getFilePath(): string { return `${this.dir}${this.id}.json`; }
 
   getDirPath(): string { return `${this.dir}${this.id}`; }

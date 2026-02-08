@@ -61,6 +61,29 @@ export class StyleConversionUtils {
     return StyleConversionUtils.fontStyleReverseMap.get(fontStyleStr) || FontStyle.Normal;  // 使用类名而不是this
   }
 
+  static fontWeightToString(fontWeight: number | FontWeight | string | undefined): string {
+    if (fontWeight === undefined || fontWeight === null) return 'normal';
+    if (typeof fontWeight === 'number') return fontWeight <= 9 ? 'bold' : 'normal';
+    if (typeof fontWeight === 'string') {
+      const trimmed = fontWeight.trim().toLowerCase();
+      if (trimmed === 'bold' || trimmed === 'bolder') return 'bold';
+      const asNumber = Number(trimmed);
+      if (!Number.isNaN(asNumber)) return asNumber <= 9 ? 'bold' : 'normal';
+      return 'normal';
+    }
+    return fontWeight === FontWeight.Bold || fontWeight === FontWeight.Bolder ? 'bold' : 'normal';
+  }
+
+  static stringToFontWeight(fontWeight: number | string | undefined): number | FontWeight | string {
+    if (fontWeight === undefined || fontWeight === null) return FontWeight.Normal;
+    if (typeof fontWeight === 'number') return fontWeight <= 9 ? FontWeight.Bold : FontWeight.Normal;
+
+    const trimmed = fontWeight.trim().toLowerCase();
+    if (trimmed === 'bold' || trimmed === '1') return FontWeight.Bold;
+    if (trimmed === 'normal' || trimmed === '0') return FontWeight.Normal;
+    return FontWeight.Normal;
+  }
+
   // ImageSpanAlignment 转换
   static imageSpanAlignmentToString(alignment: ImageSpanAlignment | undefined): string {
     if (!alignment) return 'baseline';
@@ -92,7 +115,7 @@ export class StyleConversionUtils {
       fontSize: style.fontSize,
       // 使用工具类转换颜色
       fontColor: Color.Black, //StyleConversionUtils.stringToColor(style.fontColor),
-      fontWeight: style.fontWeight,
+      fontWeight: StyleConversionUtils.stringToFontWeight(style.fontWeight),
       // 使用工具类转换字体样式
       fontStyle: StyleConversionUtils.stringToFontStyle(style.fontStyle),
       fontFamily: style.fontFamily,
@@ -109,7 +132,7 @@ export class StyleConversionUtils {
       fontSize: textStyle.fontSize,
       // 使用工具类转换颜色
       fontColor: 'Color.Black' ,//StyleConversionUtils.colorToString(textStyle.fontColor),
-      fontWeight: textStyle.fontWeight,
+      fontWeight: StyleConversionUtils.fontWeightToString(textStyle.fontWeight),
       // 使用工具类转换字体样式
       fontStyle: StyleConversionUtils.fontStyleToString(textStyle.fontStyle),
       fontFamily: textStyle.fontFamily,
