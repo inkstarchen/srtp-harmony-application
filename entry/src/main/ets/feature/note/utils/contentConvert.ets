@@ -8,20 +8,9 @@ const TAG: string = '[NoteApp]';
 const DOMAIN_NUMBER: number = 0xFF00;
 // 工具方法
 
-interface RichEditorTextStyleCarrier {
-  textStyle?: RichEditorTextStyleResult;
-  textStyleResult?: RichEditorTextStyleResult;
-  style?: RichEditorTextStyleResult;
-}
-
 
 export function generateSpanId(): string {
   return 'span_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-}
-
-function getTextStyleFromSpan(span: RichEditorTextSpanResult): RichEditorTextStyleResult | undefined {
-  const carrier = span as RichEditorTextStyleCarrier;
-  return carrier.textStyle ?? carrier.textStyleResult ?? carrier.style;
 }
 
 // 从RichEditor内容转换为持久化数据
@@ -53,12 +42,11 @@ export async function convertEditorContentToPersistentData(allSpans: (RichEditor
       });
     } else {
       // 普通文本Span
-      const textStyle = getTextStyleFromSpan(textSpan);
       persistentData.push({
         type: 'text',
         id: generateSpanId(),
         content: textSpan.value,
-        style: StyleConversionUtils.simplifyTextStyle(textStyle),
+        style: StyleConversionUtils.simplifyTextStyle(textSpan.textStyle),
         timestamp: Date.now()
       });
     }

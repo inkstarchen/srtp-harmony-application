@@ -63,24 +63,17 @@ export class StyleConversionUtils {
 
   static fontWeightToString(fontWeight: number | FontWeight | string | undefined): string {
     if (fontWeight === undefined || fontWeight === null) return 'normal';
-    if (typeof fontWeight === 'number') return fontWeight <= 9 ? 'bold' : 'normal';
-    if (typeof fontWeight === 'string') {
-      const trimmed = fontWeight.trim().toLowerCase();
-      if (trimmed === 'bold' || trimmed === 'bolder') return 'bold';
-      const asNumber = Number(trimmed);
-      if (!Number.isNaN(asNumber)) return asNumber <= 9 ? 'bold' : 'normal';
-      return 'normal';
-    }
-    return fontWeight === FontWeight.Bold || fontWeight === FontWeight.Bolder ? 'bold' : 'normal';
+    if (typeof fontWeight === 'number') return fontWeight === 9 ? 'bold' : 'normal';
+    return 'normal';
   }
 
   static stringToFontWeight(fontWeight: number | string | undefined): number | FontWeight | string {
     if (fontWeight === undefined || fontWeight === null) return FontWeight.Normal;
-    if (typeof fontWeight === 'number') return fontWeight <= 9 ? FontWeight.Bold : FontWeight.Normal;
+    if (typeof fontWeight === 'number') return fontWeight === 9 ? FontWeight.Bold : FontWeight.Normal;
 
     const trimmed = fontWeight.trim().toLowerCase();
-    if (trimmed === 'bold' || trimmed === '1') return FontWeight.Bold;
-    if (trimmed === 'normal' || trimmed === '0') return FontWeight.Normal;
+    if (trimmed === 'bold') return FontWeight.Bold;
+    if (trimmed === 'normal') return FontWeight.Normal;
     return FontWeight.Normal;
   }
 

@@ -53,7 +53,7 @@ export class EditorController{
 
   private isBoldWeight(weight: number | undefined): boolean {
     if (weight === undefined || weight === null) return false;
-    return weight <= FONT_WEIGHT_BOLD_LEVEL;
+    return weight === FONT_WEIGHT_BOLD_LEVEL;
   }
 
   getBoldStateForSelection(): boolean {
@@ -88,7 +88,7 @@ export class EditorController{
 
       foundText = true;
       const textSpan = span as RichEditorTextSpanResult;
-      const isBold = this.isBoldWeight(textSpan.textStyle.fontWeight);
+      const isBold = this.isBoldWeight(textSpan.textStyle.fontWeight);    //传入的是单一number类型
       if (isBold) {
         anyBold = true;
       } else {
