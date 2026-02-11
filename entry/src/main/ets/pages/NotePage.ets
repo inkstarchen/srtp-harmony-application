@@ -15,6 +15,8 @@ export struct NotePage {
   private options: RichEditorOptions = { controller: this.noteViewModel.getController() };
   @Local currentNoteTitle: string = '未命名笔记';
   @Local isTitleFocused: boolean = false;
+  @Local selectedTextColor: Color = Color.Black;
+  @Local isColorPickerOpen: boolean = false;
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
 
   aboutToAppear(): void {
@@ -88,7 +90,20 @@ export struct NotePage {
           },
           isBoldActive: this.noteViewModel.isBoldActive,
           isItalicActive: this.noteViewModel.isItalicActive,
-          isUnderlineActive: this.noteViewModel.isUnderlineActive
+          isUnderlineActive: this.noteViewModel.isUnderlineActive,
+          currentTextColor: this.selectedTextColor,
+          setTextColor: (color: Color) => {
+            hilog.info(DOMAIN_NUMBER, TAG, `color swatch tapped: ${color}`);
+            this.selectedTextColor = color;
+            this.noteViewModel.setTextColor(color);
+          },
+          applyTextColor: () => {
+            this.noteViewModel.applyTextColor();
+          },
+          isColorPickerOpen: this.isColorPickerOpen,
+          setColorPickerOpen: (open: boolean) => {
+            this.isColorPickerOpen = open;
+          }
         })
       }
       .width('100%')

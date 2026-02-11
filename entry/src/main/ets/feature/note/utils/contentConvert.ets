@@ -49,6 +49,7 @@ export async function convertEditorContentToPersistentData(allSpans: (RichEditor
         style: StyleConversionUtils.simplifyTextStyle(textSpan.textStyle),
         timestamp: Date.now()
       });
+      hilog.info(DOMAIN_NUMBER, TAG, `save color raw=${textSpan.textStyle.fontColor}`);
     }
   }
   }

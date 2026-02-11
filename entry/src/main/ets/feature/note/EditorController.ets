@@ -173,6 +173,29 @@ export class EditorController{
     return shouldBold;
   }
 
+  applyTextColor(color: Color): boolean {
+    const selection = this.controller.getSelection();
+    if (!selection || selection.selection[0]=== undefined || selection.selection[1]=== undefined) {
+      return false;
+    }
+
+    const start:number = selection.selection[0];
+    const end:number = selection.selection[1];
+    this.setSelection(start, end);
+    if (start === end) {
+      return false;
+    }
+
+    this.controller.updateSpanStyle({
+      start,
+      end,
+      textStyle: {
+        fontColor: color
+      }
+    });
+    return true;
+  }
+
   toggleItalic(): boolean {
     const selection = this.controller.getSelection();
     if (!selection || selection.selection[0]=== undefined || selection.selection[1]=== undefined) {

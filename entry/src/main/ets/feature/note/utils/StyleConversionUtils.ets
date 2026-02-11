@@ -1,6 +1,10 @@
 // src/utils/StyleConversionUtils.ts
 import { NoteSpanStyle } from "../model/NoteSpanData";
 import { staticMap } from "@kit.MapKit";
+import { hilog } from "@kit.PerformanceAnalysisKit";
+
+const TAG: string = '[NoteStyle]';
+const DOMAIN_NUMBER: number = 0xFF01;
 
 export class StyleConversionUtils {
   // 静态常量映射表 - 只在类加载时创建一次
@@ -48,6 +52,32 @@ export class StyleConversionUtils {
     ['none', ImageFit.None],
     ['scaleDown', ImageFit.ScaleDown],
     ['auto', ImageFit.Auto]
+  ]);
+
+  private static readonly colorMap: Map<number, string> = new Map([
+    [Color.Black, 'black'],
+    [Color.Blue, 'blue'],
+    [Color.Brown, 'brown'],
+    [Color.Grey, 'grey'],
+    [Color.Green, 'green'],
+    [Color.Orange, 'orange'],
+    [Color.Pink, 'pink'],
+    [Color.Red, 'red'],
+    [Color.White, 'white'],
+    [Color.Yellow, 'yellow']
+  ]);
+
+  private static readonly colorReverseMap: Map<string, Color> = new Map([
+    ['black', Color.Black],
+    ['blue', Color.Blue],
+    ['brown', Color.Brown],
+    ['grey', Color.Grey],
+    ['green', Color.Green],
+    ['orange', Color.Orange],
+    ['pink', Color.Pink],
+    ['red', Color.Red],
+    ['white', Color.White],
+    ['yellow', Color.Yellow]
   ]);
 
   // FontStyle 转换
@@ -103,10 +133,10 @@ export class StyleConversionUtils {
     if (!style) {
       return {};
     }
+    hilog.info(DOMAIN_NUMBER, TAG, `restore color=${style.fontColor}`);
     return {
       fontSize: style.fontSize,
-      // 使用工具类转换颜色
-      fontColor: Color.Black, //StyleConversionUtils.stringToColor(style.fontColor),
+      fontColor: StyleConversionUtils.stringToColor(style.fontColor),
       fontWeight: StyleConversionUtils.stringToFontWeight(style.fontWeight),
       // 使用工具类转换字体样式
       fontStyle: StyleConversionUtils.stringToFontStyle(style.fontStyle),
@@ -122,11 +152,9 @@ export class StyleConversionUtils {
     if (!textStyle) {
       return {};
     }
-
     return {
       fontSize: textStyle.fontSize,
-      // 使用工具类转换颜色
-      fontColor: 'Color.Black' ,//StyleConversionUtils.colorToString(textStyle.fontColor),
+      fontColor: StyleConversionUtils.colorToString(textStyle.fontColor),
       fontWeight: StyleConversionUtils.fontWeightToString(textStyle.fontWeight),
       // 使用工具类转换字体样式
       fontStyle: StyleConversionUtils.fontStyleToString(textStyle.fontStyle),
@@ -137,9 +165,13 @@ export class StyleConversionUtils {
 
   // 颜色转换  暂时不用
   static colorToString(color: ResourceColor): string {
-    if (typeof color === 'string') return color;
-    if (color && color.toString) return color.toString();
-    return '#000000';
+    if (typeof color === 'number') {
+      return StyleConversionUtils.colorMap.get(color) || 'black';
+    }
+    if (typeof color === 'string') {
+      return color;
+    }
+    return 'black';
   }
 
   // 暂时不用
@@ -147,9 +179,11 @@ export class StyleConversionUtils {
     if (!colorStr) {
       return Color.Black;
     }
-    if (colorStr.startsWith('#')) {
-      return colorStr;
+    const trimmed = colorStr.trim();
+    const lowered = trimmed.toLowerCase();
+    if (trimmed.startsWith('#') || lowered.startsWith('0x')) {
+      return trimmed;
     }
-    return Color.Black;
+    return StyleConversionUtils.colorReverseMap.get(lowered) || Color.Black;
   }
 }

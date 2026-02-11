@@ -22,6 +22,7 @@ export class NoteViewModel {
   @Trace isBoldActive: boolean = false;
   @Trace isItalicActive: boolean = false;
   @Trace isUnderlineActive: boolean = false;
+  @Trace currentTextColor: Color = Color.Black;
 
   async loadCurrentNote(){
     let filePath = this.noteState.getFilePath();
@@ -162,6 +163,15 @@ export class NoteViewModel {
 
   toggleUnderline(): void {
     this.isUnderlineActive = this.editorController.toggleUnderline();
+  }
+
+  setTextColor(color: Color): void {
+    hilog.info(DOMAIN_NUMBER, TAG, `setTextColor: ${color}`);
+    this.currentTextColor = color;
+  }
+
+  applyTextColor(): void {
+    this.editorController.applyTextColor(this.currentTextColor);
   }
 
   getTitle(){
