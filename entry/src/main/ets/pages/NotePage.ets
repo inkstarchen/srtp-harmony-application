@@ -80,7 +80,15 @@ export struct NotePage {
           toggleBold: () => {
             this.noteViewModel.toggleBold();
           },
-          isBoldActive: this.noteViewModel.isBoldActive
+          toggleItalic: () => {
+            this.noteViewModel.toggleItalic();
+          },
+          toggleUnderline: () => {
+            this.noteViewModel.toggleUnderline();
+          },
+          isBoldActive: this.noteViewModel.isBoldActive,
+          isItalicActive: this.noteViewModel.isItalicActive,
+          isUnderlineActive: this.noteViewModel.isUnderlineActive
         })
       }
       .width('100%')

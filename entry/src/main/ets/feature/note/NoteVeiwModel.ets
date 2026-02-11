@@ -20,6 +20,8 @@ export class NoteViewModel {
   noteService: NoteService = new NoteService();
   @Trace editorController = new EditorController();
   @Trace isBoldActive: boolean = false;
+  @Trace isItalicActive: boolean = false;
+  @Trace isUnderlineActive: boolean = false;
 
   async loadCurrentNote(){
     let filePath = this.noteState.getFilePath();
@@ -146,10 +148,20 @@ export class NoteViewModel {
   updateSelection(start: number, end: number): void {
     this.editorController.setSelection(start, end);
     this.isBoldActive = this.editorController.getBoldStateForSelection();
+    this.isItalicActive = this.editorController.getItalicStateForSelection();
+    this.isUnderlineActive = this.editorController.getUnderlineStateForSelection();
   }
 
   toggleBold(): void {
     this.isBoldActive = this.editorController.toggleBold();
+  }
+
+  toggleItalic(): void {
+    this.isItalicActive = this.editorController.toggleItalic();
+  }
+
+  toggleUnderline(): void {
+    this.isUnderlineActive = this.editorController.toggleUnderline();
   }
 
   getTitle(){

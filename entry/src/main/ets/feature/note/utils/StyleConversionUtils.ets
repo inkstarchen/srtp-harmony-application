@@ -61,10 +61,9 @@ export class StyleConversionUtils {
     return StyleConversionUtils.fontStyleReverseMap.get(fontStyleStr) || FontStyle.Normal;  // 使用类名而不是this
   }
 
-  static fontWeightToString(fontWeight: number | FontWeight | string | undefined): string {
+  static fontWeightToString(fontWeight: number | undefined): string {
     if (fontWeight === undefined || fontWeight === null) return 'normal';
-    if (typeof fontWeight === 'number') return fontWeight === 9 ? 'bold' : 'normal';
-    return 'normal';
+    return fontWeight === 9 ? 'bold' : 'normal';
   }
 
   static stringToFontWeight(fontWeight: number | string | undefined): number | FontWeight | string {
@@ -112,6 +111,9 @@ export class StyleConversionUtils {
       // 使用工具类转换字体样式
       fontStyle: StyleConversionUtils.stringToFontStyle(style.fontStyle),
       fontFamily: style.fontFamily,
+      decoration: {
+        type: style.decorationType !== undefined ? style.decorationType : TextDecorationType.None
+      }
     };
   }
 
@@ -129,6 +131,7 @@ export class StyleConversionUtils {
       // 使用工具类转换字体样式
       fontStyle: StyleConversionUtils.fontStyleToString(textStyle.fontStyle),
       fontFamily: textStyle.fontFamily,
+      decorationType: textStyle.decoration ? textStyle.decoration.type : TextDecorationType.None
     };
   }
 

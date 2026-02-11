@@ -14,11 +14,12 @@ interface SpanRange {
   end: number;
 }
 
-interface BoldStats {
+interface TextStyleStats {
   hasText: boolean;
-  anyBold: boolean;
-  allBold: boolean;
+  anyActive: boolean;
+  allActive: boolean;
 }
+
 @ObservedV2
 export class EditorController{
   @Trace controller: RichEditorController = new RichEditorController();
@@ -56,21 +57,50 @@ export class EditorController{
     return weight === FONT_WEIGHT_BOLD_LEVEL;
   }
 
+  private isItalicStyle(style: RichEditorTextStyleResult): boolean {
+    return style.fontStyle === FontStyle.Italic;
+  }
+
+  private isUnderlineStyle(style: RichEditorTextStyleResult): boolean {
+    if (!style.decoration) return false;
+    return style.decoration.type === TextDecorationType.Underline;
+  }
+
   getBoldStateForSelection(): boolean {
     const start = Math.min(this.selectionStart, this.selectionEnd);
     const end = Math.max(this.selectionStart, this.selectionEnd);
-    const stats = this.getBoldStatsForRange(start, end);
-    return stats.anyBold;
+    const stats = this.getTextStyleStatsForRange(start, end, (style: RichEditorTextStyleResult) => {
+      return this.isBoldWeight(style.fontWeight);
+    });
+    return stats.anyActive;
   }
 
-  private getBoldStatsForRange(start: number, end: number): BoldStats {  // 分析指定范围内文本的加粗统计信息
+  getItalicStateForSelection(): boolean {
+    const start = Math.min(this.selectionStart, this.selectionEnd);
+    const end = Math.max(this.selectionStart, this.selectionEnd);
+    const stats = this.getTextStyleStatsForRange(start, end, (style: RichEditorTextStyleResult) => {
+      return this.isItalicStyle(style);
+    });
+    return stats.anyActive;
+  }
+
+  getUnderlineStateForSelection(): boolean {
+    const start = Math.min(this.selectionStart, this.selectionEnd);
+    const end = Math.max(this.selectionStart, this.selectionEnd);
+    const stats = this.getTextStyleStatsForRange(start, end, (style: RichEditorTextStyleResult) => {
+      return this.isUnderlineStyle(style);
+    });
+    return stats.anyActive;
+  }
+
+  private getTextStyleStatsForRange(start: number, end: number, checker: (style: RichEditorTextStyleResult) => boolean): TextStyleStats {
     const spans = this.getAllSpans();
     if (spans.length === 0) {
-      return { hasText: false, anyBold: false, allBold: false };
+      return { hasText: false, anyActive: false, allActive: false };
     }
     let foundText = false;
-    let anyBold = false;
-    let allBold = true;
+    let anyActive = false;
+    let allActive = true;
     for (const span of spans) {
       if (this.isImageSpan(span)) {
         continue;
@@ -88,18 +118,18 @@ export class EditorController{
 
       foundText = true;
       const textSpan = span as RichEditorTextSpanResult;
-      const isBold = this.isBoldWeight(textSpan.textStyle.fontWeight);    //传入的是单一number类型
-      if (isBold) {
-        anyBold = true;
+      const isActive = checker(textSpan.textStyle);    // 用不同的判断
+      if (isActive) {
+        anyActive = true;
       } else {
-        allBold = false;
+        allActive = false;
       }
     }
 
     if (!foundText) {
-      return { hasText: false, anyBold: false, allBold: false };
+      return { hasText: false, anyActive: false, allActive: false };
     }
-    return { hasText: true, anyBold: anyBold, allBold: allBold };
+    return { hasText: true, anyActive: anyActive, allActive: allActive };
   }
 
   toggleBold(): boolean {
@@ -115,12 +145,14 @@ export class EditorController{
       return false;
     }
 
-    const stats = this.getBoldStatsForRange(start, end);
+    const stats = this.getTextStyleStatsForRange(start, end, (style: RichEditorTextStyleResult) => {
+      return this.isBoldWeight(style.fontWeight);
+    });
     if (!stats.hasText) {
       return false;
     }
-    const shouldBold = !stats.anyBold;
-    if (stats.anyBold && !stats.allBold) {
+    const shouldBold = !stats.anyActive;
+    if (stats.anyActive && !stats.allActive) {
       // 混合样式 -> 统一变细体
       this.controller.updateSpanStyle({
         start,
@@ -139,6 +171,86 @@ export class EditorController{
       }
     });
     return shouldBold;
+  }
+
+  toggleItalic(): boolean {
+    const selection = this.controller.getSelection();
+    if (!selection || selection.selection[0]=== undefined || selection.selection[1]=== undefined) {
+      return false;
+    }
+
+    const start:number = selection.selection[0];
+    const end:number = selection.selection[1];
+    this.setSelection(start, end);
+    if (start === end) {
+      return false;
+    }
+
+    const stats = this.getTextStyleStatsForRange(start, end, (style: RichEditorTextStyleResult) => {
+      return this.isItalicStyle(style);
+    });
+    if (!stats.hasText) {
+      return false;
+    }
+    const shouldItalic = !stats.anyActive;
+    if (stats.anyActive && !stats.allActive) {
+      this.controller.updateSpanStyle({
+        start,
+        end,
+        textStyle: {
+          fontStyle: FontStyle.Normal
+        }
+      });
+      return false;
+    }
+    this.controller.updateSpanStyle({
+      start,
+      end,
+      textStyle: {
+        fontStyle: shouldItalic ? FontStyle.Italic : FontStyle.Normal
+      }
+    });
+    return shouldItalic;
+  }
+
+  toggleUnderline(): boolean {
+    const selection = this.controller.getSelection();
+    if (!selection || selection.selection[0]=== undefined || selection.selection[1]=== undefined) {
+      return false;
+    }
+
+    const start:number = selection.selection[0];
+    const end:number = selection.selection[1];
+    this.setSelection(start, end);
+    if (start === end) {
+      return false;
+    }
+
+    const stats = this.getTextStyleStatsForRange(start, end, (style: RichEditorTextStyleResult) => {
+      return this.isUnderlineStyle(style);
+    });
+    if (!stats.hasText) {
+      return false;
+    }
+    const shouldUnderline = !stats.anyActive;
+    if (stats.anyActive && !stats.allActive) {
+      this.controller.updateSpanStyle({
+        start,
+        end,
+        textStyle: {
+          decoration: { type: TextDecorationType.None }
+        }
+      });
+      return false;
+    }
+    this.controller.updateSpanStyle({
+      start,
+      end,
+      textStyle: {
+        decoration: { type: shouldUnderline ? TextDecorationType.Underline : TextDecorationType.None }
+      }
+    });
+    return shouldUnderline;
   }
 
 

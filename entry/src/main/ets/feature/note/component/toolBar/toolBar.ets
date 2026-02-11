@@ -16,7 +16,11 @@ export struct ToolBarComponent{
   @Require @Param selectImage:() => void;
   @Require @Param saveNote:() => void;
   @Require @Param toggleBold:() => void;
+  @Require @Param toggleItalic:() => void;
+  @Require @Param toggleUnderline:() => void;
   @Require @Param isBoldActive: boolean;
+  @Require @Param isItalicActive: boolean;
+  @Require @Param isUnderlineActive: boolean;
   build(){
     // 格式工具栏
     Scroll( ) {
@@ -40,12 +44,16 @@ export struct ToolBarComponent{
           action: () => this.toggleBold(),
           isActive: this.isBoldActive
         })
-        this.ToolBarButton({ icon: $r('sys.symbol.italic'), action: () => {
-          Prompt.showToast({ message: '斜体功能待实现', duration: 1500 });
-        } })
-        this.ToolBarButton({ icon: $r('sys.symbol.underline'), action: () => {
-          Prompt.showToast({ message: '下划线功能待实现', duration: 1500 });
-        } })
+        this.ToolBarButton({
+          icon: $r('sys.symbol.italic'),
+          action: () => this.toggleItalic(),
+          isActive: this.isItalicActive
+        })
+        this.ToolBarButton({
+          icon: $r('sys.symbol.underline'),
+          action: () => this.toggleUnderline(),
+          isActive: this.isUnderlineActive
+        })
         this.ToolBarButton({ icon: $r('sys.symbol.paintpalette'), action: () => {
           Prompt.showToast({ message: '颜色功能待实现', duration: 1500 });
         } })

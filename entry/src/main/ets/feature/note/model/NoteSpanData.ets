@@ -5,6 +5,7 @@ export interface NoteSpanStyle {
   fontWeight?: string | number;
   fontStyle?: string;
   fontFamily?: string;
+  decorationType?: number;
   size?: [number, number];
   verticalAlign?: string;
   objectFit?: string;
