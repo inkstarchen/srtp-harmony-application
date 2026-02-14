@@ -8,7 +8,7 @@ import { NoteData } from "./model/NoteSpanData";
 import { cleanupUnusedImageFiles, ensureDirectoryExists, writeStringToFile } from "../../shared/utils/file";
 import { Prompt } from '@kit.ArkUI';
 import { ImageUtils } from "../../shared/utils/ImageUtils";
-import image from "@ohos.multimedia.image";
+
 
 
 const TAG: string = '[NoteApp]';

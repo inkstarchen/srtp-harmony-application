@@ -1,30 +1,5 @@
-interface ToolBarButtonParams {
-  icon: Resource;
-  action: () => void;
-}
-
-interface ToolBarButtonStateParams extends ToolBarButtonParams {
-  isActive?: boolean;
-}
-
-interface ColorButtonParams {
-  color: Color;
-  action: () => void;
-}
-
-interface DropdownButtonParams {
-  isOpen: boolean;
-  action: () => void;
-}
-
-interface ColorSwatchParams {
-  color: Color;
-  action: () => void;
-}
-
-interface RowOptions {
-  space?: number;
-}
+import { ColorButtonParams,  ColorSwatchParams, DropdownButtonParams, ToolBarButtonStateParams
+} from "../../model/ToolBarTypes";
 
 @ComponentV2
 export struct ToolBarComponent{
@@ -126,7 +101,7 @@ export struct ToolBarComponent{
                   this.setTextColor(item);
                 }
               })
-            }, (item: Color, index: number) => `${index}`)
+            }, (_item: Color, index: number) => `${index}`)
           }
           .margin({ bottom: 8 })
           .offset({ left: 160 })     //  可手动调节
@@ -138,7 +113,7 @@ export struct ToolBarComponent{
                   this.setTextColor(item);
                 }
               })
-            }, (item: Color, index: number) => `${index + 5}`)
+            }, (_item: Color, index: number) => `${index + 5}`)
           }
           .offset({ left: 160 })    //   可手动调节
         }

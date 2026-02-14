@@ -1,7 +1,7 @@
 // src/utils/StyleConversionUtils.ts
 import { NoteSpanStyle } from "../model/NoteSpanData";
-import { staticMap } from "@kit.MapKit";
 import { hilog } from "@kit.PerformanceAnalysisKit";
+//import { staticMap } from "@kit.MapKit";
 
 const TAG: string = '[NoteStyle]';
 const DOMAIN_NUMBER: number = 0xFF01;

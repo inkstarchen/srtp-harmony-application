@@ -8,7 +8,6 @@ const TAG: string = '[NoteApp]';
 const DOMAIN_NUMBER: number = 0xFF00;
 // 工具方法
 
-
 export function generateSpanId(): string {
   return 'span_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }

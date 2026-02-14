@@ -1,4 +1,5 @@
 import { NoteSpanData } from "./model/NoteSpanData";
+import { SpanRange, TextStyleStats } from "./model/EditorTypes";
 import { StyleConversionUtils } from "./utils/StyleConversionUtils";
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { Prompt, ShowDialogSuccessResponse } from '@kit.ArkUI';
@@ -8,17 +9,6 @@ import { ImageUtils } from "../../shared/utils/ImageUtils";
 const TAG: string = '[NoteApp]';
 const DOMAIN_NUMBER: number = 0xFF00;
 const FONT_WEIGHT_BOLD_LEVEL: number = 9;
-
-interface SpanRange {
-  start: number;
-  end: number;
-}
-
-interface TextStyleStats {
-  hasText: boolean;
-  anyActive: boolean;
-  allActive: boolean;
-}
 
 @ObservedV2
 export class EditorController{
