@@ -1,0 +1,149 @@
+{
+    "compatibility_info": {
+        "version": "2.0",
+        "type": "metafile"
+    },
+    "metainfo": {
+        "iid": "73a05265-2fe6-4825-afd3-1b198146b3c2",
+        "uri": "project://packages/studio-fragment-shader-functions/shader-code/src/uniforms.ark.glsl",
+        "xxh3": "d9008e5e2fa6daddd8b58c40fcaa92d6",
+        "spec": {
+            "$meta": {
+                "meta-version": "2.0"
+            },
+            "$root": {
+                "$classId": "68089ffa-cefa-11ed-afa1-0242ac120002",
+                "$className": "ShaderCodeAsset",
+                "$instanceId": "0005de68-3859-b968-8740-b562b117329a",
+                "__attachments": [
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Iid",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "73a05265-2fe6-4825-afd3-1b198146b3c2"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Uri",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "project://packages/studio-fragment-shader-functions/shader-code/src/uniforms.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Name",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "uniforms.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "MediaType",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "application/vnd.ark.shader-code"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Code",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "#ifndef UNIFORM_BLOCKS_H\r\n#define UNIFORM_BLOCKS_H\r\n\r\n/**\r\n * Retrieves common camera properties from the camera data structure.\r\n *\r\n * @displayName Camera Properties\r\n * @out position - Vec3 camera world position\r\n * @out forward - Vec3 normalized camera forward direction\r\n * @out up - Vec3 normalized camera up direction\r\n * @out right - Vec3 normalized camera right direction\r\n * @out jitter - Vec2 camera jitter offset\r\n * @out uniqueId - UVec2 camera unique identifier\r\n * @out layerMask - UVec2 camera layer mask\r\n */\r\nvoid CameraPropertiesFragBlock(\r\n    out vec3 outPosition,\r\n    out vec3 outForward,\r\n    out vec3 outUp,\r\n    out vec3 outRight,\r\n    out vec2 outJitter,\r\n    out uvec2 outUniqueId,\r\n    out uvec2 outLayerMask)\r\n{\r\n    const uint cameraIdx = GetUnpackCameraIndex(uGeneralData);\r\n    DefaultCameraMatrixStruct camera = uCameras[cameraIdx];\r\n    \r\n    // From 3d_dm_structures_common.h\r\n    outPosition = camera.viewInv[3].xyz;\r\n    \r\n    // Extract camera basis vectors from view inverse matrix\r\n    outRight = normalize(camera.viewInv[0].xyz);\r\n    \r\n    outUp = normalize(camera.viewInv[1].xyz);\r\n\r\n    outForward = normalize(-camera.viewInv[2].xyz);\r\n    \r\n    // Extract jitter values\r\n    outJitter = camera.jitter.xy;\r\n    \r\n    // Extract camera identifiers\r\n    outUniqueId = camera.indices.xy;\r\n    outLayerMask = camera.indices.zw;\r\n}\r\n\r\n/**\r\n * Extracts object properties from the world matrix. Not correct when multi-instance is enabled.\r\n *\r\n * @displayName Object Properties\r\n * @out position - Vec3 object world position\r\n * @out scale - Vec3 object scale in world space\r\n * @out right - Vec3 object right direction (X axis)\r\n * @out up - Vec3 object up direction (Y axis)\r\n * @out forward - Vec3 object forward direction (Z axis)\r\n */\r\nvoid ObjectPropertiesFragBlock(\r\n    out vec3 outPosition, \r\n    out vec3 outScale, \r\n    out vec3 outRight, \r\n    out vec3 outUp, \r\n    out vec3 outForward)\r\n{\r\n    // We don't have access to gl_InstanceIndex in the fragment shader, so instanceIdx is set to 0 here.\r\n    // This may be incorrect if there are multiple instances, as it always uses the world matrix of the first instance.\r\n    const uint instanceIdx = 0;\r\n    \r\n    mat4 worldMatrix = uMeshMatrix.mesh[instanceIdx].world;\r\n    \r\n    outPosition = worldMatrix[3].xyz;\r\n    \r\n    outScale.x = length(worldMatrix[0].xyz);\r\n    outScale.y = length(worldMatrix[1].xyz);\r\n    outScale.z = length(worldMatrix[2].xyz);\r\n    \r\n    outRight = normalize(worldMatrix[0].xyz);\r\n    outUp = normalize(worldMatrix[1].xyz);\r\n    outForward = normalize(worldMatrix[2].xyz);\r\n}\r\n\r\n#endif\r\n\r\n\r\n"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsValid",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": false
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsDirty",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": true
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    }
+                ]
+            }
+        }
+    }
+}

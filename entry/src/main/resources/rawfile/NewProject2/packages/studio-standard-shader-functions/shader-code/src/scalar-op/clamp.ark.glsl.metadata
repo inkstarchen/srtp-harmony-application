@@ -1,0 +1,149 @@
+{
+    "compatibility_info": {
+        "version": "2.0",
+        "type": "metafile"
+    },
+    "metainfo": {
+        "iid": "dd1b267d-6ff4-4fa6-9ee2-aea98bd8c5c4",
+        "uri": "project://packages/studio-standard-shader-functions/shader-code/src/scalar-op/clamp.ark.glsl",
+        "xxh3": "5e69c2937dd135ae2b2fb02086c78298",
+        "spec": {
+            "$meta": {
+                "meta-version": "2.0"
+            },
+            "$root": {
+                "$classId": "68089ffa-cefa-11ed-afa1-0242ac120002",
+                "$className": "ShaderCodeAsset",
+                "$instanceId": "0005de68-3896-8708-3f69-4b2118fcbd53",
+                "__attachments": [
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Iid",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "dd1b267d-6ff4-4fa6-9ee2-aea98bd8c5c4"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Uri",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "project://packages/studio-standard-shader-functions/shader-code/src/scalar-op/clamp.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Name",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "clamp.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "MediaType",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "application/vnd.ark.shader-code"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Code",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "\r\n#ifndef CLAMP_VEC2_BLOCKS_H\r\n#define CLAMP_VEC2_BLOCKS_H\r\n\r\n///******************************************************\r\n// * Clamp functions on Vec2 Components\r\n// ******************************************************/\r\n\r\n/**\r\n * Returns the larger components from the input values (component-wise).\r\n *\r\n * @displayName Max\r\n * @in A - First value.\r\n * @in B - Second value.\r\n * @out max - The larger components from A and B.\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid MaxBlock(in T a, in T b, out T max_)\r\n{\r\n    max_ = max(a, b);\r\n}\r\n\r\n/**\r\n * Returns the smaller components from the input values (component-wise).\r\n *\r\n * @displayName Min\r\n * @in A - First value.\r\n * @in B - Second value.\r\n * @out min - The smaller components from A and B.\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid MinBlock(in T a, in T b, out T min_)\r\n{\r\n    min_ = min(a, b);\r\n}\r\n\r\n/**\r\n * Restricts the input value between the minimum and maximum values.\r\n *\r\n * @displayName Clamp\r\n * @in value - The value to be clamped.\r\n * @in min - The lower bound(s).\r\n * @in max - The higher bound(s)\r\n * @out output - Output of clamp(value, min, max) operation\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid ClampBlock(in T x, in T minVal, in T maxVal, out T out_)\r\n{\r\n    out_ = clamp(x, minVal, maxVal);\r\n}\r\n\r\n/**\r\n * @displayName Step\r\n * @in A - The input value.\r\n * @in edge - The edge value to compare against.\r\n * @out result - Output of step(A, edge) operation\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid StepBlock(in T x, in T edge, out T res)\r\n{\r\n    res = step(edge, x);\r\n}\r\n\r\n/**\r\n * @displayName Smooth Step\r\n * @in A - The value to interpolate.\r\n * @in edge0 - The lower edge of the interpolation range.\r\n * @in edge1 - The upper edge of the interpolation range.\r\n * @out out - The interpolated value.\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid SmoothStepBlock(in T x, in T edge0, in T edge1, out T out_)\r\n{\r\n    out_ = smoothstep(edge0, edge1, x);\r\n}\r\n\r\n/**\r\n * @displayName Saturate\r\n * @in A - The value to saturate.\r\n * @out out - The saturated value.\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid SaturateBlock(in T x, out T out_)\r\n{\r\n    out_ = clamp(x, 0.0f, 1.0f);\r\n}\r\n\r\n#endif // CLAMP_VEC2_BLOCKS_H\r\n"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsValid",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": false
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsDirty",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": true
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    }
+                ]
+            }
+        }
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "name": "shader-code",
+    "version": "1.0",
+    "icon": {
+        "uri": "Lume_Icon.svg",
+        "rounded": false
+    },
+    "author": "Ark",
+    "description": "Standard shader code library",
+    "depends": [],
+    "assets": [],
+    "uid": "adf5bc93-03b7-4ad8-b277-100dd6e519dc",
+    "api": {},
+    "shader-code": {
+        "sourceRoot": "./src"
+    }
+}

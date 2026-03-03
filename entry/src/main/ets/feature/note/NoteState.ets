@@ -1,5 +1,11 @@
 import { NoteData, NoteSpanData } from "./model/NoteSpanData";
 
+export interface NoteInfo{
+  fileDir: string;
+  fileName: string;
+  time: string | null;
+}
+
 @ObservedV2
 export class NoteState{
   dir: string;

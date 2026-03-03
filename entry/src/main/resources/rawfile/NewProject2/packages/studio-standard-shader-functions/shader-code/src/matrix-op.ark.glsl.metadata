@@ -1,0 +1,149 @@
+{
+    "compatibility_info": {
+        "version": "2.0",
+        "type": "metafile"
+    },
+    "metainfo": {
+        "iid": "8a759ca6-6662-4973-9083-e0e04716c29b",
+        "uri": "project://packages/studio-standard-shader-functions/shader-code/src/matrix-op.ark.glsl",
+        "xxh3": "f3c2959ee95048c7eb18413349a5899b",
+        "spec": {
+            "$meta": {
+                "meta-version": "2.0"
+            },
+            "$root": {
+                "$classId": "68089ffa-cefa-11ed-afa1-0242ac120002",
+                "$className": "ShaderCodeAsset",
+                "$instanceId": "0005de68-387e-d4a0-f792-57cfc68103ac",
+                "__attachments": [
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Iid",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "8a759ca6-6662-4973-9083-e0e04716c29b"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Uri",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "project://packages/studio-standard-shader-functions/shader-code/src/matrix-op.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Name",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "matrix-op.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "MediaType",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "application/vnd.ark.shader-code"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Code",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "\r\n#ifndef MATRIX_OP_BLOCKS_H\r\n#define MATRIX_OP_BLOCKS_H\r\n\r\n// =====================\r\n//    Row Constructions\r\n// =====================\r\n/**\r\n * Constructs a mat2 from two vectors representing the rows of the matrix.\r\n *\r\n * @displayName Construct Mat2 from Rows\r\n * @in row0 - The first row of the matrix.\r\n * @in row1 - The second row of the matrix.\r\n * @out result - The constructed 2x2 matrix.\r\n */\r\nvoid Mat2RowConstructBlock(in vec2 row0, in vec2 row1, out mat2 result)\r\n{\r\n    result = transpose(mat2(\r\n        row0.x, row0.y,\r\n        row1.x, row1.y\r\n    ));\r\n}\r\n\r\n/**\r\n * Constructs a mat3 from three vectors representing the rows of the matrix.\r\n *\r\n * @displayName Construct Mat3 from Rows\r\n * @in row0 - The first row of the matrix.\r\n * @in row1 - The second row of the matrix.\r\n * @in row2 - The third row of the matrix.\r\n * @out result - The constructed 3x3 matrix.\r\n */\r\nvoid Mat3RowConstructBlock(in vec3 row0, in vec3 row1, in vec3 row2, out mat3 result)\r\n{\r\n    result = transpose(mat3(\r\n        row0.x, row0.y, row0.z,\r\n        row1.x, row1.y, row1.z,\r\n        row2.x, row2.y, row2.z\r\n    ));\r\n}\r\n\r\n/**\r\n * Constructs a mat4 from four vectors representing the rows of the matrix.\r\n *\r\n * @displayName Construct Mat4 from Rows\r\n * @in row0 - The first row of the matrix.\r\n * @in row1 - The second row of the matrix.\r\n * @in row2 - The third row of the matrix.\r\n * @in row3 - The fourth row of the matrix.\r\n * @out result - The constructed 4x4 matrix.\r\n */\r\nvoid Mat4RowConstructBlock(in vec4 row0, in vec4 row1, in vec4 row2, in vec4 row3, out mat4 result)\r\n{\r\n    result = transpose(mat4(\r\n        row0.x, row0.y, row0.z, row0.w,\r\n        row1.x, row1.y, row1.z, row1.w,\r\n        row2.x, row2.y, row2.z, row2.w,\r\n        row3.x, row3.y, row3.z, row3.w\r\n    ));\r\n}\r\n\r\n// =====================\r\n//    Row Destructions\r\n// =====================\r\n/**\r\n * Extracts the rows of a mat2 as individual vec2 vectors.\r\n *\r\n * @displayName Destruct Mat2 to Rows\r\n * @in matrix - The input 2x2 matrix to destruct.\r\n * @out row0 - The first row of the matrix.\r\n * @out row1 - The second row of the matrix.\r\n */\r\nvoid Mat2RowDestructBlock(in mat2 matrix, out vec2 row0, out vec2 row1)\r\n{\r\n    mat2 transposed = transpose(matrix);\r\n    row0 = transposed[0];\r\n    row1 = transposed[1];\r\n}\r\n\r\n/**\r\n * Extracts the rows of a mat3 as individual vec3 vectors.\r\n *\r\n * @displayName Destruct Mat3 to Rows\r\n * @in matrix - The input 3x3 matrix to destruct.\r\n * @out row0 - The first row of the matrix.\r\n * @out row1 - The second row of the matrix.\r\n * @out row2 - The third row of the matrix.\r\n */\r\nvoid Mat3RowDestructBlock(in mat3 matrix, out vec3 row0, out vec3 row1, out vec3 row2)\r\n{\r\n    mat3 transposed = transpose(matrix);\r\n    row0 = transposed[0];\r\n    row1 = transposed[1];\r\n    row2 = transposed[2];\r\n}\r\n\r\n/**\r\n * Extracts the rows of a mat4 as individual vec4 vectors.\r\n *\r\n * @displayName Destruct Mat4 to Rows\r\n * @in matrix - The input 4x4 matrix to destruct.\r\n * @out row0 - The first row of the matrix.\r\n * @out row1 - The second row of the matrix.\r\n * @out row2 - The third row of the matrix.\r\n * @out row3 - The fourth row of the matrix.\r\n */\r\nvoid Mat4RowDestructBlock(in mat4 matrix, out vec4 row0, out vec4 row1, out vec4 row2, out vec4 row3)\r\n{\r\n    mat4 transposed = transpose(matrix);\r\n    row0 = transposed[0];\r\n    row1 = transposed[1];\r\n    row2 = transposed[2];\r\n    row3 = transposed[3];\r\n}\r\n\r\n// =====================\r\n//    BASIC OPERATIONS\r\n// =====================\r\n\r\n/**\r\n * Returns the inverse of the given matrix.\r\n *\r\n * @displayName Matrix Inverse\r\n * @in matrix - The input matrix to invert.\r\n * @out result - The inverse of the input matrix.\r\n * @templateArg T = mat2 | mat3 | mat4\r\n */\r\nvoid MatInverseBlock(in T matrix, out T result)\r\n{\r\n    result = inverse(matrix);\r\n}\r\n\r\n/**\r\n * Returns the determinant of the given matrix.\r\n *\r\n * @displayName Matrix Determinant\r\n * @in matrix - The input matrix.\r\n * @out result - The determinant value of the input matrix.\r\n * @templateArg T = mat2 | mat3 | mat4\r\n */\r\nvoid MatDeterminantBlock(in T matrix, out float result)\r\n{\r\n    result = determinant(matrix);\r\n}\r\n\r\n/**\r\n * Returns the transpose of the given matrix.\r\n *\r\n * @displayName Matrix Transpose\r\n * @in matrix - The input matrix to transpose.\r\n * @out result - The transposed matrix.\r\n * @templateArg T = mat2 | mat3 | mat4\r\n */\r\nvoid MatTransposeBlock(in T matrix, out T result)\r\n{\r\n    result = transpose(matrix);\r\n}\r\n\r\n// =====================\r\n//    MULTIPLY OPERATIONS\r\n// Normal mat with mat operation is handled at scaler-op/basic.ark.glsl -> MultiplyBlock\r\n// =====================\r\n\r\n\r\n/**\r\n * Multiplies a mat2 with a vec2.\r\n *\r\n * @displayName Mat2 Vec2 Multiply\r\n * @in matrix - The 2x2 matrix.\r\n * @in vector - The 2-component vector.\r\n * @out result - The resulting 2-component vector.\r\n */\r\nvoid Mat2Vec2MultiplyBlock(in mat2 matrix, in vec2 vector, out vec2 result)\r\n{\r\n    result = matrix * vector;\r\n}\r\n\r\n/**\r\n * Multiplies a mat3 with a vec3.\r\n *\r\n * @displayName Mat3 Vec3 Multiply\r\n * @in matrix - The 3x3 matrix.\r\n * @in vector - The 3-component vector.\r\n * @out result - The resulting 3-component vector.\r\n */\r\nvoid Mat3Vec3MultiplyBlock(in mat3 matrix, in vec3 vector, out vec3 result)\r\n{\r\n    result = matrix * vector;\r\n}\r\n\r\n/**\r\n * Multiplies a mat4 with a vec4.\r\n *\r\n * @displayName Mat4 Vec4 Multiply\r\n * @in matrix - The 4x4 matrix.\r\n * @in vector - The 4-component vector.\r\n * @out result - The resulting 4-component vector.\r\n */\r\nvoid Mat4Vec4MultiplyBlock(in mat4 matrix, in vec4 vector, out vec4 result)\r\n{\r\n    result = matrix * vector;\r\n}\r\n\r\n/**\r\n * Multiplies a 4x4 matrix by a vector, where the matrix is passed as 4 column vectors (Deprecated)\r\n *\r\n * @displayName Matrix Vector Multiply\r\n * @in col0 - First column of the matrix\r\n * @in col1 - Second column of the matrix\r\n * @in col2 - Third column of the matrix\r\n * @in col3 - Fourth column of the matrix\r\n * @in vector - Vector to multiply with the matrix\r\n * @out result - Result of the matrix-vector multiplication\r\n */\r\nvoid MatrixVectorMultiplyBlock(\r\n    in vec4 col0, \r\n    in vec4 col1, \r\n    in vec4 col2, \r\n    in vec4 col3, \r\n    in vec4 vector, \r\n    out vec4 outResult)\r\n{\r\n    outResult.x = dot(col0, vector);\r\n    outResult.y = dot(col1, vector);\r\n    outResult.z = dot(col2, vector);\r\n    outResult.w = dot(col3, vector);\r\n}\r\n\r\n#endif // MATRIX_OP_BLOCKS_H\r\n"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsValid",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": false
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsDirty",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": true
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    }
+                ]
+            }
+        }
+    }
+}

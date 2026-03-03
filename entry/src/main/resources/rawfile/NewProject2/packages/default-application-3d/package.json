@@ -1,0 +1,26 @@
+{
+    "name": "default-application-3d",
+    "version": "1.0",
+    "icon": {
+        "uri": "Lume_Icon.svg",
+        "rounded": false
+    },
+    "author": "Ark",
+    "images": [],
+    "description": "Default application for launching .scene content with the Lume runtime framework",
+    "plugins": [
+        "PluginDefaultApplication3D/plugin.json"
+    ],
+    "editorplugins": [],
+    "files": [
+        "PluginDefaultApplication3D/",
+        "CMakeLists.txt",
+        "Lume_Icon.svg"
+    ],
+    "license": "",
+    "main": "",
+    "scripts": {},
+    "keywords": [
+        "ARK"
+    ]
+}

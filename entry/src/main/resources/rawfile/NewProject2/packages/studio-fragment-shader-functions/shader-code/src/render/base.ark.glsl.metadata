@@ -1,0 +1,149 @@
+{
+    "compatibility_info": {
+        "version": "2.0",
+        "type": "metafile"
+    },
+    "metainfo": {
+        "iid": "cc586339-b679-4a30-83bd-f090e7cdb529",
+        "uri": "project://packages/studio-fragment-shader-functions/shader-code/src/render/base.ark.glsl",
+        "xxh3": "3b8c87f7c6fcba16af73b3b2ab20639e",
+        "spec": {
+            "$meta": {
+                "meta-version": "2.0"
+            },
+            "$root": {
+                "$classId": "68089ffa-cefa-11ed-afa1-0242ac120002",
+                "$className": "ShaderCodeAsset",
+                "$instanceId": "0005de68-386a-b894-a9a6-3221ce484b6b",
+                "__attachments": [
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Iid",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "cc586339-b679-4a30-83bd-f090e7cdb529"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Uri",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "project://packages/studio-fragment-shader-functions/shader-code/src/render/base.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Name",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "base.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "MediaType",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "application/vnd.ark.shader-code"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Code",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "#ifndef SHADERS__COMMON__BASE_BLOCKS_H\r\n#define SHADERS__COMMON__BASE_BLOCKS_H\r\n\r\n/**\r\n * Constructs a vec4 color of floats. You can alternatively use attached literal on an input port.\r\n *\r\n * @displayName Construct Color (Vec4)\r\n * @in r - red component of the color (vec4.x)\r\n * @in g - green component of the color (vec4.y)\r\n * @in b - blue component of the color (vec4.z)\r\n * @in a - alpha component of the color (vec4.w)\r\n * @out color - Vec4 color output\r\n */\r\nvoid ColorVec4Block(in float r, in float g, in float b, in float a, out vec4 outVec)\r\n{\r\n    outVec = vec4(r, g, b, a);\r\n}\r\n\r\n/**\r\n * Constructs a vec3 color of floats. You can alternatively use an attached literal on an input port.\r\n *\r\n * @displayName Construct Color (Vec3)\r\n * @in r - red component of the color (vec3.x)\r\n * @in g - green component of the color (vec3.y)\r\n * @in b - blue component of the color (vec3.z)\r\n * @out color - Vec3 color output\r\n */\r\nvoid ColorVec3Block(in float x, in float y, in float z, out vec3 outVec)\r\n{\r\n    outVec = vec3(x, y, z);\r\n}\r\n\r\n/**\r\n * Samples a texture with the provided sampler2D at the given UV coordinates.\r\n *\r\n * @displayName Sample Texture with Sampler\r\n * @in UV coords - UV coordinates to sample from.\r\n * @in sampler - Combined image sampler for fetching a value.\r\n * @out color - Vec4 sampled value at the given UV coordinates.\r\n */\r\nvoid ImageSampleVec4Block(in vec2 inUv, in sampler2D inSampler, out vec4 outColor)\r\n{\r\n    outColor = texture(inSampler, inUv);\r\n}\r\n\r\n/**\r\n * The binormal vector of the current fragment that is perpendicular to the tangent vector and the normal vector.\r\n * Also referred as the bitangent.\r\n *\r\n * @displayName Binormal\r\n * @out B - The binormal vector perpendicular to the normal and the tangent.\r\n */\r\nvoid BinormalBlock(out vec3 outBinormal)\r\n{\r\n    const vec3 normNormal = normalize(inNormal.xyz);\r\n    const vec3 tangent = normalize(inTangentW.xyz);\r\n    outBinormal = normalize(cross(normNormal, tangent.xyz) * inTangentW.w);\r\n}\r\n\r\n/**\r\n * Provides the size of the viewport in pixels.\r\n *\r\n * @displayName Viewport Size\r\n * @out size - The size of the viewport in pixels.\r\n */\r\nvoid ViewportSizeBlock(out vec2 outViewportSize)\r\n{\r\n    outViewportSize = GetUnpackViewport(uGeneralData).xy;\r\n}\r\n\r\n/**\r\n * Provides whether the current fragment is facing the camera.\r\n *\r\n * @displayName Is Front Facing\r\n * @out front facing - Whether the current fragment is facing the camera.\r\n */\r\nvoid FrontFacingBlock(out bool outFrontFacing)\r\n{\r\n    outFrontFacing = gl_FrontFacing;\r\n}\r\n\r\n/**\r\n * Computes the Fresnel term for a material using Schlick's approximation based on the given\r\n * F0 reflectance and VoH value.\r\n *\r\n * @displayName Fresnel Calculation\r\n * @in f0 - The base reflectance (F0) of the material as a vec3.\r\n * @in VoH - The dot product between the view direction and the half vector as a float.\r\n * @out outFresnel - The output vec3 containing the calculated Fresnel term.\r\n */\r\nvoid FresnelBlock(in vec3 f0, in float VoH, out vec3 outFresnel)\r\n{\r\n    outFresnel = f0 + (1.0 - f0) * pow(1.0 - VoH, 5.0);\r\n}\r\n\r\n/**\r\n * Converts an RGB color to HSV. All components are in the range [0, 1].\r\n *\r\n * @displayName RGB to HSV\r\n * @in rgb - The RGB color to convert.\r\n * @out hsv - The HSV color.\r\n */\r\nvoid Rgb2HsvBlock(in vec3 rgbColor, out vec3 hsvColor)\r\n{\r\n    const vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);\r\n    const vec4 p = mix(vec4(rgbColor.bg, K.wz), vec4(rgbColor.gb, K.xy), step(rgbColor.b, rgbColor.g));\r\n    const vec4 q = mix(vec4(p.xyw, rgbColor.r), vec4(rgbColor.r, p.yzx), step(p.x, rgbColor.r));\r\n\r\n    const float d = q.x - min(q.w, q.y);\r\n    const float e = 1.0e-10;\r\n    hsvColor = vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);\r\n}\r\n\r\n/**\r\n * Converts an HSV color to RGB. All components are in the range [0, 1].\r\n *\r\n * @displayName HSV to RGB\r\n * @in hsv - The HSV color to convert.\r\n * @out rgb - The RGB color.\r\n */\r\nvoid Hsv2RgbBlock(in vec3 hsvColor, out vec3 rgbColor)\r\n{\r\n    const vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);\r\n    const vec3 p = abs(fract(hsvColor.xxx + K.xyz) * 6.0 - K.www);\r\n    rgbColor = hsvColor.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), hsvColor.y);\r\n}\r\n\r\n#endif // SHADERS__COMMON__BASE_BLOCKS_H\r\n"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsValid",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": false
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsDirty",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": true
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    }
+                ]
+            }
+        }
+    }
+}

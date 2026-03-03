@@ -65,7 +65,7 @@ export async function ensureDirectoryExists(dirPath: string): Promise<void> {
   try {
     const exists = await fs.access(dirPath);
     if (!exists) {
-      await fs.mkdir(dirPath);
+      await fs.mkdir(dirPath,true);
     }
   } catch (error) {
     hilog.error(DOMAIN_NUMBER, TAG, `创建目录失败: ${(error as BusinessError).message}`);
@@ -74,7 +74,8 @@ export async function ensureDirectoryExists(dirPath: string): Promise<void> {
 
 export async function createDir(path: string): Promise<void> {
   try {
-    await fs.mkdir(path);
+
+    await fs.mkdir(path,true);
 
     const created = await fs.access(path);
     if (created) {

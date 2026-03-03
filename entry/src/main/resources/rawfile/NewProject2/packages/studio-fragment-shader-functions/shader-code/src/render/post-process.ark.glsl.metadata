@@ -1,0 +1,149 @@
+{
+    "compatibility_info": {
+        "version": "2.0",
+        "type": "metafile"
+    },
+    "metainfo": {
+        "iid": "7b852829-e16d-4d4c-bb34-950496927c56",
+        "uri": "project://packages/studio-fragment-shader-functions/shader-code/src/render/post-process.ark.glsl",
+        "xxh3": "62a3661acceeae1a0e0d0005a2fd3992",
+        "spec": {
+            "$meta": {
+                "meta-version": "2.0"
+            },
+            "$root": {
+                "$classId": "68089ffa-cefa-11ed-afa1-0242ac120002",
+                "$className": "ShaderCodeAsset",
+                "$instanceId": "0005de68-3870-0858-c918-aee991494f12",
+                "__attachments": [
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Iid",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "7b852829-e16d-4d4c-bb34-950496927c56"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Uri",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "project://packages/studio-fragment-shader-functions/shader-code/src/render/post-process.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Name",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "post-process.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "MediaType",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "application/vnd.ark.shader-code"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Code",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "\r\n#ifndef SHADERS__COMMON__POST_PROCESS_BLOCKS_H\r\n#define SHADERS__COMMON__POST_PROCESS_BLOCKS_H\r\n\r\n#include \"render/shaders/common/render_post_process_structs_common.h\"\r\n#include \"render/shaders/common/render_tonemap_common.h\"\r\n#include \"render/shaders/common/render_color_conversion_common.h\"\r\n\r\n#define CORE_CLAMP_MAX_VALUE 64512.0\r\n\r\n/**\r\n * Applies a tone mapping effect on the color. todo write more about this\r\n *\r\n * @displayName Tone Mapping\r\n * @in flags - Post process flags (contains tone map enable flag)\r\n * @in factor - Tonemap factor (.x = exposure, .w type) todo shouldn't this be a float and a uint instead of a vec4?\r\n * @in color - Input color\r\n * @out mapped color - output color of the tone-mapping\r\n */\r\nvoid PostProcessTonemapBlock(in uint postProcessFlags, in vec4 tonemapFactor, in vec3 inCol, out vec3 outCol)\r\n{\r\n    outCol = inCol;\r\n    if ((postProcessFlags & POST_PROCESS_SPECIALIZATION_TONEMAP_BIT) == POST_PROCESS_SPECIALIZATION_TONEMAP_BIT) {\r\n        const float exposure = tonemapFactor.x;\r\n        const vec3 x = outCol * exposure;\r\n        const uint tonemapType = uint(tonemapFactor.w);\r\n        if (tonemapType == CORE_POST_PROCESS_TONEMAP_ACES) {\r\n            outCol = TonemapAces(x);\r\n        } else if (tonemapType == CORE_POST_PROCESS_TONEMAP_ACES_2020) {\r\n            outCol = TonemapAcesFilmRec2020(x);\r\n        } else if (tonemapType == CORE_POST_PROCESS_TONEMAP_FILMIC) {\r\n            const float exposureEstimate = 6.0f;\r\n            outCol = TonemapFilmic(x * exposureEstimate);\r\n        }\r\n    }\r\n}\r\n\r\n/**\r\n * Applies vignette to a color.\r\n *\r\n * @displayName Vignette\r\n * @in flags - Post process flags (contains vignette enable flag)\r\n * @in factor - Vignette factor (.x = coefficient, .y = pow) Values in the range [0, 1]\r\n *              todo maybe change to vec2 or separate variables?\r\n * @in UV coords - UV coordinates\r\n * @in color - Input color\r\n * @out color - The result color after applying the vignette effect\r\n */\r\nvoid PostProcessVignetteBlock(\r\n    in uint postProcessFlags, in vec4 vignetteFactor, in vec2 uv, in vec3 inCol, out vec3 outCol)\r\n{\r\n    outCol = inCol;\r\n    if ((postProcessFlags & POST_PROCESS_SPECIALIZATION_VIGNETTE_BIT) == POST_PROCESS_SPECIALIZATION_VIGNETTE_BIT) {\r\n        const vec2 uvVal = uv.xy * (vec2(1.0) - uv.yx);\r\n        // TODO: coefficient 40 baked into factor .x ?\r\n        CORE_RELAXEDP float vignette = uvVal.x * uvVal.y * vignetteFactor.x * 40.0;\r\n        vignette = clamp(pow(vignette, vignetteFactor.y), 0.0, 1.0);\r\n        outCol.rgb *= vignette;\r\n    }\r\n}\r\n\r\n/**\r\n * A chromatic aberration post-process block that applies color fringing to the input image based on the provided chroma\r\n * factors. The function adds red and blue color fringes to the input color, creating a chromatic aberration effect. The\r\n * strength and distance scaling of the effect are controlled by the chromaFactor parameter.\r\n *\r\n * @displayName Chromatic Aberration\r\n * @in postProcessFlags - Flags containing post-process settings, including the chromatic aberration enable flag.\r\n * @in chromaFactor - A vec4 representing chromatic aberration factors (.x = chroma strength, .y = chroma distance\r\n * scaling factor).\r\n * @in uv - The texture coordinates for sampling the image.\r\n * @in uv size - The size of the texture in UV space (width, height) as a vec2.\r\n * @in sampler - The sampler2D containing the input image to be processed.\r\n * @in color  - The color at the given texture coordinates. Its green channel will be used. Todo do we need this? Maybe\r\n *                                                                                           we could sample inside?\r\n * @out color - The output vec3 color with chromatic aberration applied.\r\n */\r\nvoid PostProcessColorFringeBlock(in uint postProcessFlags, in vec4 chromaFactor, in vec2 uv, in vec2 uvSize,\r\n    in sampler2D imgSampler, in vec3 inCol, out vec3 outCol)\r\n{\r\n    outCol = inCol;\r\n    if ((postProcessFlags & POST_PROCESS_SPECIALIZATION_COLOR_FRINGE_BIT) !=\r\n        POST_PROCESS_SPECIALIZATION_COLOR_FRINGE_BIT) {\r\n        return;\r\n    }\r\n    // this is cheap chroma\r\n    const vec2 distUv = (uv - 0.5) * 2.0;\r\n    const CORE_RELAXEDP float chroma = dot(distUv, distUv) * chromaFactor.y * chromaFactor.x;\r\n\r\n    const vec2 uvDistToImageCenter = chroma * uvSize;\r\n    const CORE_RELAXEDP float chromaRed =\r\n        texture(imgSampler, uv - vec2(uvDistToImageCenter.x, uvDistToImageCenter.y)).x;\r\n    const CORE_RELAXEDP float chromaBlue =\r\n        texture(imgSampler, uv + vec2(uvDistToImageCenter.x, uvDistToImageCenter.y)).z;\r\n\r\n    outCol.r = chromaRed;\r\n    outCol.b = chromaBlue;\r\n}\r\n\r\n/**\r\n * Applies a dither effect to the input color.\r\n *\r\n * Dithering is a technique that can be used to simulate a higher color bit depth by introducing random noise to smooth\r\n * out color transitions between neighboring pixels.\r\n *\r\n * @displayName Dither\r\n * @in flags - Post process flags (contains dither enable flag)\r\n * @in dither factors - Dither factors (.x = amount, .y = uvx coeff, .xz = uvy coeff)\r\n * @in uv - The XY coordinates where we are applying the effect\r\n * @in input color - Input color\r\n * @out output color - Vec3 output color of operation\r\n */\r\nvoid PostProcessDitherBlock(in uint postProcessFlags, in vec4 ditherFactor, in vec2 uv, in vec3 inCol, out vec3 outCol)\r\n{\r\n    outCol = inCol;\r\n    if (!((postProcessFlags & POST_PROCESS_SPECIALIZATION_DITHER_BIT) == POST_PROCESS_SPECIALIZATION_DITHER_BIT)) {\r\n        return;\r\n    }\r\n    const vec2 random01Range = vec2(uv.x * ditherFactor.y, uv.y * ditherFactor.z);\r\n    outCol += fract(sin(dot(random01Range.xy, vec2(12.9898, 78.233))) * 43758.5453) * ditherFactor.x;\r\n}\r\n\r\n/**\r\n * A post-process block that performs color space conversion based on the provided color conversion options.\r\n * The function will support different types of color space conversions, determined by the conversionType parameter.\r\n * Currently, it only supports linear-to-sRGB conversion.\r\n *\r\n * @displayName Color Space Conversion\r\n * @in flags - Post process flags, including the color space conversion enable flag\r\n * (POST_PROCESS_SPECIALIZATION_COLOR_CONVERSION_BIT).\r\n * @in options - A vec4 representing color conversion options (.w = conversion type). Todo maybe refactor this to single\r\n * attribute\r\n * @in color - The input vec3 color in the original color space.\r\n * @out color - The output vec3 color after the color space conversion has been applied.\r\n */\r\nvoid PostProcessColorConversionBlock(\r\n    in uint postProcessFlags, in vec4 colorConversionFactor, in vec3 inCol, out vec3 outCol)\r\n{\r\n    outCol = inCol;\r\n    if ((postProcessFlags & POST_PROCESS_SPECIALIZATION_COLOR_CONVERSION_BIT) ==\r\n        POST_PROCESS_SPECIALIZATION_COLOR_CONVERSION_BIT) {\r\n        const uint conversionType = uint(colorConversionFactor.w);\r\n        if (conversionType == CORE_POST_PROCESS_COLOR_CONVERSION_SRGB) {\r\n            outCol.rgb = LinearToSrgb(outCol.rgb);\r\n        }\r\n    }\r\n}\r\n\r\n/**\r\n * Applies a bloom effect on the given color. todo write more about this, what are the types, how does it look, how do\r\n *                                            the parameters affect it, etc.\r\n *\r\n * @displayName Bloom Combine\r\n * @in flags - Post process flags, including the bloom combine enable flag (POST_PROCESS_SPECIALIZATION_BLOOM_BIT).\r\n * @in bloom factors - A vec4 representing bloom factors (.z = bloom color strength, .w = dirt strength).\r\n * @in uv - The coordinates where we are applying the effect\r\n * @in bloom combined sampler - A sampler2D for the bloom combined image. todo rename / rephrase / add details\r\n * @in dirt map combined sampler - A sampler2D for the dirt map combined image.\r\n * @in color - The input color.\r\n * @out color - The output color after the bloom combine has been applied.\r\n */\r\nvoid PostProcessBloomCombineBlock(in uint postProcessFlags, in vec4 bloomFactor, in vec2 uv, in sampler2D imgSampler,\r\n    in sampler2D dirtImgSampler, in vec3 inCol, out vec3 outCol)\r\n{\r\n    outCol = inCol;\r\n    if ((postProcessFlags & POST_PROCESS_SPECIALIZATION_BLOOM_BIT) == POST_PROCESS_SPECIALIZATION_BLOOM_BIT) {\r\n        // NOTE: lower resolution, more samples might be needed\r\n        const vec3 bloomColor = texture(imgSampler, uv).rgb * bloomFactor.z;\r\n        const vec3 dirtColor = texture(dirtImgSampler, uv).rgb * bloomFactor.w;\r\n        const vec3 bloomCombine = outCol + bloomColor + dirtColor * max(bloomColor.x, max(bloomColor.y, bloomColor.z));\r\n        outCol.rgb = min(bloomCombine, CORE_CLAMP_MAX_VALUE);\r\n    }\r\n}\r\n\r\n#endif // SHADERS__COMMON__POST_PROCESS_BLOCKS_H\r\n"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsValid",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": false
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsDirty",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": true
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    }
+                ]
+            }
+        }
+    }
+}

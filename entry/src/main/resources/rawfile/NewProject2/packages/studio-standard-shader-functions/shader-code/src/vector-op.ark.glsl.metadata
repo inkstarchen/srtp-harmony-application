@@ -1,0 +1,149 @@
+{
+    "compatibility_info": {
+        "version": "2.0",
+        "type": "metafile"
+    },
+    "metainfo": {
+        "iid": "e19bbbc2-8fb0-4d29-971c-e4858e75f7cf",
+        "uri": "project://packages/studio-standard-shader-functions/shader-code/src/vector-op.ark.glsl",
+        "xxh3": "974c4a1ddf3b543784bfc16c41982388",
+        "spec": {
+            "$meta": {
+                "meta-version": "2.0"
+            },
+            "$root": {
+                "$classId": "68089ffa-cefa-11ed-afa1-0242ac120002",
+                "$className": "ShaderCodeAsset",
+                "$instanceId": "0005de68-3883-baec-d0d9-1058c6a2c192",
+                "__attachments": [
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Iid",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "e19bbbc2-8fb0-4d29-971c-e4858e75f7cf"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Uri",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "project://packages/studio-standard-shader-functions/shader-code/src/vector-op.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Name",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "vector-op.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "MediaType",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "application/vnd.ark.shader-code"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Code",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "\r\n#ifndef VECTOR_OP_BLOCKS_H\r\n#define VECTOR_OP_BLOCKS_H\r\n\r\n/**\r\n * Returns the length of a vector.\r\n *\r\n * @displayName Vector Length\r\n * @in v - The vector to calculate the length of.\r\n * @out result - The length of the vector.\r\n * @templateArg T = vec2 | vec3 | vec4\r\n */\r\nvoid VecLengthBlock(in T v, out float result)\r\n{\r\n    result = length(v);\r\n}\r\n\r\n/**\r\n * Returns the squared length of a vector. This function avoids calculating a square root, so it is much more efficient\r\n * if you only need to compare lengths.\r\n *\r\n * @displayName Vector Length Squared\r\n * @in v - The vector to calculate the squared length of.\r\n * @out result - The squared length of the vector.\r\n * @templateArg T = vec2 | vec3 | vec4\r\n */\r\nvoid VecLengthSquaredBlock(in T v, out float result)\r\n{\r\n    result = dot(v, v);\r\n}\r\n\r\n/**\r\n * Returns a vector in the same direction as the input vector but with a length of 1. The input vector should not be\r\n * the zero vector.\r\n *\r\n * @displayName Normalize\r\n * @in v - The vector to normalize. Should not be the zero vector.\r\n * @out result - The normalized vector.\r\n * @templateArg T = vec2 | vec3 | vec4\r\n */\r\nvoid VecNormalizeBlock(in T v, out T result)\r\n{\r\n    result = normalize(v);\r\n}\r\n\r\n/**\r\n * Returns the distance between two vectors.\r\n *\r\n * @displayName Distance\r\n * @in u - The first vector.\r\n * @in v - The second vector.\r\n * @out result - The distance between the two vectors u and v.\r\n * @templateArg T = vec2 | vec3 | vec4\r\n */\r\nvoid VecDistanceBlock(in T u, in T v, out float result)\r\n{\r\n    result = distance(u, v);\r\n}\r\n\r\n/**\r\n * Returns the squared distance between two vectors. This function avoids calculating the square root, so it is much\r\n * more efficient.\r\n *\r\n * @displayName Distance Squared\r\n * @in u - The first vector.\r\n * @in v - The second vector.\r\n * @out result - The squared distance between the two vectors u and v.\r\n * @templateArg T = vec2 | vec3 | vec4\r\n *\r\n */\r\nvoid VecDistanceSquaredBlock(in T u, in T v, out float result)\r\n{\r\n    result = dot(u - v, u - v);\r\n}\r\n\r\n/**\r\n * Returns the reflection of the incident vector off a surface with the specified normal.\r\n *\r\n * @displayName Reflect\r\n * @in I - The incident vector.\r\n * @in N - The normal of the reflecting surface.\r\n * @out result - The reflected vector.\r\n * @templateArg T = vec2 | vec3 | vec4\r\n */\r\nvoid VecReflectBlock(in T I, in T N, out T result)\r\n{\r\n    result = reflect(I, N);\r\n}\r\n\r\n/**\r\n * Returns the refraction vector of an incident vector I incident on a surface with the specified normal N and the ratio\r\n * of indices of refraction (\u03B7).\r\n *\r\n * @displayName Refract\r\n * @in I - The incident vector.\r\n * @in N - The normal of the refracting surface.\r\n * @in \u03B7 - The ratio of indices of refraction (eta).\r\n * @out result - The refracted vector.\r\n * @templateArg T = vec2 | vec3 | vec4\r\n */\r\nvoid VecRefractBlock(in T I, in T N, in float eta, out T result)\r\n{\r\n    result = refract(I, N, eta);\r\n}\r\n\r\n/**\r\n * Returns the dot product of the given vectors. This is calculated as the sum of the products of the two\r\n * vectors' corresponding components: `u\u00B7v = u.x\u00B7v.x + u.y\u00B7v.y + ...`.\r\n *\r\n * @displayName Dot Product\r\n * @in u - The first vector.\r\n * @in v - The second vector.\r\n * @out result - The dot product of the two vectors u and v.\r\n * @templateArg T = vec2 | vec3 | vec4\r\n *\r\n */\r\nvoid VecDotBlock(in T A, in T B, out float result)\r\n{\r\n    result = dot(A, B);\r\n}\r\n\r\n/**\r\n * Returns the angle in radians between the vector and the positive X axis. The result is in the range [-\u03C0, \u03C0].\r\n *\r\n * @displayName ATan2\r\n * @in v - The 2d vector to get the angle of. If the coordinates are (0, 0), the result is undefined.\r\n * @out angle - The angle in radians between the vector and the positive X axis.\r\n */\r\nvoid Atan2Block(in vec2 A, out float result)\r\n{\r\n    result = atan(A.y, A.x);\r\n}\r\n\r\n/**\r\n * Returns the cross product of the given vectors. The cross product is a vector perpendicular to both u and v.\r\n *\r\n * @displayName Cross Product\r\n * @in u - The first vector.\r\n * @in v - The second vector.\r\n * @out result - The cross product of the vectors u and v.\r\n */\r\nvoid CrossProductBlock(in vec3 A, in vec3 B, out vec3 result)\r\n{\r\n    result = cross(A, B);\r\n}\r\n\r\n/**\r\n * Constructs a vec2 from the given components. [DEPRECATED]. Use attached constant blocks or drop down the node inputs\r\n * instead.\r\n *\r\n * @displayName Construct Vec2\r\n * @in x - The x component of the vector.\r\n * @in y - The y component of the vector.\r\n * @out result - The constructed vector.\r\n */\r\n    void Vec2SwizzleBlock(in float x, in float y, out vec2 result)\r\n{\r\n    result = vec2(x, y);\r\n}\r\n\r\n/**\r\n * Constructs a vec3 from the given components. [DEPRECATED]. Use attached constant blocks or drop down the node inputs\r\n * instead.\r\n *\r\n * @displayName Construct Vec3\r\n * @in x - The x component of the vector.\r\n * @in y - The y component of the vector.\r\n * @in z - The z component of the vector.\r\n * @out result - The constructed vector.\r\n */\r\nvoid Vec3SwizzleBlock(in float x, in float y, in float z, out vec3 result)\r\n{\r\n    result = vec3(x, y, z);\r\n}\r\n\r\n/**\r\n * Constructs a vec4 from the given components. [DEPRECATED]. Use attached constant blocks or drop down the node inputs\r\n * instead.\r\n *\r\n * @displayName Construct Vec4\r\n * @in x - The x component of the vector.\r\n * @in y - The y component of the vector.\r\n * @in z - The z component of the vector.\r\n * @in w - The w component of the vector.\r\n * @out result - The constructed vector.\r\n */\r\nvoid Vec4SwizzleBlock(in float x, in float y, in float z, in float w, out vec4 result)\r\n{\r\n    result = vec4(x, y, z, w);\r\n}\r\n\r\n/**\r\n * Applies tiling and offset to the given UV coordinates.\r\n *\r\n * @displayName UV Tiling and Offset\r\n * @in uv - The input UV coordinates to modify.\r\n * @in tiling - The tiling factor (scaling factor) for the UV coordinates.\r\n * @in offset - The offset to apply to the UV coordinates.\r\n * @out result - The modified UV coordinates after applying tiling and offset.\r\n */\r\nvoid VecTileOffsetBlock(in vec2 uv, in vec2 tiling = vec2(1,1), in vec2 offset, out vec2 result)\r\n{\r\n    result = (uv * tiling) + offset;\r\n}\r\n\r\n\r\n#endif // VECTOR_OP_BLOCKS_H\r\n"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsValid",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": false
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsDirty",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": true
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    }
+                ]
+            }
+        }
+    }
+}

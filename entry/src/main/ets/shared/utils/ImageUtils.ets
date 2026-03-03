@@ -3,12 +3,184 @@ import { hilog } from "@kit.PerformanceAnalysisKit";
 import fs from '@ohos.file.fs';
 import { ensureDirectoryExists } from "./file";
 import { photoAccessHelper } from "@kit.MediaLibraryKit";
+import { Prompt } from "@kit.ArkUI";
+import fileIo from "@ohos.file.fs";
+import cameraPicker from "@ohos.multimedia.cameraPicker";
+import { camera } from "@kit.CameraKit";
+import { Context } from "@kit.AbilityKit";
+import picker from "@ohos.file.picker";
+import { JSON } from "@kit.ArkTS";
+
+class Constants{
+  static readonly NUMBER_500 = 500;
+  static readonly NUMBER_800 = 800;
+  static readonly NUMBER_ONE_HALF = 0.5;
+  static readonly NUMBER_1000 = 1000;
+  static readonly NUMBER_0 = 0;
+  static readonly NUMBER_400 = 400;
+  static readonly NUMBER_250 = 250;
+
+
+}
 
 const DOMAIN_NUMBER: number = 0xFF00;  // 与主笔记使用相同的领域号
 const TAG: string = '[ImageManager]';   // 使用不同的TAG标识
 export class ImageUtils {
   private static readonly MAX_SIZE: number = 2048;
   private static readonly DEFAULT_QUALITY: number = 85;
+
+  static async TakePictureAndSave(context: Context | undefined):Promise<void>{
+    try {
+      // 使用后置摄像头
+      let pickerProfile: cameraPicker.PickerProfile =
+        { cameraPosition: camera.CameraPosition.CAMERA_POSITION_BACK };
+      // 调用拍摄接口获取结果
+      let pickerResult: cameraPicker.PickerResult =
+        await cameraPicker.pick(context, [cameraPicker.PickerMediaType.PHOTO], pickerProfile);
+      // 返回图片的uri到应用
+      hilog.info(0x0000, "Camera", 'cameraPicker.pick succeed, uri: ' + JSON.stringify(pickerResult));
+      let pixmap = await ImageUtils.uriToPixelMapByFd(pickerResult.resultUri);
+      // 暂时使用临时目录需要后续决定如何存储
+      let fileDir = context?.filesDir;
+      if (fileDir && pixmap) {
+        // 这里的文件名需要一个标识系统，这里仅仅用作示例
+        await ImageUtils.savePixelMapToFile(pixmap, fileDir + "/capture.png");
+      }
+    } catch (error){
+      let err = error as BusinessError;
+      hilog.error(0x0000, "Camera", `cameraPicker.pick failed, error: ${err.code}, ${err.message}`);
+    }
+  }
+
+  static TwoImageStencil(images: Array<string> | Array<image.PixelMap>,
+    isH = true): image.PixelMap | null {
+    let wideList: Array<number> = [];
+    let heightList: Array<number> = [];
+    let imageSourceList: Array<image.ImageSource> = [];
+    try {
+      if (images.length < 2) {
+        return null;
+      }
+      let buffer: ArrayBuffer;
+      for (let x = 0; x < images.length; x++) {
+        if (typeof images[x] === 'string') {
+          let file = fileIo.openSync(String(images[x]), fileIo.OpenMode.READ_ONLY);
+          buffer = new ArrayBuffer(fileIo.statSync(file.fd).size);
+          // 读取图片到buffer
+          fileIo.readSync(file.fd, buffer);
+          fileIo.closeSync(file);
+        } else {
+          let pixelMap1 = images[x] as image.PixelMap;
+          buffer = new ArrayBuffer(pixelMap1.getPixelBytesNumber());
+          pixelMap1.readPixelsToBufferSync(buffer);
+        }
+        // 创建imageSource
+        let imageSource = image.createImageSource(buffer);
+        let imageInfo = imageSource.getImageInfoSync();
+        let singleWidth = imageInfo.size.width;
+        let singleHeight = imageInfo.size.height;
+        wideList[x] = singleWidth;
+        heightList[x] = singleHeight;
+        imageSourceList[x] = imageSource;
+      }
+      let totalHeight = 2 * heightList[0];
+      let totalWidth = wideList[0];
+      let combineOpts: image.InitializationOptions = {
+        alphaType: 0,
+        editable: true,
+        // 注意上下格式统一
+        pixelFormat: image.PixelMapFormat.BGRA_8888,
+        size: { width: totalWidth, height: totalHeight }
+      };
+      let imageOption: Array<image.DecodingOptions> = [];
+      for (let i = 0; i < images.length; i++) {
+        let singleOpts: image.DecodingOptions = {
+          editable: true,
+          desiredPixelFormat: image.PixelMapFormat.BGRA_8888,
+          desiredSize: {width: totalWidth, height: heightList[0]}
+        };
+        imageOption.push(singleOpts);
+      }
+      let combineColor = new ArrayBuffer(combineOpts.size.width * combineOpts.size.height * 4);
+      let newPixelMap = image.createPixelMapSync(combineColor, combineOpts);
+      if (true) {
+        for (let x = 0; x < images.length; x++) {
+          let singleOpts = imageOption[x];
+          let singleColor = new ArrayBuffer(singleOpts.desiredSize!.width * singleOpts.desiredSize!.height * 4);
+          let imageSource = imageSourceList[x];
+          //读取小图
+          let singlePixelMap = imageSource.createPixelMapSync(singleOpts);
+          singlePixelMap.readPixelsToBufferSync(singleColor);
+          //写入大图
+          let area: image.PositionArea = {
+            pixels: singleColor,
+            offset: Constants.NUMBER_0,
+            stride: totalWidth * 4,
+            region: {
+              size: {height: heightList[0], width: totalWidth},
+              x: 0,
+              y: x === 0 ? 0 : heightList[0]
+            }
+          };
+          newPixelMap.writePixelsSync(area);
+        }
+        return newPixelMap;
+      }
+    } catch (err) {
+      hilog.error(0x0000, 'JOIN_IMAGES', 'PictureJoinTogether join error: ' + JSON.stringify(err));
+      return null;
+    }
+  }
+
+  // 获取图片的信息，并在日志中打印出来.
+  static async GetImageInfo(pixelMap: image.PixelMap) {
+    if (pixelMap != undefined) {
+      pixelMap.getImageInfo().then((imageInfo: image.ImageInfo) => {
+        if (imageInfo != undefined) {
+          console.info(`ImageInfo | ${imageInfo.mimeType} ${imageInfo.size.height} ${imageInfo.size.width} ${imageInfo.density} ${imageInfo.stride} ${imageInfo.pixelFormat.toString()} ${imageInfo.alphaType.toString()} ${imageInfo.isHdr}`);
+        }
+      }).catch((error:BusinessError) => {
+        console.error(`Failed to obtain the image pixel map information, code is ${error}`);
+      })
+    }
+  }
+
+  static async  ReadPixelsToBuffer(pixelMap: image.PixelMap) {
+    const readBuffer: ArrayBuffer = new ArrayBuffer(4096 * 3072 * 4);
+    if(pixelMap != undefined){
+      pixelMap.readPixelsToBuffer(readBuffer, (error: BusinessError, res: void) => {
+        if(error) {
+          console.error(`Failed to read image pixel data. code is ${error.code}, message is ${error.message}`);
+          return;
+        } else {
+          console.info('Succeeded in reading image pixel data.');
+        }
+      })
+    }
+  }
+
+
+
+  static captureComponent(uiContext:UIContext,id:string,name:string){
+    uiContext.getComponentSnapshot().get("origin", (error: Error, pixmap: image.PixelMap) => {
+      if(error) {
+        console.error(`error: ${JSON.stringify(error)}`);
+        return;
+      }
+      let fileDir = uiContext.getHostContext()?.tempDir;
+      if(fileDir){
+        console.info("Test: SaveDir is " + fileDir)
+        ImageUtils.savePixelMapToFile(pixmap as image.PixelMap,fileDir + "/" + name)
+          .then((result) => {
+            if(result){
+              Prompt.showToast({message: "saved"})
+            }else{
+              Prompt.showToast({message:"failed"})
+            }
+          })
+      }
+    }, { scale: 2, waitUntilRenderFinished: true });
+  }
 
   // 通过uri获取PixelMap
   static async uriToPixelMapByFd(uri: string): Promise<image.PixelMap | null> {
@@ -88,7 +260,7 @@ export class ImageUtils {
         await fs.close(file);
       }
       // 确保释放 ImagePacker
-      imagePacker.release();
+      await imagePacker.release();
     }
   }
 

@@ -1,0 +1,82 @@
+{
+    "compatibility_info": {
+        "version": "22.00",
+        "type": "entitycollection"
+    },
+    "src": "../../3d/plane/plane.gltf?root=Plane",
+    "entities" : [
+        { "id" : "reflectionRenderTarget" }
+    ],
+    "entity-components": [
+        {
+            "components": {
+                "6b432233-bac4-43ff-8c15-983f467052a6": {
+                    "name": "NameComponent",
+                    "properties": {
+                        "name": "Reflection Plane"
+                    }
+                },
+                "fb5c16b5-c369-4f7b-bc02-5398ddfdfa1d" : {
+                    "name": "RenderHandleComponent"
+                },
+                "56430c14-cb12-4320-80d3-2bef4f86a041": {
+                    "name": "MaterialComponent",
+                    "properties": {
+                        "textures[2].factor": [0.0, 0.2, 0.0, 1.0],
+                        "textures[6]": {
+                            "image": "reflectionRenderTarget",
+                            "factor": [0, 0, 0, 1]
+                        },
+                        "extraRenderingFlags": 1,
+                        "materialShader.shader": {
+                            "renderHandle" : {
+                                "type": 6,
+                                "name": "3dshaders://shader/core3d_dm_fw_reflection_plane.shader"
+                            }
+                        }
+                    }
+                },
+                "5081ccf4-2013-43c1-b9bb-23041e73ac6d": {
+                    "name": "PlanarReflectionComponent",
+                    "properties": {
+                        "colorRenderTarget": "reflectionRenderTarget"
+                    }
+                }
+            },
+            "entity": "/"
+        },
+        {
+            "components": {
+                "6b432233-bac4-43ff-8c15-983f467052a6": {
+                    "name": "NameComponent",
+                    "properties": {
+                        "name": "Reflection Plane Mesh"
+                    }
+                },
+                "cd08dae1-d13b-4a4a-a317-56acbb332f76": {
+                    "name": "MeshComponent",
+                    "properties": {
+                        "submeshes": {
+                            "0": {
+                                "material": "/"
+                            }
+                        }
+                        
+                    }
+                }
+            },
+            "entity": {
+                "collection": "meshes",
+                "entity": 0
+            }
+        },
+        {
+            "components": {
+                "fb5c16b5-c369-4f7b-bc02-5398ddfdfa1d" : {
+                    "name": "RenderHandleComponent"
+                }
+            },
+            "entity": "reflectionRenderTarget"
+        }
+    ]
+}

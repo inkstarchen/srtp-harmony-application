@@ -3,14 +3,31 @@ import { NoteData } from "./model/NoteSpanData";
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from "@kit.BasicServicesKit";
 import fs from '@ohos.file.fs';
+import { Constants } from "../../shared/constants";
+import { Context } from "@kit.AbilityKit";
 
 const TAG: string = '[NoteApp]';
 const DOMAIN_NUMBER: number = 0xFF00;
 
 export class NoteService {
 
-  async loadNote(filePath: string): Promise<NoteData | undefined> {
+  static getNoteDir(appContext: Context, timeArray:string[]): string{
+    return appContext.filesDir + '/data/' + timeArray[0] + '/' + timeArray[1] + '/' + timeArray[2] + '/';
+  }
+
+  static async getNoteList(notesDir: string): Promise<string[]> {
     try {
+      const files = await fs.listFile(notesDir);
+      let noteFiles = files.filter(file => file.endsWith('.json'));
+      return noteFiles;
+    } catch (error) {
+      return [];
+    }
+  }
+
+  static async loadNote(filePath: string): Promise<NoteData | undefined> {
+    try {
+      console.debug("path is" + filePath);
       const jsonString = await readStringFromFile(filePath);
       let noteData:NoteData = JSON.parse(jsonString);
 
@@ -22,7 +39,7 @@ export class NoteService {
     }
   }
 
-  async ensureNotesDirectoryExists(notesDir:string): Promise<void> {
+  static async ensureNotesDirectoryExists(notesDir:string): Promise<void> {
     try {
       const dirExists = await isExists(notesDir);
 

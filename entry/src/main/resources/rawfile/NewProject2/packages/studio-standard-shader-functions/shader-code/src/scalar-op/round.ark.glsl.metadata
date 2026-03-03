@@ -1,0 +1,149 @@
+{
+    "compatibility_info": {
+        "version": "2.0",
+        "type": "metafile"
+    },
+    "metainfo": {
+        "iid": "a7602289-7c4c-4ec5-88dc-23cbc273c289",
+        "uri": "project://packages/studio-standard-shader-functions/shader-code/src/scalar-op/round.ark.glsl",
+        "xxh3": "716614378cc0db6caa2941b0dfc4734f",
+        "spec": {
+            "$meta": {
+                "meta-version": "2.0"
+            },
+            "$root": {
+                "$classId": "68089ffa-cefa-11ed-afa1-0242ac120002",
+                "$className": "ShaderCodeAsset",
+                "$instanceId": "0005de68-38a2-5bf0-98ea-0f3dc8327d70",
+                "__attachments": [
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Iid",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "a7602289-7c4c-4ec5-88dc-23cbc273c289"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Uri",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "project://packages/studio-standard-shader-functions/shader-code/src/scalar-op/round.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Name",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "round.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "MediaType",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "application/vnd.ark.shader-code"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Code",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "#ifndef ROUND_VEC2_BLOCKS_H\r\n#define ROUND_VEC2_BLOCKS_H\r\n\r\n///******************************************************\r\n// * Rounding functions\r\n// ******************************************************/\r\n\r\n/**\r\n * Returns the largest integer less than or equal to the component value. Example: `floor(1.5) = 1.0`,\r\n * `floor(-1.5) = -2`.\r\n *\r\n * @displayName Floor\r\n * @in x - The value to floor.\r\n * @out result - The result of the floor function.\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid FloorBlock(in T x, out T result)\r\n{\r\n    result = floor(x);\r\n}\r\n\r\n/**\r\n * Returns the smallest integer greater than or equal to the component value. Example: `ceil(1.5) = 2.0`,\r\n * `ceil(-1.5) = -1`.\r\n *\r\n * @displayName Ceil\r\n * @in x - The value to ceil.\r\n * @out result - The result of the ceiling.\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid CeilBlock(in T x, out T result)\r\n{\r\n    result = ceil(x);\r\n}\r\n\r\n/**\r\n * Returns the integer part of the component value, so it rounds towards zero. Example: `trunc(1.5) = 1.0`,\r\n * `trunc(-1.5) = -1`.\r\n *\r\n * @displayName Trunc\r\n * @in x - The value to truncate.\r\n * @out result - The truncated value.\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid TruncBlock(in T x, out T result)\r\n{\r\n    result = trunc(x);\r\n}\r\n\r\n/**\r\n * Returns the nearest integer number to the component value. 0.5 is implementation dependent. Example:\r\n * `round(1.5) = 2.0`, `round(-1.5) = -2`.\r\n *\r\n * @displayName Round\r\n * @in x - The value to round.\r\n * @out result - The rounded value.\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid RoundBlock(in T x, out T result)\r\n{\r\n    result = round(x);\r\n}\r\n\r\n/**\r\n * Returns the fractional part of the component value but for negative values it's just continuing the repeating saw\r\n * pattern of interval 1. The value is calculated as `x - floor(x)`. Example: `fract(1.3) = 0.3`, `fract(-1.3) = 0.7`.\r\n *\r\n * @displayName Fractional Part\r\n * @in x - The value to get the fractional part of.\r\n * @out result - The fractional part of the input value.\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid FractBlock(in T x, out T result)\r\n{\r\n    result = fract(x);\r\n}\r\n\r\n/**\r\n * Returns the nearest even integer number to the component value. Equivalent to `round(x / 2) * 2`. Example:\r\n * `roundEven(1.1) = 2.0`\r\n *\r\n * @displayName Round To Even\r\n * @in x - The value to round.\r\n * @out result - The even rounded value.\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n *\r\n */\r\nvoid RoundEven(in T x, out T result)\r\n{\r\n    result = round(x / 2.0f) * 2.0f;\r\n}\r\n#endif // ROUND_VEC2_BLOCKS_H\r\n"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsValid",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": false
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsDirty",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": true
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    }
+                ]
+            }
+        }
+    }
+}

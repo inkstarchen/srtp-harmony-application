@@ -1,0 +1,62 @@
+{
+    "name": "PluginMyBehaviors",
+    "version": "0.1",
+    "description": "Plugin for editor generated behaviors.",
+    "license": "license.txt",
+    "icon": {
+        "uri":"",
+        "rounded":false
+    },
+    "author": "my-company",
+    "source": [ "link to offline (in package) / online sources" ],
+    "documentation:": [ "doc/readme.md" ],
+    "depends": [ "aea82541-84c7-43d8-b466-fc3cac9932f2" ],
+    "uid": "f56c83e2-b5fa-4335-b902-93fcef2ed346",
+    "platform": [
+        {
+            "name": "windows",
+            "arch": [ "x64" ],
+            "files": {
+                "x64": [ "bin/Release/Win64/PluginMyBehaviors.dll" ]
+            },
+            "assets": {
+                "x64": [ "arch dependent assets" ],
+                "none": [ "arch independent assets" ]
+            }
+        },
+        {
+            "name": "android",
+            "arch": [ "arm64-v8a" ],
+            "files": {
+                "arm64-v8a": [ "bin/Release/android/arm64-v8a/libPluginMyBehaviors.so" ]
+            },
+            "assets": {}
+        },
+        {
+            "name": "ohos",
+            "arch": [ "arm64-v8a" ],
+            "files": {
+                "arm64-v8a": [ "bin/Release/ohos/arm64-v8a/libPluginMyBehaviors.so" ]
+            },
+            "assets": {}
+        }
+    ],
+    "assets": [ "common (non arch/platform dependant) asset files" ],
+    "api": {
+        "platform": [
+            {
+                "name": "windows",
+                "arch": [ "x64" ],
+                "files": {}
+            },
+            {
+                "name": "android",
+                "arch": [ "arm64-v8a" ],
+                "files": {}
+            }
+        ],
+        "files": [
+        ],
+        "cmake_module_path": "cmake"
+    }
+}

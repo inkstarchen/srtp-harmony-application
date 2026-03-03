@@ -1,0 +1,25 @@
+{
+    "name": "studio-fragment-shader-functions",
+    "version": "1.0",
+    "icon": {
+        "uri": "Lume_Icon.svg",
+        "rounded": false
+    },
+    "author": "Ark",
+    "images": [],
+    "description": "A package containing functions that are useful for fragment shaders.",
+    "plugins": [
+        "shader-code/plugin.json"
+    ],
+    "editorplugins": [],
+    "files": [
+        "shader-code/",
+        "Lume_Icon.svg"
+    ],
+    "license": "",
+    "main": "",
+    "scripts": {},
+    "keywords": [
+        "ARK"
+    ]
+}

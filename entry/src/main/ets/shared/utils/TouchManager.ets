@@ -1,27 +1,68 @@
 import { TraceVec2 } from "../../core/math/vec";
 import Prompt from "@system.prompt";
+import { Vec2 } from "@kit.ArkGraphics3D";
 
-@ObservedV2
-export class TouchManager{
-  down: TraceVec2 = new TraceVec2();
-  @Trace distance: TraceVec2 = new TraceVec2();
-  up:TraceVec2 = new TraceVec2();
+export interface Touch{
+  phase: number;
+  active: boolean;
+  downPos: Vec2;
+  curPos: Vec2;
+  lastPos: Vec2;
+}
 
-  TouchDown(event:TouchEvent){
-    this.down.x = event.touches[0].x;
-    this.down.y = event.touches[0].y;
-    // Prompt.showToast({message:'down'});
+export function getTouchDefault() : Touch{
+  return {
+    phase: 0,
+    active: false,
+    downPos : {x:0,y:0},
+    curPos : {x:0, y:0},
+    lastPos : {x:0,y:0},
+  };
+}
+
+export const TOUCH_DEFAULT = {
+  phase :0,
+  active : false,
+  downPos : {x:0,y:0},
+  curPos : {x:0, y:0},
+  lastPos : {x:0,y:0},
+} as Touch;
+
+export function HandleTouch(event:TouchEvent, touch: Touch) {
+  if (event.type === TouchType.Down) {
+    TouchDown(event,touch);
+  } else if (event.type === TouchType.Move) {
+    TouchMove(event,touch)
+  } else if (event.type === TouchType.Up) {
+    TouchUp(event,touch)
   }
+}
 
-  TouchUp(event:TouchEvent){
-    this.up.x = event.touches[0].x;
-    this.up.y = event.touches[0].y;
-    // Prompt.showToast({message:'up'});
-  }
+export function TouchDown(event:TouchEvent, touch: Touch){
+  touch.downPos.x = event.touches[0].x;
+  touch.downPos.y = event.touches[0].y;
+  touch.active = true;
+  touch.curPos.x = event.touches[0].x;
+  touch.curPos.y = event.touches[0].y;
+  touch.phase = 1;
+  touch.lastPos.x = event.touches[0].x;
+  touch.lastPos.y = event.touches[0].y;
+}
 
-  TouchMove(event:TouchEvent){
-    this.distance.x = event.touches[0].x - this.down.x;
-    this.distance.y = event.touches[0].y - this.down.y;
-    // Prompt.showToast({message:'move'});
-  }
+export function TouchUp(event:TouchEvent, touch: Touch){
+  touch.active = false;
+  touch.curPos.x = event.touches[0].x;
+  touch.curPos.y = event.touches[0].y;
+  touch.phase = 3;
+  // Prompt.showToast({message:'up'});
+}
+
+export function TouchMove(event:TouchEvent, touch: Touch){
+  touch.lastPos.x = touch.curPos.x;
+  touch.lastPos.y = touch.curPos.y;
+  console.info("Rotation Test | cur" + touch.curPos.x.toString() + '/' + touch.curPos.y.toString() + ' | last' + touch.lastPos.x + '/' + touch.lastPos.y.toString())
+  touch.curPos.x = event.touches[0].x;
+  touch.curPos.y = event.touches[0].y;
+  touch.phase = 2;
+  // Prompt.showToast({message:'move'});
 }

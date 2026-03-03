@@ -1,0 +1,15 @@
+{
+    "name": "my-behaviors",
+    "description": "Package for editor generated behaviors.",    
+    "icon": {
+        "uri":"",
+        "rounded":false
+    },
+    "author": "my-company",
+    "images": [],
+    "plugins": [
+        "PluginMyBehaviors/plugin.json"
+    ],
+    "editorplugins": []
+}
+

@@ -1,12 +1,38 @@
-import { Geometry, Material, Node, Quaternion, Vec3 } from '@kit.ArkGraphics3D';
+import { Geometry, Material,
+  MaterialType,
+  Node, Quaternion, SceneResourceFactory,
+  SceneResourceParameters,
+  ShaderMaterial,
+  Vec3 } from '@kit.ArkGraphics3D';
 
 export class NodeUtil{
+
+
+  static async attachShader(node:Node,shaderName:string,shaderRes:Resource,rf:SceneResourceFactory,MaterialName:string,imageName:string |undefined,imageUri:string|undefined){
+    let geom = node as Geometry;
+
+    let shader = await rf.createShader({
+      name: shaderName,
+      uri: shaderRes
+    });
+    let material = await rf.createMaterial({ name: MaterialName }, MaterialType.SHADER) as ShaderMaterial;
+    material.colorShader = shader;
+    if(imageUri && imageName){
+      let sceneImageParameter:SceneResourceParameters = {
+        name: imageName,
+        uri: imageUri
+      };
+      let image = await rf.createImage(sceneImageParameter);
+      material.colorShader.inputs['BASE_COLOR_Image'] = image;
+    }
+    geom.mesh.materialOverride = undefined;
+    geom.mesh.subMeshes[0].material = material;
+  }
 
   static getMaterial(node: Node): Material{
     let geom = node as Geometry;
     return geom.mesh.subMeshes[0].material;
   }
-
 }
 
 function Sub(l: Vec3, r: Vec3): Vec3 {

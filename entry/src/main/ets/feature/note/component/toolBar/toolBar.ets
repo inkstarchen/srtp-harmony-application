@@ -1,9 +1,11 @@
 import { ColorButtonParams,  ColorSwatchParams, DropdownButtonParams, ToolBarButtonStateParams
 } from "../../model/ToolBarTypes";
+import { AnimatorResult } from "@kit.ArkUI";
 
 @ComponentV2
 export struct ToolBarComponent{
 
+  @Require @Param clearSpan:() => void;
   @Require @Param newNote:() => void;
   @Require @Param selectImage:() => void;
   @Require @Param saveNote:() => void;
@@ -18,6 +20,64 @@ export struct ToolBarComponent{
   @Require @Param applyTextColor:() => void;
   @Require @Param isColorPickerOpen: boolean;
   @Require @Param setColorPickerOpen:(open: boolean) => void;
+  @Require @Param changeEditState: () => void;
+
+  @Require @Param editing:boolean;
+  @Param playAnim: boolean = false;
+  @Local heightAnim: number = 0;
+  appearAnim:AnimatorResult | undefined;
+  disappearAnim:AnimatorResult | undefined;
+
+  @Monitor("editing")
+  onEditChange(monitor:IMonitor) {
+    let editState = monitor.value()?.now as boolean;
+    if(!editState) {
+      this.disappearAnim?.play();
+    }
+  }
+
+  aboutToAppear(): void {
+    if(this.playAnim){
+      this.appearAnim = this.getUIContext().createAnimator({
+        duration:1000,
+        fill:"forwards",
+        easing:'ease-in-out',
+        delay:0,
+        direction:"normal",
+        iterations:1,
+        begin:0,
+        end:1
+      })
+      this.appearAnim.onFrame = (progress) => {
+        this.heightAnim = 48 * progress;
+      }
+      this.disappearAnim = this.getUIContext().createAnimator({
+        duration:1000,
+        fill:"forwards",
+        easing:'ease-in-out',
+        delay:0,
+        direction:"normal",
+        iterations:1,
+        begin:0,
+        end:1
+      })
+      this.disappearAnim.onFrame = (progress) => {
+        this.heightAnim = 48 * (1 - progress);
+      }
+      this.disappearAnim.onFinish = () => {
+        this.changeEditState();
+      }
+      this.appearAnim.play();
+    }else{
+      this.heightAnim = 48;
+    }
+  }
+
+
+
+  aboutToDisappear(): void {
+
+  }
 
   private readonly colorRow1: Color[] = [
     Color.Black,
@@ -45,7 +105,7 @@ export struct ToolBarComponent{
             icon: $r('sys.symbol.folder_badge_plus'),
             action: async () => {
               this.newNote();
-              // this.notesController.controller.deleteSpans({ start: 0, end: -1 });
+              this.clearSpan();
               // await this.notesController.initializeNewNote();
               // this.currentNoteTitle = this.notesController.note?.noteTitle ?? '未命名笔记';
             }
@@ -89,7 +149,8 @@ export struct ToolBarComponent{
       .scrollable(ScrollDirection.Horizontal)
       .scrollBar(BarState.Off)
       .edgeEffect(EdgeEffect.None)
-      .height(48)
+      .clip(true)
+      .height(this.heightAnim)
 
       if (this.isColorPickerOpen) {
         Column() {

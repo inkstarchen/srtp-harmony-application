@@ -1,0 +1,17 @@
+{
+    "name": "shader-code",
+    "version": "1.0",
+    "icon": {
+        "uri": "Lume_Icon.svg",
+        "rounded": false
+    },
+    "author": "Ark",
+    "description": "Shader function library for fragment shaders.",
+    "depends": [],
+    "assets": [],
+    "uid": "612ae679-8a21-4286-a7e6-92b48a35b781",
+    "api": {},
+    "shader-code": {
+        "sourceRoot": "./src"
+    }
+}

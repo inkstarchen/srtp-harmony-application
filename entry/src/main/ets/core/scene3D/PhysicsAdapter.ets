@@ -1,54 +1,49 @@
-import { Geometry, Node } from '@kit.ArkGraphics3D';
+import { Geometry, Node, Vec3, Vec4 } from '@kit.ArkGraphics3D';
 
-export interface Vector3 {
-  x: number;
-  y: number;
-  z: number;
+export enum ShapeType{
+  AABB,
+  SPHERE,
 }
 
 export interface PhysicsData{
-  name: string,
-  position: Vector3;
-  velocity: Vector3;
-  aabb_length: Vector3;
-  mass: number;
-  radius: number;
-  isStatic: boolean;
+  position: Vec3;
+  rotation: Vec4;
+  scale: Vec3;
+  extent: Vec3;
+  shapeType: number;
+  isStatic: number;
 }
 
 export class PhysicsAdapter {
-  static nodeToPhysicsData(node: Node): PhysicsData {
+  static ToPhysicsData(node: Node,type: ShapeType, isStatic: boolean): PhysicsData {
     const position = node.position;
+    const rotation = node.rotation as Vec4;
     const scale = node.scale;
-
     const radius = (scale[0] + scale[1] + scale[2]) / 6;
     let geom = node as Geometry;
     let aabb = geom.mesh.aabb;
-    const aabb_length = {
+
+    let extent = {
       x: (aabb.aabbMax.x - aabb.aabbMin.x) / 2,
       y: (aabb.aabbMax.y - aabb.aabbMin.y) / 2,
       z: (aabb.aabbMax.z - aabb.aabbMin.z) / 2
-    } as Vector3;
+    } as Vec3;
+    let shapeType:number = 0;
+    if(type == ShapeType.SPHERE){
+      shapeType = 1;
+      let max = Math.max(extent.x,extent.y,extent.z);
+      extent.x = max;
+      extent.y = max;
+      extent.z = max;
+    }
 
     return {
-      name:node.name,
-      position:{
-        x: position.x,
-        y: position.y,
-        z: position.z
-      } as Vector3,
-      velocity: { x:0, y:0 ,z:0},
-      aabb_length: aabb_length,
-      radius: radius,
-      mass: 1,
-      isStatic: false
+      position: position,
+      rotation: rotation,
+      scale: scale,
+      extent: extent,
+      shapeType: shapeType,
+      isStatic: isStatic ? 0 : 1,
     } as PhysicsData;
-  }
-
-  static applyPhysicsToNode(node: Node, physicsData: PhysicsData): void{
-    const pos = physicsData.position;
-    node.position.x = pos.x;
-    node.position.y = pos.y;
-    node.position.z = pos.z;
   }
 }

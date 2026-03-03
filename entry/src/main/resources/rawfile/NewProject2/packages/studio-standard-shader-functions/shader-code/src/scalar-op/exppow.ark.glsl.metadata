@@ -1,0 +1,149 @@
+{
+    "compatibility_info": {
+        "version": "2.0",
+        "type": "metafile"
+    },
+    "metainfo": {
+        "iid": "f0c4636f-c47c-4995-a424-a081cc743abf",
+        "uri": "project://packages/studio-standard-shader-functions/shader-code/src/scalar-op/exppow.ark.glsl",
+        "xxh3": "7434d81c6f316ce66c6a8f722931df0a",
+        "spec": {
+            "$meta": {
+                "meta-version": "2.0"
+            },
+            "$root": {
+                "$classId": "68089ffa-cefa-11ed-afa1-0242ac120002",
+                "$className": "ShaderCodeAsset",
+                "$instanceId": "0005de68-389c-7050-948c-da493d4a9431",
+                "__attachments": [
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Iid",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "f0c4636f-c47c-4995-a424-a081cc743abf"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Uri",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "project://packages/studio-standard-shader-functions/shader-code/src/scalar-op/exppow.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Name",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "exppow.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "MediaType",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "application/vnd.ark.shader-code"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Code",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "#ifndef EXPPOW_VEC2_BLOCKS_H\r\n#define EXPPOW_VEC2_BLOCKS_H\r\n\r\n///******************************************************\r\n// * Exponential / Power functions\r\n// ******************************************************/\r\n\r\n/**\r\n * Returns the result of the component-wise power function. Equivalent to `pow(A, B)` and to `vecN(pow(A.x, B.x), ...,\r\n * pow(A.n, B.n))`.\r\n *\r\n * @displayName Power\r\n * @in A - The base of the power function.\r\n * @in B - The exponent of the power function.\r\n * @out result - The result of the component-wise power function.\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid PowerBlock(in T a, in T b, out T result)\r\n{\r\n    result = pow(a, b);\r\n}\r\n\r\n/**\r\n * Returns the result of the component-wise logarithm with base 2. Equivalent to `log2(x)` and to `vecN(log2(x.x), ...,\r\n * log2(x.n))`.\r\n *\r\n * @displayName Log2\r\n * @in x - The values to calculate the logarithm of. Cannot be 0.\r\n * @out result - The result of the logarithm.\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid Log2Block(in T x, out T result)\r\n{\r\n    result = log2(x);\r\n}\r\n\r\n/**\r\n * Returns the result of the component-wise logarithm with base e. Equivalent to `log(x)` and to `vecN(log(x.x), ...,\r\n * log(x.n))`.\r\n *\r\n * @displayName Log_e\r\n * @in x - The values to calculate the logarithm of. Cannot be 0.\r\n * @out result - The result of the logarithm.\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid LogBlock(in T x, out T result)\r\n{\r\n    result = log(x);\r\n}\r\n\r\n/**\r\n * Returns the result of the component-wise logarithm with a custom base. Equivalent to `log(x) / log(base)` and to\r\n * `vecN(log(x.x) / log(base.x), ..., log(x.n) / log(base.n))`.\r\n *\r\n * @displayName Log_<base>\r\n * @in x - The values to calculate the logarithm of. Cannot be 0.\r\n * @in base - The base of the logarithm. Cannot be 0.\r\n * @out result - The result of the logarithm such that `base^result = x`.\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid LogWithCustomBaseBlock(in T x, in T base, out T res)\r\n{\r\n    res = log(x) / log(base);\r\n}\r\n\r\n/**\r\n * Returns the result of the component-wise exponential function with base 2. Equivalent to `exp2(x)` and to\r\n * `vecN(exp2(x.x), ..., exp2(x.n))`.\r\n *\r\n * @displayName Exp2\r\n * @in x - The values to calculate the exponential of.\r\n * @out 2^x - The result of the exponential function.\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid Exp2Block(in T x, out T result)\r\n{\r\n    result = exp2(x);\r\n}\r\n\r\n/**\r\n * Returns the result of the component-wise exponential function. Equivalent to `exp(x)` and to `vecN(exp(x.x), ...,\r\n * exp(x.n))`.\r\n *\r\n * @displayName Exp_e\r\n * @in x - The values to calculate the exponential of.\r\n * @out e^x - The result of the exponential function.\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid ExpBlock(in T x, out T result)\r\n{\r\n    result = exp(x);\r\n}\r\n\r\n/**\r\n * Returns the result of the component-wise square root function. Equivalent to `sqrt(x)` and to `vecN(sqrt(x.x), ...,\r\n * sqrt(x.n))`. The square root of a number is a positive number that, when multiplied by itself, gives the original\r\n * number.\r\n *\r\n * @displayName Sqrt\r\n * @in x - The value to calculate the square root of. Components cannot be negative, otherwise the result is undefined.\r\n * @out result - The result of the square root function.\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid SqrtBlock(in T x, out T result)\r\n{\r\n    result = sqrt(x);\r\n}\r\n\r\n/**\r\n * Returns the result of the component-wise inverse square root function. Equivalent to `1 / sqrt(x)` and to\r\n * `vecN(1 / sqrt(x.x), ..., 1 / sqrt(x.n))`.\r\n *\r\n * @displayName InvSqrt\r\n * @in x - The value to calculate the inverse square root of. Components should be positive, otherwise the result is\r\n * undefined.\r\n * @out result - The result of the component-wise inverse square root function.\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid InvSqrtBlock(in T x, out T result)\r\n{\r\n    result = inversesqrt(x);\r\n}\r\n#endif // EXPPOW_VEC2_BLOCKS_H\r\n"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsValid",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": false
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsDirty",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": true
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    }
+                ]
+            }
+        }
+    }
+}

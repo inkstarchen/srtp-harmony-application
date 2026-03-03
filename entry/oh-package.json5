@@ -9,7 +9,7 @@
 //    "libentry.so": "file:./src/main/cpp/types/libentry"
 //  }
   "devDependencies": {
-    "libentry.so": "file:./src/main/cpp/graphics/libentry",
+    "libphysics.so": "file:./src/main/cpp/physics/libphysics",
     "libnativerender.so": "file:./src/main/cpp/nativerender/libnativerender"
   }
 }

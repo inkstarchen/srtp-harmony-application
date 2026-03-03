@@ -1,0 +1,149 @@
+{
+    "compatibility_info": {
+        "version": "2.0",
+        "type": "metafile"
+    },
+    "metainfo": {
+        "iid": "e49e0599-747a-4d3e-8d11-f92189884219",
+        "uri": "project://packages/studio-fragment-shader-functions/shader-code/src/core-3d/core-3d-env.ark.glsl",
+        "xxh3": "d853c5e449f1a155e5e376d6bcafe076",
+        "spec": {
+            "$meta": {
+                "meta-version": "2.0"
+            },
+            "$root": {
+                "$classId": "68089ffa-cefa-11ed-afa1-0242ac120002",
+                "$className": "ShaderCodeAsset",
+                "$instanceId": "0005de68-3865-4b20-01f2-9925bb8bcc8f",
+                "__attachments": [
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Iid",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "e49e0599-747a-4d3e-8d11-f92189884219"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Uri",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "project://packages/studio-fragment-shader-functions/shader-code/src/core-3d/core-3d-env.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Name",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "core-3d-env.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "MediaType",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "application/vnd.ark.shader-code"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Code",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "//#ifndef SHADERS__COMMON__CORE3D_ENV_BLOCKS_H\r\n//#define SHADERS__COMMON__CORE3D_ENV_BLOCKS_H\r\n//\r\n//// Needs to be included after the descriptor set descriptions\r\n//\r\n//#define CORE3D_DEFAULT_ENV_PI 3.1415926535897932384626433832795\r\n\r\n///**\r\n// * Outputs the default environment type (CORE_DEFAULT_ENV_TYPE) with default material env\r\n// *\r\n// * @displayName Environment Type\r\n// * @out environment type - default environment type (CORE_DEFAULT_ENV_TYPE)\r\n// */\r\n//void EnvironmentTypeBlock(out uint environmentType)\r\n//{\r\n//    environmentType = CORE_DEFAULT_ENV_TYPE;\r\n//}\r\n\r\n///**\r\n// * Performs environment map sampling based on the given environment type and input parameters.\r\n// * This function uses data from common sets (which need to be defined with descriptor sets):\r\n// * - uGeneralData (camera index)\r\n// * - uCameras (cameras for near/far plane)\r\n// * - uEnvironmentData (orientation, LOD level, and factors)\r\n// *\r\n// * @displayName Environment Map Sampler\r\n// * @in environmentType - The type of environment map to use, based on the flags (CORE_DEFAULT_ENV_TYPE).\r\n// * @in uv - The 2D texture coordinates for sampling the environment map.\r\n// * @in cubeMap - The environment cube map.\r\n// * @in texMap - The environment texture map.\r\n// * @out color - The sampled environment color.\r\n// */\r\n//void EnvironmentMapSampleBlock(\r\n//    in uint environmentType, in vec2 uv, in samplerCube cubeMap, in sampler2D texMap, out vec3 color)\r\n//{\r\n//    color = vec3(0.0);\r\n//    CORE_RELAXEDP const float lodLevel = uEnvironmentData.values.y;\r\n//    if ((environmentType == CORE_BACKGROUND_TYPE_CUBEMAP) ||\r\n//        (environmentType == CORE_BACKGROUND_TYPE_EQUIRECTANGULAR)) {\r\n//        // NOTE: would be nicer to calculate in the vertex shader\r\n//\r\n//        // remove translation from view\r\n//        const uint cameraIdx = GetUnpackCameraIndex(uGeneralData);\r\n//        mat4 viewProjInv = uCameras[cameraIdx].viewInv;\r\n//        viewProjInv[3] = vec4(0.0, 0.0, 0.0, 1.0);\r\n//        viewProjInv = viewProjInv * uCameras[cameraIdx].projInv;\r\n//\r\n//        vec4 farPlane = viewProjInv * vec4(inUv.x, inUv.y, 1.0, 1.0);\r\n//        farPlane.xyz = farPlane.xyz / farPlane.w;\r\n//\r\n//        vec4 nearPlane = viewProjInv * vec4(inUv.x, inUv.y, 0.0, 1.0);\r\n//        nearPlane.xyz = nearPlane.xyz / nearPlane.w;\r\n//\r\n//        const vec3 worldView = mat3(uEnvironmentData.envRotation) * normalize(farPlane.xyz - nearPlane.xyz);\r\n//\r\n//        if (environmentType == CORE_BACKGROUND_TYPE_CUBEMAP) {\r\n//            color = unpackEnvMap(textureLod(cubeMap, worldView, lodLevel));\r\n//        } else {\r\n//            const vec2 texCoord = vec2(atan(worldView.z, worldView.x) + CORE3D_DEFAULT_ENV_PI, acos(worldView.y)) /\r\n//                vec2(2.0 * CORE3D_DEFAULT_ENV_PI, CORE3D_DEFAULT_ENV_PI);\r\n//            color = textureLod(texMap, texCoord, lodLevel).xyz;\r\n//        }\r\n//    } else if (environmentType == CORE_BACKGROUND_TYPE_IMAGE) {\r\n//        const vec2 texCoord = (inUv + vec2(1.0)) * 0.5;\r\n//        color = unpackEnvMap(textureLod(texMap, texCoord, lodLevel));\r\n//    }\r\n//\r\n//    color *= uEnvironmentData.envMapColorFactor.xyz;\r\n//}\r\n//#endif // SHADERS__COMMON__CORE3D_ENV_BLOCKS_H\r\n"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsValid",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": false
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsDirty",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": true
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    }
+                ]
+            }
+        }
+    }
+}

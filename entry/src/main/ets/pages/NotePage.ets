@@ -2,6 +2,7 @@ import { common } from "@kit.AbilityKit";
 import { ToolBarComponent } from "../feature/note/component/toolBar/toolBar";
 import { NoteViewModel } from "../feature/note/NoteVeiwModel";
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { getDateByTimeStamp } from "../shared/utils/Time/time";
 
 const TAG: string = '[NoteApp]';
 const DOMAIN_NUMBER: number = 0xFF00;
@@ -11,7 +12,7 @@ const DOMAIN_NUMBER: number = 0xFF00;
 export struct NotePage {
 
   // RichEditor 控制器和选项
-  @Local noteViewModel: NoteViewModel = new NoteViewModel();
+  @Local noteViewModel: NoteViewModel = new NoteViewModel(this.getUIContext().getHostContext());
   private options: RichEditorOptions = { controller: this.noteViewModel.getController() };
   @Local currentNoteTitle: string = '未命名笔记';
   @Local isTitleFocused: boolean = false;
@@ -25,8 +26,9 @@ export struct NotePage {
 
   async init(){
     const appContext = this.context.getApplicationContext();
-    let path = `${appContext.filesDir}/notes/`;
-    // console.info('NotePage | path is ' + path);
+    let timestamp = Date.now();
+    let timeArray = getDateByTimeStamp(timestamp);
+    let path = `${appContext.filesDir}/data/${timeArray[0]}/${timeArray[1]}/${timeArray[2]}/`;
     let initFlag = await this.noteViewModel.init(path);
     this.currentNoteTitle = this.noteViewModel.noteState.title;
     // await this.noteViewModel.loadCurrentNote();
@@ -70,6 +72,10 @@ export struct NotePage {
         .alignItems(VerticalAlign.Center)
 
         ToolBarComponent({
+          editing: true,
+          clearSpan: () => {
+            this.noteViewModel.editorController.cleanAll();
+          },
           newNote: () => {
             this.noteViewModel.newNote();
             },
@@ -103,6 +109,8 @@ export struct NotePage {
           isColorPickerOpen: this.isColorPickerOpen,
           setColorPickerOpen: (open: boolean) => {
             this.isColorPickerOpen = open;
+          },
+          changeEditState: () => {
           }
         })
       }

@@ -1,0 +1,149 @@
+{
+    "compatibility_info": {
+        "version": "2.0",
+        "type": "metafile"
+    },
+    "metainfo": {
+        "iid": "0d9d910c-fee8-4b9d-8cb0-0082a4cfd7c9",
+        "uri": "project://packages/studio-vertex-shader-functions/shader-code/src/vertex-blocks.ark.glsl",
+        "xxh3": "23e6147871858c8d4af90a2e4c538685",
+        "spec": {
+            "$meta": {
+                "meta-version": "2.0"
+            },
+            "$root": {
+                "$classId": "68089ffa-cefa-11ed-afa1-0242ac120002",
+                "$className": "ShaderCodeAsset",
+                "$instanceId": "0005de68-38bc-76c0-5e89-065f222e45ed",
+                "__attachments": [
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Iid",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "0d9d910c-fee8-4b9d-8cb0-0082a4cfd7c9"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Uri",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "project://packages/studio-vertex-shader-functions/shader-code/src/vertex-blocks.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Name",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "vertex-blocks.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "MediaType",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "application/vnd.ark.shader-code"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Code",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "#ifndef VERTEX_BLOCKS_H\r\n#define VERTEX_BLOCKS_H\r\n\r\n#include \"common.h\"\r\n\r\n/**\r\n * Sets the output data of the vertex shader.\r\n *\r\n * @displayName Output Vertex Data\r\n * @in Position - The local vertex position.\r\n * @in Normal - The local vertex normal.\r\n * @in Tangent - The local vertex tangent.\r\n * @in Color - The vertex color.\r\n */\r\nvoid OutputVertexBlock(in vec3 position, in vec3 normal, in vec4 tangent, in vec4 color)\r\n{\r\n    const uint cameraIdx = GetUnpackCameraIndex(uGeneralData);\r\n    mat4 worldMatrix;\r\n    mat3 normalMatrix;\r\n    mat4 prevWorldMatrix;\r\n    GetWorldMatrix(worldMatrix, normalMatrix, prevWorldMatrix);\r\n    const vec4 worldPos = worldMatrix * vec4(position.xyz, 1.0);\r\n    const vec4 projPos = uCameras[cameraIdx].viewProj * worldPos;\r\n    CORE_VERTEX_OUT(projPos);\r\n\r\n    const uint instanceIdx = GetInstanceIndex();\r\n    outIndices = GetPackFlatIndices(cameraIdx, instanceIdx);\r\n\r\n    outPos.xyz = worldPos.xyz;\r\n    outPrevPosI = vec4(0.0, 0.0, 0.0, 0.0);\r\n    if ((CORE_SUBMESH_FLAGS & CORE_SUBMESH_VELOCITY_BIT) == CORE_SUBMESH_VELOCITY_BIT) {\r\n        outPrevPosI.xyz = (prevWorldMatrix * vec4(position.xyz, 1.0)).xyz;\r\n    }\r\n\r\n    outNormal = normalize(normalMatrix * normal.xyz);\r\n    if ((CORE_SUBMESH_FLAGS & CORE_SUBMESH_TANGENTS_BIT) == CORE_SUBMESH_TANGENTS_BIT) {\r\n        outTangentW = vec4(normalize(normalMatrix * tangent.xyz), tangent.w);\r\n    } else {\r\n        outTangentW = vec4(0.0, 0.0, 0.0, 1.0);\r\n    }\r\n\r\n    outUv.xy = inUv0;\r\n    if ((CORE_SUBMESH_FLAGS & CORE_SUBMESH_SECOND_TEXCOORD_BIT) == CORE_SUBMESH_SECOND_TEXCOORD_BIT) {\r\n        outUv.zw = inUv1;\r\n    }\r\n\r\n    if ((CORE_SUBMESH_FLAGS & CORE_SUBMESH_VERTEX_COLORS_BIT) == CORE_SUBMESH_VERTEX_COLORS_BIT) {\r\n        outColor = color;\r\n    } else {\r\n        outColor = vec4(1.0);\r\n    }\r\n}\r\n\r\n/**\r\n * Retrieves various attributes of the vertex from the input data.\r\n *\r\n * @displayName Input Vertex Data\r\n * @out Position - The local vertex position.\r\n * @out Normal - The local vertex normal.\r\n * @out Tangent - The local vertex tangent.\r\n * @out Color - The vertex color.\r\n */\r\nvoid InputVertexBlock(out vec3 position, out vec3 normal, out vec4 tangent, out vec4 color)\r\n{\r\n    position = inPosition.xyz;\r\n    normal = inNormal.xyz;\r\n    tangent = inTangent;\r\n    color = inColor;\r\n}\r\n\r\n/**\r\n * Retrieves the local vertex position from the input data.\r\n *\r\n * @displayName Input Vertex Position\r\n * @out Position - The local vertex position.\r\n */\r\nvoid InputVertexPositionBlock(out vec3 position)\r\n{\r\n    position = inPosition.xyz;\r\n}\r\n\r\n/**\r\n * Retrieves the local vertex normal from the input data.\r\n *\r\n * @displayName Input Vertex Normal\r\n * @out Normal - The local vertex normal.\r\n */\r\nvoid InputVertexNormalBlock(out vec3 normal)\r\n{\r\n    normal = inNormal.xyz;\r\n}\r\n\r\n/**\r\n * Retrieves the local vertex tangent from the input data.\r\n *\r\n * @displayName Input Vertex Tangent\r\n * @out Tangent - The local vertex tangent.\r\n */\r\nvoid InputVertexTangentBlock(out vec4 tangent)\r\n{\r\n    tangent = inTangent;\r\n}\r\n\r\n/**\r\n * Retrieves the vertex color from the input data.\r\n *\r\n * @displayName Input Vertex Color\r\n * @out Color - The vertex color.\r\n */\r\nvoid InputVertexColorBlock(out vec4 color)\r\n{\r\n    color = inColor;\r\n}\r\n\r\n/**\r\n * Retrieves the UV coordinates from the input, including support for a second UV set if available.\r\n *\r\n * @displayName UV\r\n * @out Uv - UV coordinates (xy: first UV set, zw: second UV set, if available).\r\n */\r\nvoid UvVertexBlock(out vec4 uv)\r\n{\r\n    uv = vec4(0.0, 0.0, 0.0, 0.0);\r\n    uv.xy = inUv0;\r\n    if ((CORE_SUBMESH_FLAGS & CORE_SUBMESH_SECOND_TEXCOORD_BIT) == CORE_SUBMESH_SECOND_TEXCOORD_BIT) {\r\n        uv.zw = inUv1;\r\n    }\r\n}\r\n\r\n/**\r\n * Retrieves the current scene time and delta time.\r\n *\r\n * @displayName Time\r\n * @out SceneTime - The current time in the scene.\r\n * @out DeltaTime - The time elapsed since the last frame.\r\n */\r\nvoid TimeVertexBlock(out float sceneTime, out float deltaTime)\r\n{\r\n    sceneTime = uGeneralData.sceneTimingData.z;\r\n    deltaTime = uGeneralData.sceneTimingData.x;\r\n}\r\n\r\n/**\r\n * Generates 3D Simplex noise based on the input position.\r\n *\r\n * @displayName Simplex Noise 3D\r\n * @in Position - The input position in 3D space.\r\n * @out Noise - The resulting 3D Simplex noise value.\r\n */\r\nvoid SimplexNoise3DVertexBlock(in vec3 v, out float noise)\r\n{  \r\n    noise = SimplexNoise(v);\r\n}\r\n\r\n/**\r\n * Samples a gradient based on the number of colors and interpolates between them over time.\r\n *\r\n * @displayName Sample Gradient\r\n * @in NumColors - The number of colors to interpolate between [2, 4].\r\n * @in Color 1 - The first color.\r\n * @in Color 2 - The second color.\r\n * @in Color 3 - The third color (used if numColors >= 3).\r\n * @in Color 4 - The fourth color (used if numColors == 4).\r\n * @in Time - A value between 0 and 1 representing the interpolation factor.\r\n * @out Color - The interpolated color output.\r\n */\r\nvoid SampleGradientVertexBlock(\r\n    in float numColors, in vec3 color1, in vec3 color2, in vec3 color3, in vec3 color4, in float time, out vec3 color)\r\n{\r\n    vec3 result;\r\n    if (numColors == 2) {\r\n        result = mix(color1, color2, time);\r\n    } else if (numColors == 3) {\r\n        if (time <= 0.5) {\r\n            float t = time / 0.5;\r\n            result = mix(color1, color2, t);\r\n        } else {\r\n            float t = (time - 0.5) / 0.5;\r\n            result = mix(color2, color3, t);\r\n        }\r\n    } else if (numColors == 4) {\r\n        if (time <= 0.33) {\r\n            float t = time / 0.33;\r\n            result = mix(color1, color2, t);\r\n        } else if (time <= 0.66) {\r\n            float t = (time - 0.33) / 0.33;\r\n            result = mix(color2, color3, t);\r\n        } else {\r\n            float t = (time - 0.66) / 0.34;\r\n            result = mix(color3, color4, t);\r\n        }\r\n    } else {\r\n        // Default case if an unsupported number of colors is passed\r\n        result = color1;\r\n    }\r\n\r\n    color = result;\r\n}\r\n\r\n/**\r\n * Applies a 3D rotation to the input position around a specified axis and center.\r\n *\r\n * @displayName Rotate 3D\r\n * @in Position - The input vector to rotate.\r\n * @in RotationCenter - The center of the rotation.\r\n * @in Axis - The axis around which to rotate.\r\n * @in Angle - The angle of rotation, in radians.\r\n * @out NewPosition - The rotated output vector.\r\n */\r\nvoid Rotate3DVertexBlock(in vec3 position, in vec3 rotationCenter, in vec3 axis, in float angle, out vec3 newPosition)\r\n{\r\n    vec3 normalizedAxis = normalize(axis);\r\n    float s = sin(angle);\r\n    float c = cos(angle);\r\n    float oc = 1.0 - c;\r\n\r\n    mat3 rotationMatrix = mat3(oc * normalizedAxis.x * normalizedAxis.x + c,\r\n        oc * normalizedAxis.x * normalizedAxis.y - normalizedAxis.z * s,\r\n        oc * normalizedAxis.x * normalizedAxis.z + normalizedAxis.y * s,\r\n        oc * normalizedAxis.x * normalizedAxis.y + normalizedAxis.z * s, oc * normalizedAxis.y * normalizedAxis.y + c,\r\n        oc * normalizedAxis.y * normalizedAxis.z - normalizedAxis.x * s,\r\n        oc * normalizedAxis.x * normalizedAxis.z - normalizedAxis.y * s,\r\n        oc * normalizedAxis.y * normalizedAxis.z + normalizedAxis.x * s, oc * normalizedAxis.z * normalizedAxis.z + c);\r\n\r\n    vec3 translatedPosition = position - rotationCenter;\r\n    newPosition = rotationMatrix * translatedPosition;\r\n    newPosition += rotationCenter;\r\n}\r\n\r\n/**\r\n * Transforms a position from object space to world space using the world matrix.\r\n *\r\n * @displayName World Matrix Transform\r\n * @in ObjectPosition - The position in object space.\r\n * @out WorldPosition - The transformed position in world space.\r\n */\r\nvoid WorldMatrixTransformVertexBlock(in vec3 objectPosition, out vec3 worldPosition)\r\n{\r\n    mat4 worldMatrix;\r\n    mat3 normalMatrix;\r\n    mat4 prevWorldMatrix;\r\n    GetWorldMatrix(worldMatrix, normalMatrix, prevWorldMatrix);\r\n\r\n    worldPosition = (worldMatrix * vec4(objectPosition, 1.0)).xyz;\r\n}\r\n\r\n/**\r\n * Transforms a position from world space to object space using the inverse of the world matrix.\r\n *\r\n * @displayName Object Matrix Transform\r\n * @in WorldPosition - The position in world space.\r\n * @out ObjectPosition - The transformed position in object space.\r\n */\r\nvoid ObjectMatrixTransformVertexBlock(in vec3 worldPosition, out vec3 objectPosition)\r\n{\r\n    mat4 worldMatrix;\r\n    mat3 normalMatrix;\r\n    mat4 prevWorldMatrix;\r\n    GetWorldMatrix(worldMatrix, normalMatrix, prevWorldMatrix);\r\n\r\n    mat4 objectMatrix = inverse(worldMatrix);\r\n\r\n    objectPosition = (objectMatrix * vec4(worldPosition, 1.0)).xyz;\r\n}\r\n\r\n/**\r\n * Transforms a direction from world space to object space\r\n *\r\n * @displayName Object Direction Transform\r\n * @in WorldDirection - The direction in world space.\r\n * @out ObjectDirection - The transformed direction in object space.\r\n */\r\nvoid ObjectDirectionTransformVertexBlock(in vec3 worldDirection, out vec3 objectDirection)\r\n{\r\n    mat4 worldMatrix;\r\n    mat3 normalMatrix;\r\n    mat4 prevWorldMatrix;\r\n    GetWorldMatrix(worldMatrix, normalMatrix, prevWorldMatrix);\r\n    mat4 objectMatrix = inverse(worldMatrix);\r\n    \r\n    objectDirection = (objectMatrix * vec4(worldDirection, 0.0)).xyz;\r\n}\r\n\r\n/**\r\n* Transforms a direction from object space to world space\r\n*\r\n* @displayName World Direction Transform\r\n* @in ObjectDirection - The direction in object space.\r\n* @out WorldDirection - The transformed direction in world space.\r\n*/\r\nvoid WorldDirectionTransformVertexBlock(in vec3 objectDirection, out vec3 worldDirection)\r\n{\r\n   mat4 worldMatrix;\r\n   mat3 normalMatrix;\r\n   mat4 prevWorldMatrix;\r\n   GetWorldMatrix(worldMatrix, normalMatrix, prevWorldMatrix);\r\n   \r\n   worldDirection = (worldMatrix * vec4(objectDirection, 0.0)).xyz;\r\n}\r\n\r\n#endif\r\n\r\n\r\n"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsValid",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": false
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsDirty",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": true
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    }
+                ]
+            }
+        }
+    }
+}

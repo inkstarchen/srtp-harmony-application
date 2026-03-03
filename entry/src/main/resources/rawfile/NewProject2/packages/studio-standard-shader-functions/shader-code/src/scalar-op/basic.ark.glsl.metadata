@@ -1,0 +1,149 @@
+{
+    "compatibility_info": {
+        "version": "2.0",
+        "type": "metafile"
+    },
+    "metainfo": {
+        "iid": "7df9e07f-c72d-4278-9b81-0e8872104aaa",
+        "uri": "project://packages/studio-standard-shader-functions/shader-code/src/scalar-op/basic.ark.glsl",
+        "xxh3": "1069e92b879d4d8e13255cbecac914cc",
+        "spec": {
+            "$meta": {
+                "meta-version": "2.0"
+            },
+            "$root": {
+                "$classId": "68089ffa-cefa-11ed-afa1-0242ac120002",
+                "$className": "ShaderCodeAsset",
+                "$instanceId": "0005de68-388e-c964-c7a2-2f9d252ec4b1",
+                "__attachments": [
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Iid",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "7df9e07f-c72d-4278-9b81-0e8872104aaa"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Uri",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "project://packages/studio-standard-shader-functions/shader-code/src/scalar-op/basic.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Name",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "basic.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "MediaType",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "application/vnd.ark.shader-code"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Code",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "\r\n\r\n#ifndef BASIC_VEC2_BLOCKS_H\r\n#define BASIC_VEC2_BLOCKS_H\r\n\r\n///******************************************************\r\n// * Basic functions on Vec2 Components\r\n// ******************************************************/\r\n\r\n/**\r\n * @displayName Add\r\n * @in A - value to be added\r\n * @in B - value to be added\r\n * @out result - Sum of A and B.\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid AddBlock(in T x, in T m, out T result)\r\n{\r\n    result = x + m;\r\n}\r\n\r\n/**\r\n * @displayName Subtract\r\n * @in A - value to be subtracted from\r\n * @in B - value to be subtracted\r\n * @out result - Difference of A and B. The result is a vector pointing from B to A (if T is a vector).\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid SubtractBlock(in T x, in T m, out T result)\r\n{\r\n    result = x - m;\r\n}\r\n\r\n/**\r\n * @displayName Multiply\r\n * @in A - value to be multiplied\r\n * @in B - value to be multiplied\r\n * @out result - Product of A and B.\r\n * @templateArg T = float | vec2 | vec3 | vec4 | mat2 | mat3 | mat4\r\n */\r\nvoid MultiplyBlock(in T x, in T m, out T result)\r\n{\r\n    result = x * m;\r\n}\r\n\r\n/**\r\n * If the divisor is zero, the result is zero - todo migrate to float infinity\r\n *\r\n * @displayName Divide\r\n * @in A - Dividend - the value to be divided\r\n * @in B - Divisor - the value to divide by\r\n * @out result - Output of div operation.\r\n * @templateArg T\r\n */\r\nvoid DivideBlock(in T x, in T d, out T result);\r\n\r\n/**\r\n * @specialization\r\n * @templateArg T = float\r\n */\r\nvoid DivideBlock(in float x, in float d, out float result)\r\n{\r\n    result = x / d;\r\n    if (d == 0) {\r\n        result = 0.0;\r\n    }\r\n}\r\n\r\n/**\r\n * @specialization\r\n * @templateArg T = vec2\r\n */\r\nvoid DivideBlock(in vec2 x, in vec2 d, out vec2 result)\r\n{\r\n    result = x / d;\r\n    if (d.x == 0) {\r\n        result.x = 0.0;\r\n    }\r\n    if (d.y == 0) {\r\n        result.y = 0.0;\r\n    }\r\n}\r\n\r\n/**\r\n * @specialization\r\n * @templateArg T = vec3\r\n */\r\nvoid DivideBlock(in vec3 x, in vec3 d, out vec3 result)\r\n{\r\n    result = x / d;\r\n    if (d.x == 0) {\r\n        result.x = 0.0;\r\n    }\r\n    if (d.y == 0) {\r\n        result.y = 0.0;\r\n    }\r\n    if (d.z == 0) {\r\n        result.z = 0.0;\r\n    }\r\n}\r\n\r\n/**\r\n * @specialization\r\n * @templateArg T = vec4\r\n */\r\nvoid DivideBlock(in vec4 x, in vec4 d, out vec4 result)\r\n{\r\n    result = x / d;\r\n    if (d.x == 0) {\r\n        result.x = 0.0;\r\n    }\r\n    if (d.y == 0) {\r\n        result.y = 0.0;\r\n    }\r\n    if (d.z == 0) {\r\n        result.z = 0.0;\r\n    }\r\n    if (d.w == 0) {\r\n        result.w = 0.0;\r\n    }\r\n}\r\n\r\n/**\r\n * Returns the reciprocal of the input value component-wise. Equivalent of `1 / A`.\r\n *\r\n * @displayName Reciprocal\r\n * @in value - value to take the reciprocal of\r\n * @out result - the reciprocal of the input value\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid ReciprocalBlock(in T x, out T result)\r\n{\r\n    result = 1.0f / x;\r\n}\r\n\r\n/**\r\n * Negates the input value component-wise. Equivalent of `-A`.\r\n *\r\n * @displayName Negate\r\n * @in value - value to negate\r\n * @out result - the negated value\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid NegateBlock(in T x, out T result)\r\n{\r\n    result = -x;\r\n}\r\n\r\n/**\r\n * Returns `1 - A` component-wise.\r\n *\r\n * @displayName One Minus\r\n * @in value - value to subtract from 1\r\n * @out result - the result of `1 - A`\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid OneMinusBlock(in T x, out T result)\r\n{\r\n    result = 1.0f - x;\r\n}\r\n\r\n/**\r\n * Linearly interpolates between two values.\r\n *\r\n * @displayName Lerp\r\n * @in A - value to interpolate from\r\n * @in B - value to interpolate to\r\n * @in t - Interpolation factor. <br>0.0 yields A, 1.0 yields B, and 0.5 yields the midpoint between A and B.\r\n * @out result - the interpolated value\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid LerpBlock(in T a, in T b, in T t, out T c)\r\n{\r\n    c = mix(a, b, t);\r\n}\r\n\r\n/**\r\n * Given a known range of values and a target value, the inverse lerp function returns the normalized position of the\r\n * target value within the range of values, expressed as a value between 0 and 1. This value represents the proportion\r\n * of the distance between the minimum and maximum values of the range that the target value is located.\r\n *\r\n * The output of this function is not clamped, so it can return values outside the range of 0 to 1 if the given value is\r\n * outside the range of [min, max].\r\n *\r\n * Note that the minimum and maximum values of the range must not be equal, otherwise the result will be undefined.\r\n *\r\n * @displayName Inverse Lerp\r\n * @in min - minimum value of the range\r\n * @in max - maximum value of the range\r\n * @in value - value to find the normalized position of within the range\r\n * @out t - the normalized position of the value within the range (min yields 0, max yields 1, and the midpoint yields\r\n * 0.5)\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid InverseLerpBlock(in T min, in T max, in T value, out T result)\r\n{\r\n    result = (value - min) / (max - min);\r\n}\r\n\r\n/**\r\n * Returns the absolute value of the input value (component-wise).\r\n *\r\n * @displayName Abs\r\n * @in value - value to take the absolute value of\r\n * @out result - the absolute value of the input value\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid AbsBlock(in T x, out T result)\r\n{\r\n    result = abs(x);\r\n}\r\n\r\n/**\r\n * Returns the remainder of the division of A by B (component-wise).\r\n *\r\n * @displayName Mod\r\n * @in Dividend - the value to be divided\r\n * @in Divisor - the value to divide by\r\n * @out result - the remainder of the (component-wise) division of A by B\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n */\r\nvoid ModBlock(in T x, in T y, out T result)\r\n{\r\n    result = mod(x, y);\r\n}\r\n\r\n#endif // BASIC_VEC2_BLOCKS_H\r\n"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsValid",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": false
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsDirty",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": true
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    }
+                ]
+            }
+        }
+    }
+}

@@ -1,0 +1,10 @@
+@echo off
+setlocal
+
+set CMD_DIR=%~dp0
+set CMD_DIR=%CMD_DIR:~0,-1%
+:: Convert '\' to '/'
+set "CMD_PATH=%CMD_DIR:\=/%"
+
+:: TODO: -app_path="%CMD_PATH%/"
+"%CMD_DIR%\${ARCH_PATH_NATIVE}\AppRunner.exe" -lume_config="file:///%CMD_PATH%/${ARCH_PATH}/runtime-config.json" -project_path="%CMD_PATH%/../../" -cache_path="%CMD_PATH%/${ARCH_PATH}/cache"

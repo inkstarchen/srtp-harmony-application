@@ -1,4 +1,4 @@
-import { isToday } from '../../../shared/utils/time';
+import { isToday } from '../../../shared/utils/Time/time';
 import { CalendarDayState } from './CalendarDayState'
 
 @ComponentV2

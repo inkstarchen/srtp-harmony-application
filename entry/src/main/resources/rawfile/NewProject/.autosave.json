@@ -1,0 +1,85 @@
+{
+  "PaneManager": {
+    "floating-windows": [
+      {
+        "floating-window-resource-uri": "",
+        "floating-window-class-id": "com.huawei.editor.ProjectWindowDockContainer",
+        "floating-window-instance-id": "com.huawei.editor.ProjectWindowDockContainer#bqdhtm0YDd",
+        "floating-window-title": "Project",
+        "floating-window-state": "docked",
+        "panes": [
+          {
+            "pane-class-id": "com.huawei.editor.ProjectPane",
+            "pane-instance-id": "com.huawei.editor.ProjectPane#eP564OhjIr"
+          }
+        ]
+      },
+      {
+        "floating-window-resource-uri": "",
+        "floating-window-class-id": "com.huawei.editor.LogWindowDockContainer",
+        "floating-window-instance-id": "com.huawei.editor.LogWindowDockContainer#CnzWbRqhZq",
+        "floating-window-title": "Log",
+        "floating-window-state": "docked",
+        "panes": [
+          {
+            "pane-class-id": "com.huawei.editor.LogPane",
+            "pane-instance-id": "com.huawei.editor.LogPane#7pjryBkmpd"
+          }
+        ]
+      },
+      {
+        "floating-window-resource-uri": "",
+        "floating-window-class-id": "com.huawei.editor.InspectorWindowDockContainer",
+        "floating-window-instance-id": "com.huawei.editor.InspectorWindowDockContainer#WbHEljiqRa",
+        "floating-window-title": "Properties",
+        "floating-window-state": "docked",
+        "panes": [
+          {
+            "pane-class-id": "com.huawei.editor.InspectorPane",
+            "pane-instance-id": "com.huawei.editor.InspectorPane#30sCQ6uIR5"
+          }
+        ]
+      },
+      {
+        "floating-window-resource-uri": "project://assets/default.scene",
+        "floating-window-class-id": "com.huawei.editor.View3DWindowDockContainer",
+        "floating-window-instance-id": "com.huawei.editor.View3DWindowDockContainer#uKmZGJezTL",
+        "floating-window-title": "3D View [default.scene]",
+        "floating-window-state": "docked",
+        "panes": [
+          {
+            "pane-class-id": "com.huawei.editor.UiHierarchyPane",
+            "pane-instance-id": "com.huawei.editor.UiHierarchyPane#tKk8qwwepQ",
+            "resource-uri": "project://assets/default.scene",
+            "backup-uri": "project://assets/.autosave.default.scene",
+            "have-unsaved-changes": false
+          },
+          {
+            "pane-class-id": "com.huawei.editor.ToolkitView3DPane",
+            "pane-instance-id": "com.huawei.editor.ToolkitView3DPane#XSgm6uu6PH"
+          }
+        ]
+      }
+    ],
+    "docking-layout": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPFF0QWR2YW5jZWREb2NraW5nU3lzdGVtIFZlcnNpb249IjEiIFVzZXJWZXJzaW9uPSIwIiBDb250YWluZXJzPSIxIiBDZW50cmFsV2lkZ2V0PSJDZW50cmFsV2lkZ2V0Ij4KICAgIDxDb250YWluZXIgRmxvYXRpbmc9IjAiPgogICAgICAgIDxTcGxpdHRlciBPcmllbnRhdGlvbj0iLSIgQ291bnQ9IjIiPgogICAgICAgICAgICA8U3BsaXR0ZXIgT3JpZW50YXRpb249InwiIENvdW50PSIyIj4KICAgICAgICAgICAgICAgIDxBcmVhIFRhYnM9IjIiIEN1cnJlbnQ9ImNvbS5odWF3ZWkuZWRpdG9yLlZpZXczRFdpbmRvd0RvY2tDb250YWluZXIjdUttWkdKZXpUTCIgRmxhZ3M9IjEiPgogICAgICAgICAgICAgICAgICAgIDxXaWRnZXQgTmFtZT0iQ2VudHJhbFdpZGdldCIgQ2xvc2VkPSIwIi8+CiAgICAgICAgICAgICAgICAgICAgPFdpZGdldCBOYW1lPSJjb20uaHVhd2VpLmVkaXRvci5WaWV3M0RXaW5kb3dEb2NrQ29udGFpbmVyI3VLbVpHSmV6VEwiIENsb3NlZD0iMCIvPgogICAgICAgICAgICAgICAgPC9BcmVhPgogICAgICAgICAgICAgICAgPEFyZWEgVGFicz0iMSIgQ3VycmVudD0iY29tLmh1YXdlaS5lZGl0b3IuSW5zcGVjdG9yV2luZG93RG9ja0NvbnRhaW5lciNXYkhFbGppcVJhIj4KICAgICAgICAgICAgICAgICAgICA8V2lkZ2V0IE5hbWU9ImNvbS5odWF3ZWkuZWRpdG9yLkluc3BlY3RvcldpbmRvd0RvY2tDb250YWluZXIjV2JIRWxqaXFSYSIgQ2xvc2VkPSIwIi8+CiAgICAgICAgICAgICAgICA8L0FyZWE+CiAgICAgICAgICAgICAgICA8U2l6ZXM+MTA3NyA1MjAgPC9TaXplcz4KICAgICAgICAgICAgPC9TcGxpdHRlcj4KICAgICAgICAgICAgPEFyZWEgVGFicz0iMiIgQ3VycmVudD0iY29tLmh1YXdlaS5lZGl0b3IuUHJvamVjdFdpbmRvd0RvY2tDb250YWluZXIjYnFkaHRtMFlEZCI+CiAgICAgICAgICAgICAgICA8V2lkZ2V0IE5hbWU9ImNvbS5odWF3ZWkuZWRpdG9yLlByb2plY3RXaW5kb3dEb2NrQ29udGFpbmVyI2JxZGh0bTBZRGQiIENsb3NlZD0iMCIvPgogICAgICAgICAgICAgICAgPFdpZGdldCBOYW1lPSJjb20uaHVhd2VpLmVkaXRvci5Mb2dXaW5kb3dEb2NrQ29udGFpbmVyI0NueldiUnFoWnEiIENsb3NlZD0iMCIvPgogICAgICAgICAgICA8L0FyZWE+CiAgICAgICAgICAgIDxTaXplcz42NjYgMjQ4IDwvU2l6ZXM+CiAgICAgICAgPC9TcGxpdHRlcj4KICAgIDwvQ29udGFpbmVyPgo8L1F0QWR2YW5jZWREb2NraW5nU3lzdGVtPgo="
+  },
+  "MainWindow": {
+    "size": [
+      1600,
+      968
+    ],
+    "position": [
+      53,
+      24
+    ],
+    "maximize": false
+  },
+  "BackupList": {
+    "list": [
+      {
+        "resource-uri": "project://assets/default.scene",
+        "backup-uri": "project://assets/.autosave.default.scene"
+      }
+    ]
+  }
+}

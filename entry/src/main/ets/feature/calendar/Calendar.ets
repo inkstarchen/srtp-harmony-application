@@ -10,6 +10,7 @@ import { TraceVec3 } from "../../core/math/vec";
 const THRESHOLD_MAX = 0.5;
 const THRESHOLD_MIN = 0.1;
 
+
 @ComponentV2
 export struct CalendarComponent {
   @Local calendarViewModel: CalendarViewModel = new CalendarViewModel();

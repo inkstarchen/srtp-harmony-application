@@ -1,0 +1,17 @@
+{
+    "name": "effect-particles",
+    "version": "1.0",
+    "icon": {
+        "uri": "Lume_Icon.svg",
+        "rounded": false
+    },
+    "author": "Ark",
+    "description": "Particle effects",
+    "depends": [],
+    "assets": [
+        "particle_effect_billboard.collection",
+        "particle_effect_mesh.collection"
+    ],
+    "uid": "caabeebe-a7f0-47be-8b57-4789c2ba07c5",
+    "api": {}
+}

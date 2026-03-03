@@ -236,47 +236,94 @@ float fbm(vec2 p) {
     return value;
 }
 
+vec3 GammaCorrect(vec3 color, float gamma)
+{
+    return pow(color, vec3(1.0 / gamma));
+}
+
+vec3 GammaDecode(vec3 color, float gamma)
+{
+    return pow(color, vec3(gamma));
+}
+
+vec4 uv90CW(vec4 uv) {
+    float y = uv.y;
+    float x = uv.x;
+    uv.y = -x;
+    uv.x = y;
+    return uv;
+}
+
 void main(void) {
-    CORE_RELAXEDP vec4 baseColor = GetBaseColorSample(inUv);
+
     
     float time = uMyData.time / 100.0;
-    vec2 uv = inUv.xy;
-    
-    // 创建多层正弦波浪
-    float wave1 = sin(uv.x * 8.0 + time * 2.0) * 0.5 + 0.5;
-    float wave2 = sin(uv.y * 6.0 + time * 1.5) * 0.3 + 0.5;
-    float wave3 = sin((uv.x + uv.y) * 10.0 + time * 2.5) * 0.4 + 0.5;
-    
-    // 组合波浪
-    float wavePattern = (wave1 * 0.5 + wave2 * 0.3 + wave3 * 0.2);
-    
-    // 添加流向效果
-    vec2 flowUV = uv;
-    flowUV.x += sin(uv.y * 3.0 + time * 1.2) * 0.1;
-    flowUV.y += sin(uv.x * 2.5 + time * 0.8) * 0.08;
-    
-    // 基于流向的波浪
-    float flowWave = sin(flowUV.x * 12.0 + flowUV.y * 8.0 + time * 3.0) * 0.5 + 0.5;
-    
-    // 最终波浪值
-    float waveValue = (wavePattern * 0.7 + flowWave * 0.3);
-    
-    // 海洋颜色渐变
-    vec3 oceanColor;
-    if (waveValue < 0.3) {
-        oceanColor = mix(vec3(0.0, 0.1, 0.3), vec3(0.1, 0.3, 0.6), waveValue / 0.3);
-    } else if (waveValue < 0.7) {
-        oceanColor = mix(vec3(0.1, 0.3, 0.6), vec3(0.3, 0.6, 0.9), (waveValue - 0.3) / 0.4);
-    } else {
-        oceanColor = mix(vec3(0.3, 0.6, 0.9), vec3(0.5, 0.8, 1.0), (waveValue - 0.7) / 0.3);
+    vec4 uv = inUv;
+    vec3 finalColor = vec3(0.0);
+    if(uv.y >= 0.5 && uv.y <= 0.75){
+        if(uv.x >= 0.375 && uv.x <= 0.625){
+            uv.x = (uv.x - 0.375) * 2.0;
+            uv.y = (uv.y - 0.25) * 4.0;
+            uv = uv90CW(uv);
+            CORE_RELAXEDP vec4 baseColor = GetBaseColorSample(uv);
+            finalColor = baseColor.xyz;
+        }
+    }else if(uv.y >= 0.0 && uv.y <= 0.25){
+        if(uv.x >= 0.375 && uv.x <= 0.625){
+            uv.x = 0.5 + (uv.x - 0.375) * 2.0;
+            uv.y = (uv.y - 0.25) * 4.0;
+            uv = uv90CW(uv);
+            CORE_RELAXEDP vec4 baseColor = GetBaseColorSample(uv);
+            finalColor = baseColor.xyz;
+        }
+    }else{
+        finalColor = vec3(1.0,1.0, 1.0);
     }
-    
-    // 添加波浪泡沫
-    float foam = smoothstep(0.7, 0.9, waveValue) * (0.8 + 0.2 * sin(time * 5.0 + uv.x * 20.0));
-    oceanColor += vec3(1.0, 1.0, 1.0) * foam * 0.3;
-    
-    // 与基础颜色混合
-    vec3 finalColor = mix(baseColor.xyz, oceanColor, 0.7);
-    
+
     outColor = vec4(finalColor, 1.0);
 }
+
+// void main(void) {
+//     CORE_RELAXEDP vec4 baseColor = GetBaseColorSample(inUv);
+    
+//     float time = uMyData.time / 100.0;
+//     vec2 uv = inUv.xy;
+    
+//     // 创建多层正弦波浪
+//     float wave1 = sin(uv.x * 8.0 + time * 2.0) * 0.5 + 0.5;
+//     float wave2 = sin(uv.y * 6.0 + time * 1.5) * 0.3 + 0.5;
+//     float wave3 = sin((uv.x + uv.y) * 10.0 + time * 2.5) * 0.4 + 0.5;
+    
+//     // 组合波浪
+//     float wavePattern = (wave1 * 0.5 + wave2 * 0.3 + wave3 * 0.2);
+    
+//     // 添加流向效果
+//     vec2 flowUV = uv;
+//     flowUV.x += sin(uv.y * 3.0 + time * 1.2) * 0.1;
+//     flowUV.y += sin(uv.x * 2.5 + time * 0.8) * 0.08;
+    
+//     // 基于流向的波浪
+//     float flowWave = sin(flowUV.x * 12.0 + flowUV.y * 8.0 + time * 3.0) * 0.5 + 0.5;
+    
+//     // 最终波浪值
+//     float waveValue = (wavePattern * 0.7 + flowWave * 0.3);
+    
+//     // 海洋颜色渐变
+//     vec3 oceanColor;
+//     if (waveValue < 0.3) {
+//         oceanColor = mix(vec3(0.0, 0.1, 0.3), vec3(0.1, 0.3, 0.6), waveValue / 0.3);
+//     } else if (waveValue < 0.7) {
+//         oceanColor = mix(vec3(0.1, 0.3, 0.6), vec3(0.3, 0.6, 0.9), (waveValue - 0.3) / 0.4);
+//     } else {
+//         oceanColor = mix(vec3(0.3, 0.6, 0.9), vec3(0.5, 0.8, 1.0), (waveValue - 0.7) / 0.3);
+//     }
+    
+//     // 添加波浪泡沫
+//     float foam = smoothstep(0.7, 0.9, waveValue) * (0.8 + 0.2 * sin(time * 5.0 + uv.x * 20.0));
+//     oceanColor += vec3(1.0, 1.0, 1.0) * foam * 0.3;
+    
+//     // 与基础颜色混合
+//     vec3 finalColor = mix(baseColor.xyz, oceanColor, 0.7);
+    
+//     outColor = vec4(finalColor, 1.0);
+// }

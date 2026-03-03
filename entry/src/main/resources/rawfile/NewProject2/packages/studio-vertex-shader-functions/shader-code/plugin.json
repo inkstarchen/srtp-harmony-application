@@ -1,0 +1,17 @@
+{
+    "name": "shader-code",
+    "version": "1.0",
+    "icon": {
+        "uri": "Lume_Icon.svg",
+        "rounded": false
+    },
+    "author": "Ark",
+    "description": "Shader function library for vertex shaders.",
+    "depends": [],
+    "assets": [],
+    "uid": "c356ef54-b65a-4fc5-a55e-a3b7f542e1c5",
+    "api": {},
+    "shader-code": {
+        "sourceRoot": "./src"
+    }
+}

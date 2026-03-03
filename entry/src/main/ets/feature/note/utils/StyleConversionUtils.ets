@@ -129,13 +129,31 @@ export class StyleConversionUtils {
   }
 
   // 恢复时：NoteSpanStyle to RichEditorTextStyle
-  static restoreTextStyle(style: NoteSpanStyle | undefined): RichEditorTextStyle {
+  static restoreEditorTextStyle(style: NoteSpanStyle | undefined): RichEditorTextStyle {
     if (!style) {
       return {};
     }
     hilog.info(DOMAIN_NUMBER, TAG, `restore color=${style.fontColor}`);
     return {
       fontSize: style.fontSize,
+      fontColor: StyleConversionUtils.stringToColor(style.fontColor),
+      fontWeight: StyleConversionUtils.stringToFontWeight(style.fontWeight),
+      // 使用工具类转换字体样式
+      fontStyle: StyleConversionUtils.stringToFontStyle(style.fontStyle),
+      fontFamily: style.fontFamily,
+      decoration: {
+        type: style.decorationType !== undefined ? style.decorationType : TextDecorationType.None
+      }
+    };
+  }
+
+  static restoreEditorTextStyleMain(style: NoteSpanStyle | undefined): RichEditorTextStyle {
+    if (!style) {
+      return {};
+    }
+    hilog.info(DOMAIN_NUMBER, TAG, `restore color=${style.fontColor}`);
+    return {
+      fontSize: 14,
       fontColor: StyleConversionUtils.stringToColor(style.fontColor),
       fontWeight: StyleConversionUtils.stringToFontWeight(style.fontWeight),
       // 使用工具类转换字体样式

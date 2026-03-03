@@ -3,12 +3,11 @@ import { getScreenSize } from "../../shared/ui/uiUtils";
 import { SideBarButton } from "./component/button";
 import { ButtonData, SideBarState } from "./SideBarState"
 import { router } from "@kit.ArkUI";
-import { TouchManager } from "../../shared/utils/TouchManager";
 
 @ComponentV2
 export struct SideBar {
   @Local sideBarState: SideBarState = new SideBarState();
-  @Require @Param touchManager:TouchManager;
+
   @Event CalendarDisplay: () => void;
   // 回调映射表
   private buttonHandlers: Record<string, () => void> = {

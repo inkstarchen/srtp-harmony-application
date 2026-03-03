@@ -1,0 +1,149 @@
+{
+    "compatibility_info": {
+        "version": "2.0",
+        "type": "metafile"
+    },
+    "metainfo": {
+        "iid": "70b8db15-ab7f-448e-af87-0e7aa80316cc",
+        "uri": "project://packages/studio-standard-shader-functions/shader-code/src/conditionals.ark.glsl",
+        "xxh3": "98183cc40dde341ea3a115166b06f1cf",
+        "spec": {
+            "$meta": {
+                "meta-version": "2.0"
+            },
+            "$root": {
+                "$classId": "68089ffa-cefa-11ed-afa1-0242ac120002",
+                "$className": "ShaderCodeAsset",
+                "$instanceId": "0005de68-3879-30e0-bff5-6b5caf3cde25",
+                "__attachments": [
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Iid",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "70b8db15-ab7f-448e-af87-0e7aa80316cc"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Uri",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "project://packages/studio-standard-shader-functions/shader-code/src/conditionals.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Name",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "conditionals.ark.glsl"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "MediaType",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "application/vnd.ark.shader-code"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "Code",
+                        "defaultValue": {
+                            "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": ""
+                        },
+                        "values": [
+                            {
+                                "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": "#ifndef STUDIO_STANDARD_SHADER_FUNCTIONS_CONTIONALS\r\n#define STUDIO_STANDARD_SHADER_FUNCTIONS_CONTIONALS\r\n\r\n/**\r\n * Compares a and b, then returns the corresponding value from the inputs.\r\n *\r\n * @displayName Compare Switch\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n * @in a - The first value to compare.\r\n * @in b - The second value to compare.\r\n * @in tolerance - The tolerance to use when checking if a == b.\r\n * @in a == b - The value to return if a and b are equal.\r\n * @in a > b - The value to return if a is greater than b.\r\n * @in a < b - The value to return if a is less than b.\r\n * @out result - The corresponding input value based on the comparison.\r\n */\r\nvoid CompareSwitchBlock(\r\n    in float a, in float b, in float tolerance, in T ifAEqualsB, in T ifAGreaterThanB, in T ifALessThanB, out T result)\r\n{\r\n    if (abs(a - b) <= tolerance) {\r\n        result = ifAEqualsB;\r\n    } else if (a > b) {\r\n        result = ifAGreaterThanB;\r\n    } else {\r\n        result = ifALessThanB;\r\n    }\r\n}\r\n\r\n/**\r\n * If the condition is true, returns the first value, otherwise the second one.\r\n *\r\n * @displayName If\r\n * @templateArg T = float | vec2 | vec3 | vec4\r\n * @in condition - The condition to check.\r\n * @in if true - The value to return if the condition is true.\r\n * @in if false - The value to return if the condition is false.\r\n * @out result - The corresponding input number based on the condition.\r\n */\r\nvoid IfBlock(in bool condition, in T ifTrue, in T ifFalse, out T result)\r\n{\r\n    if (condition) {\r\n        result = ifTrue;\r\n    } else {\r\n        result = ifFalse;\r\n    }\r\n}\r\n\r\n/**\r\n * Returns whether a is less than b.\r\n *\r\n * @displayName Less\r\n * @in a - The first value to compare.\r\n * @in b - The second value to compare.\r\n * @out a < b - Whether a is less than b.\r\n * @templateArg T = float | int | uint\r\n */\r\nfun LessBlock(in T a, in T b, out bool result)\r\n{\r\n    result = a < b;\r\n}\r\n\r\n/**\r\n * Returns whether a is less than or equal to b.\r\n *\r\n * @displayName Less or Equal\r\n * @in a - The first value to compare.\r\n * @in b - The second value to compare.\r\n * @out a \u2264 b - Whether a is less than or equal to b.\r\n * @templateArg T = float | int | uint\r\n */\r\nfun LessEqualBlock(in T a, in T b, out bool result)\r\n{\r\n    result = a <= b;\r\n}\r\n\r\n/**\r\n * Returns whether a is greater than b.\r\n *\r\n * @displayName Greater\r\n * @in a - The first value to compare.\r\n * @in b - The second value to compare.\r\n * @out a > b - Whether a is greater than b.\r\n * @templateArg T = float | int | uint\r\n */\r\nfun GreaterBlock(in T a, in T b, out bool result)\r\n{\r\n    result = a > b;\r\n}\r\n\r\n/**\r\n * Returns whether a is greater than or equal to b.\r\n *\r\n * @displayName Greater or Equal\r\n * @in a - The first value to compare.\r\n * @in b - The second value to compare.\r\n * @out a \u2265 b - Whether a is greater than or equal to b.\r\n * @templateArg T = float | int | uint\r\n */\r\nfun GreaterEqualBlock(in T a, in T b, out bool result)\r\n{\r\n    result = a >= b;\r\n}\r\n\r\n/**\r\n * Returns whether a is equal to b.\r\n *\r\n * @displayName Equal\r\n * @in a - The first value to compare.\r\n * @in b - The second value to compare.\r\n * @out a == b - Whether a is equal to b.\r\n * @templateArg T = float | vec2 | vec3 | vec4 | int | uint\r\n */\r\nfun EqualToBlock(in T a, in T b, out bool result)\r\n{\r\n    result = a == b;\r\n}\r\n\r\n/**\r\n * Determines whether the value 'a' is within the range defined by 'min' and\r\n * 'max', inclusive. This means it checks if 'a' is greater than or equal to\r\n * 'min' and less than or equal to 'max'.\r\n *\r\n * @displayName In Range\r\n * @in a - The value to check.\r\n * @in min - The minimum value.\r\n * @in max - The maximum value.\r\n * @out in range - Whether a is between min and max, inclusive.\r\n * @templateArg T = float | int | uint\r\n */\r\nfun InRangeBlock(in T a, in T min, in T max, out bool result)\r\n{\r\n    result = a >= min && a <= max;\r\n}\r\n\r\n/**\r\n * Determines whether the value 'a' falls outside the inclusive range of 'min'\r\n * and 'max'. It returns true if 'a' is strictly less than 'min' or strictly\r\n * greater than 'max'. Essentially, this function checks if 'a' does not lie\r\n * within or on the boundaries of the given range, thus being the inverse\r\n * condition of the 'InRange' function.\r\n *\r\n * @displayName Out of Range\r\n * @in a - The value to check.\r\n * @in min - The minimum value.\r\n * @in max - The maximum value.\r\n * @out out of range - Whether a is outside of min and max, exclusive.\r\n * @templateArg T = float | int | uint\r\n */\r\nfun OutOfRangeBlock(in T a, in T min, in T max, out bool result)\r\n{\r\n    result = a < min || a > max;\r\n}\r\n\r\n// is inf, is nan, is finite:\r\n/**\r\n * Returns whether the given value is either positive or negative infinite\r\n * value.\r\n *\r\n * @displayName Is Infinite\r\n * @in a - The value to check.\r\n * @out infinite - Whether a is infinite (-inf or inf).\r\n */\r\nfun IsInfiniteBlock(in float a, out bool inf)\r\n{\r\n    inf = isinf(a); // todo: add other template specializations for vec2, vec3,\r\n                    // vec4 once the generic system gets better\r\n}\r\n\r\n/**\r\n * Returns whether the given value is a NaN (not a number).\r\n *\r\n * @displayName Is NaN\r\n * @in a - The value to check.\r\n * @out nan - Whether a is NaN.\r\n */\r\nfun IsNaNBlock(in float a, out bool nan)\r\n{\r\n    nan = isnan(a); // todo: add other template specializations for vec2, vec3,\r\n                    // vec4 once the generic system gets better\r\n}\r\n\r\n/**\r\n * Returns whether at least one of the given inputs is true.\r\n *\r\n * @displayName Or\r\n * @in a - The first value to compare.\r\n * @in b - The second value to compare.\r\n * @out \u2228 - Whether a or b is true.\r\n */\r\nfun OrBlock(in bool a, in bool b, out bool result)\r\n{\r\n    result = a || b;\r\n}\r\n\r\n/**\r\n * Returns whether the given value is positive.\r\n *\r\n * @displayName Is Positive\r\n * @in a - The value to check.\r\n * @out positive - Whether a is greater than 0.\r\n */\r\nfun IsPositiveBlock(in float a, out bool result)\r\n{\r\n    result = a > 0.0;\r\n}\r\n\r\n/**\r\n * Returns whether the given value is negative.\r\n *\r\n * @displayName Is Negative\r\n * @in a - The value to check.\r\n * @out negative - Whether a is less than 0.\r\n */\r\nfun IsNegativeBlock(in float a, out bool result)\r\n{\r\n    result = a < 0.0;\r\n}\r\n\r\n/**\r\n * Returns whether both of the given inputs are true.\r\n *\r\n * @displayName And\r\n * @in a - The first value to compare.\r\n * @in b - The second value to compare.\r\n * @out \u2227 - Whether a and b are true.\r\n */\r\nfun AndBlock(in bool a, in bool b, out bool result)\r\n{\r\n    result = a && b;\r\n}\r\n\r\n/**\r\n * Negates the given input - returns whether it is false.\r\n *\r\n * @displayName Not\r\n * @in a - The value to negate.\r\n * @out \u00ACa - Whether a is false.\r\n */\r\nfun NotBlock(in bool a, out bool result)\r\n{\r\n    result = !a;\r\n}\r\n\r\n/**\r\n * Returns whether a implies b. This says that if a is true, then b must also\r\n * be. If a is false, then b can be either true or false.\r\n *\r\n * @displayName Implies\r\n * @in a - The first value to compare.\r\n * @in b - The second value to compare.\r\n * @out a \u2192 b - Whether a implies b.\r\n */\r\nfun ImpliesBlock(in bool a, in bool b, out bool result)\r\n{\r\n    result = !a || b;\r\n}\r\n\r\n/**\r\n * Returns whether a is equivalent to b. This says that a and b must have the\r\n * same truth value.\r\n *\r\n * @displayName Logical Equivalence\r\n * @in a - The first value to compare.\r\n * @in b - The second value to compare.\r\n * @out a \u2194 b - Whether a is equivalent to b.\r\n */\r\nfun LogicalEquivalenceBlock(in bool a, in bool b, out bool result)\r\n{\r\n    result = a == b;\r\n}\r\n\r\n/**\r\n * Returns true iff a and b have different truth values. (Exclusive Or)\r\n *\r\n * @displayName Xor\r\n * @in a - The first value to compare.\r\n * @in b - The second value to compare.\r\n * @out a \u2295 b - Whether a is not equivalent to b.\r\n */\r\nfun XorBlock(in bool a, in bool b, out bool result)\r\n{\r\n    result = a != b;\r\n}\r\n\r\n/**\r\n * Returns true iff both a and b are false. Equivalent to not(a or b).\r\n *\r\n * @displayName Nor\r\n * @in a - The first value to compare.\r\n * @in b - The second value to compare.\r\n * @out a \u2193 b - Whether a nor b.\r\n */\r\nfun NorBlock(in bool a, in bool b, out bool result)\r\n{\r\n    result = !(a || b);\r\n}\r\n\r\n/**\r\n * Returns true iff at least one of a and b is false. Equivalent to not(a and\r\n * b).\r\n *\r\n * @displayName Nand\r\n * @in a - The first value to compare.\r\n * @in b - The second value to compare.\r\n * @out a \u2191 b - Whether a nand b.\r\n */\r\nfun NandBlock(in bool a, in bool b, out bool result)\r\n{\r\n    result = !(a && b);\r\n}\r\n\r\n#endif // STUDIO_STANDARD_SHADER_FUNCTIONS_CONTIONALS"
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsValid",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": false
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    },
+                    {
+                        "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
+                        "$className": "Property",
+                        "$name": "IsDirty",
+                        "defaultValue": {
+                            "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                            "$className": "Any",
+                            "value": true
+                        },
+                        "values": [
+                            {
+                                "$classId": "cd2fd49b-c6b0-14bd-4275-696c74416e79",
+                                "$className": "Any",
+                                "value": true
+                            }
+                        ],
+                        "modifiers": []
+                    }
+                ]
+            }
+        }
+    }
+}

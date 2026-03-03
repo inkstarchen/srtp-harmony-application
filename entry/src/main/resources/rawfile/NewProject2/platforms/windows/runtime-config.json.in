@@ -1,0 +1,15 @@
+{
+  "title": "NewProject2",
+  "lume_app_uid": "@APP_UID@",
+  "lume_plugins": [@PLUGIN_UIDS_ARRAY@],
+  "lume_plugin_paths": [@PLUGIN_PATHS_ARRAY@],
+  "startup_uri": "@STARTUP_URI@",
+  "output_colorspace": "@OUTPUT_COLORSPACE@",
+  "default_scene_uri": "@DEFAULT_SCENE_URI@",
+  "default_font_uri": "@DEFAULT_FONT_URI@",
+  "default_palette_uri": "@DEFAULT_PALETTE_URI@",
+  "default_locale": "@DEFAULT_LOCALE@",
+  "localizations_in_use": "@LOCALIZATIONS_IN_USE_ARRAY@",
+  "window_clear_enabled": "@CLEAR_ENABLED@",
+  "window_clear_color": "@CLEAR_COLOR@"
+}

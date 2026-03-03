@@ -1,84 +1,162 @@
 import image from '@ohos.multimedia.image'
-import { JSON } from '@kit.ArkTS';
 import { ImageUtils } from '../shared/utils/ImageUtils';
-import Prompt from '@system.prompt';
+import { SceneProxy } from '../core/scene3D/SceneProxy';
+import { RaycastParameters, ShaderMaterial, Vec2, Vec3, Vec4 } from '@kit.ArkGraphics3D';
+import { AnimatorOptions, AnimatorResult } from '@kit.ArkUI';
+import { Touch, TouchDown, TouchMove, TouchUp, TOUCH_DEFAULT } from '../shared/utils/TouchManager';
+import { getScreenSize } from '../shared/ui/uiUtils';
+import { getDateStringWithTimeStamp } from '../shared/utils/Time/time';
 
-@Entry
+
+const  ANIMATION_OPTION: AnimatorOptions = {
+  duration: 2000,
+  easing: 'ease',
+  delay: 0,
+  fill: 'none',
+  direction: 'normal',
+  iterations: -1,
+  begin: 100,
+  end: 200
+};
+
 @ComponentV2
-struct TestPage{
+export struct TestPage {
+  @Local ScreenSize: Size = getScreenSize();
+  touch:Touch = {
+    phase :0,
+    active : false,
+    downPos : {x:0,y:0},
+    curPos : {x:0, y:0},
+    lastPos : {x:0,y:0},
+  } as Touch;
   @Local pixmap: image.PixelMap | undefined = undefined;
   @Local loadPixmap: image.PixelMap | undefined = undefined;
   uiContext: UIContext = this.getUIContext();
+  @Local imageUri: string = '';
+  @Local backId: number = 0;
+  @Event showCard: (imageUri:string) => void;
+  @Local sceneProxy: SceneProxy = new SceneProxy(this.getUIContext());
+  @Local delta: Vec3 = {x:0,y:0,z:0};
+  @Local backAnimator: AnimatorResult | undefined = undefined;
+  step: number = 0;
+  material: ShaderMaterial | null = null;
+  @Local init:boolean = false;
+  aboutToAppear(): void {
+    this.sceneProxy.loadScene('emptyscene');
+    this.backAnimator = this.getUIContext().createAnimator(ANIMATION_OPTION);
+    this.backAnimator.onFrame = () => {
+      this.step++;
+      if (this.material && this.material.colorShader) {
+        // Just give a random effect.
+        (this.material.colorShader.inputs['vec_1'] as Vec4) = {
+          x: Math.abs(Math.sin(this.step) + 0.5),
+          y: Math.abs(Math.sin(this.step * 0.86) + 0.5),
+          z: Math.abs(Math.sin(this.step * 0.91) + 0.5),
+          w: 1.0
+        };
+        (this.material.colorShader.inputs['time'] as number) = this.step;
+      }
+    };
 
-  build(){
-    Column(){
+  }
 
-      Row({space: 20}){
-        Column(){
-
+  async captureAndDisplay() {
+    await ImageUtils.TakePictureAndSave(this.getUIContext().getHostContext());
+    let array: Array<string> = [];
+    let fileDir = this.uiContext.getHostContext()?.filesDir;
+    if(fileDir){
+      array.push(fileDir + '/capture.png');
+      array.push(fileDir + '/capture.png');
+      let loadPixmap = ImageUtils.TwoImageStencil(array, false);
+      if(loadPixmap){
+        await ImageUtils.savePixelMapToFile(loadPixmap, fileDir + '/fix.png');
+        this.sceneProxy.addCard(fileDir + '/fix.png');
+        if (fileDir) {
+          ImageUtils.loadPixelMapFromFile(fileDir + '/fix.png')
+            .then((pixmap) => {
+              this.loadPixmap = pixmap;
+            })
         }
-        .width(80)
-        .height(80)
-        .backgroundColor("#ff00c4ff")
-        .id("origin")
+      }
+    }
+  }
 
-        Image(this.pixmap)
-          .width(80)
-          .height(80)
+  aboutToDisappear(): void {
+    this.sceneProxy.release();
+  }
 
-        Image(this.loadPixmap)
-          .width(80)
-          .height(80)
+  build() {
+    Stack({alignContent:Alignment.Center}){
+      Column() {
+        Button("capture")
+          .onClick(async () => {
+            await this.captureAndDisplay();
+          })
       }
       .width("100%")
-      .height("50%")
-      .background("#fffce2e2")
+      .height("100%")
+      .backgroundColor("#00fff8eb")
 
-      Button("click")
-        .onClick(() => {
-          this.uiContext.getComponentSnapshot().get("origin", (error: Error, pixmap: image.PixelMap) => {
-            if(error) {
-              console.error(`error: ${JSON.stringify(error)}`);
-              return;
-            }
-            this.pixmap = pixmap;
-          }, { scale: 2, waitUntilRenderFinished: true });
-        }).margin(10)
+      Stack({alignContent:Alignment.Center}){
+        if(this.sceneProxy.options){
+          Component3D(this.sceneProxy.options)
+            .renderWidth('100%')
+            .renderHeight('100%')
+            .id('3D')
+            .hitTestBehavior(HitTestMode.None)
+        }
+      }
+      .backgroundColor("#00ffffff")
+      .hitTestBehavior(HitTestMode.None)
+      .width("100%")
+      .height("100%")
 
-      Button("save")
-        .onClick(() => {
-          if(this.pixmap){
-            let fileDir = this.uiContext.getHostContext()?.tempDir;
-            if(fileDir){
-              console.info("Test: SaveDir is " + fileDir)
-              ImageUtils.savePixelMapToFile(this.pixmap as image.PixelMap,fileDir + "/temp.png")
-                .then((result) => {
-                  if(result){
-                    Prompt.showToast({message: "saved"})
-                  }else{
-                    Prompt.showToast({message:"failed"})
-                  }
-                })
-            }
-          }
-        })
-
-      Button("load")
-        .onClick(() => {
-          let fileDir = this.uiContext.getHostContext()?.tempDir;
-          if(fileDir){
-            ImageUtils.loadPixelMapFromFile(fileDir + '/temp.png')
-              .then((pixmap) => {
-                this.loadPixmap = this.pixmap;
-                Prompt.showToast({message:'load pixmap'});
-              })
-          }
-
-
-        })
     }
+    .backgroundColor("#00ffffff")
+    .onTouch(async (event) => {
+      if(event.type == TouchType.Down){
+        TouchDown(event, this.touch);
+        const info = this.uiContext.getComponentUtils().getRectangleById('3D');
+
+        let x = this.uiContext.vp2px(event.touches[0].x);
+        let y = this.uiContext.vp2px(event.touches[0].y);
+        {
+        // console.info('RayCastTest | size' + info.size.width.toString() + '/' + info.size.height.toString());
+        // console.info('RayCastTest | TouchPos ' + x.toString() + '/' + y.toString());
+        // console.info('RayCastTest | offset ' + info.windowOffset.x.toString() + '/' + info.windowOffset.y.toString() );
+        // console.info('RayCastTest | touchOffset ' + (x - info.windowOffset.x).toString() + '/' + (y - info.windowOffset.y).toString());
+        }
+        let fx = x / this.ScreenSize.width;
+        let fy = y / this.ScreenSize.height;
+        let raycastParams: RaycastParameters = {};
+        let node = this.sceneProxy.scene?.root;
+        if(node){
+          raycastParams.rootNode = node;
+          let result = await this.sceneProxy.camera?.raycast({x:fx,y:fy} as Vec2,raycastParams);
+          if(result){
+            for(let i = 0; i < result.length; i++){
+              console.info('RayCastTest | Results ' + result[i].node.name);
+            }
+            this.sceneProxy.touchRotate.target = result[0].node;
+          }
+        }
+      }
+      if(event.type == TouchType.Move){
+        if(this.sceneProxy.touchRotate.target){
+          TouchMove(event,this.touch);
+          let id = this.sceneProxy.physicalSystem.getId(this.sceneProxy.touchRotate.target.path + "/" + this.sceneProxy.touchRotate.target.name);
+          if(id != undefined){
+            this.sceneProxy.physicalSystem.setRotation(id,this.sceneProxy.touchRotate.update(this.touch));
+          }
+        }
+      }
+      if(event.type == TouchType.Up){
+        TouchUp(event,this.touch);
+      }
+
+    })
     .width("100%")
     .height("100%")
-    .backgroundColor("#fff")
+
   }
 }
