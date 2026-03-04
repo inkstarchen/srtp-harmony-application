@@ -14,6 +14,12 @@ import { NavDirection, Test } from "../feature/TestComponent";
 import { TestPage } from "./TestPage";
 import { PlayGround } from "./PlayGround";
 
+
+enum NewPageState{
+  HIDDEN = 0,
+  SHOW = 1
+}
+
 @Entry
 @ComponentV2
 export struct mainPage {
@@ -42,13 +48,19 @@ export struct mainPage {
 
 
   rubberMovable: boolean = true;
-  @Local rubber: PhysicsScroller = new PhysicsScroller({x:-20,y:-20}, {x:20,y:20},this.getUIContext(),{width:this.ScreenWidth,height:this.ScreenHeight});
+  @Local rubber: PhysicsScroller = new PhysicsScroller(
+    {x:-this.ScreenWidth * 0.12,y:-this.ScreenHeight * 0.12},
+    {x:this.ScreenWidth * 0.12,y: this.ScreenHeight * 0.12}
+    ,this.getUIContext(),
+    {width:this.ScreenWidth,height:this.ScreenHeight}
+  );
 
   // LightEffect
   backId:number = 0;
   @Local timeNow: number = 0.01;
 
   // 编辑
+  @Local newPageState: NewPageState = NewPageState.HIDDEN;
   @Local editPageVisible:boolean = true;
   @Local selectedTextColor: Color = Color.Black;
   @Local isColorPickerOpen: boolean = false;
@@ -62,6 +74,7 @@ export struct mainPage {
 
 
   aboutToAppear(): void {
+    this.noteViewModel.newNote();
     // 灯光效果参数
     this.backId = setInterval(() => {
       this.timeNow += 0.05;
@@ -86,17 +99,41 @@ export struct mainPage {
   build() {
     Stack({ alignContent: Alignment.Center}) {
 
+
       // NavigatorBack
       Test({
         navDirection:this.rubber.navDir,
         nextPage: this.rubber.nextPage
       })
+      Stack(){
 
+      }
+      .width("100%")
+      .height("100%")
+      .backgroundColor("#00ffffff")
+      .onTouch((event) => {
+        HandleTouch(event, this.touch);
+        if(this.rubberMovable) {
+          if (event.type == TouchType.Down) {
+            this.rubber.down(this.touch.downPos);
+          } else if (event.type == TouchType.Move) {
+            this.rubber.move(this.touch.curPos);
+          } else {
+            this.rubber.up()
+          }
+        }
+      })
       if(this.rubber.curPage == PageId.PHOTO){
-        TestPage()
+        TestPage({
+          photoOffset:this.rubber.photoOffset,
+          translatePos:this.rubber.pos
+        })
       }
       if(this.rubber.curPage == PageId.PLAYGROUND){
-        PlayGround()
+        PlayGround({
+          playOffset:this.rubber.playGroundOffset,
+          translatePos:this.rubber.pos
+        })
       }
       // ==== 主展示界面 START ====
       mainDisplay({
@@ -140,26 +177,59 @@ export struct mainPage {
       // ==== 新建笔记编辑 ====
       if(this.editPageVisible){
         Stack({alignContent:Alignment.Center}){
-          Column(){
+          Column() {
             // topBar
-            Row(){
-              Button({ type: ButtonType.Circle }){
-                SymbolGlyph(this.editState ? $r("sys.symbol.arrow_down_right_and_arrow_up_left"): $r("sys.symbol.arrow_up_left_and_arrow_down_right"))
-                  .fontSize(20)
-                  .fontColor([Color.Black ])   //?
-              }
-              .onClick(() => {
-                this.editState = !this.editState;
-              })
-              .margin({top:15,left:10})
-              .backgroundColor('#00000000')
-              .width(40)
-              .height(40)
+            if(this.newPageState == NewPageState.SHOW){
+              Row() {
+                Button({ type: ButtonType.Circle }) {
+                  SymbolGlyph(this.editState ? $r("sys.symbol.arrow_down_right_and_arrow_up_left") :
+                    $r("sys.symbol.arrow_up_left_and_arrow_down_right"))
+                    .fontSize(20)
+                    .fontColor([Color.Black]) //?
+                }
+                .onClick(() => {
+                  this.editState = !this.editState;
+                })
+                .margin({ top: 15, left: 10 })
+                .backgroundColor('#00000000')
+                .width(40)
+                .height(40)
+
+                Button({ type: ButtonType.Circle }) {
+                  SymbolGlyph($r("sys.symbol.arrow_down"))
+                    .fontSize(20)
+                    .fontColor([Color.Black])
+                }
+                .onClick(() => {
+                  this.noteViewModel.editorController.controller.stopEditing()
+                  this.newPageState = NewPageState.HIDDEN;
+                })
+                .margin({ top: 15, left: 10 })
+                .backgroundColor('#00000000')
+                .width(40)
+                .height(40)
             }
             .justifyContent(FlexAlign.Start)
             .backgroundColor('#00000000')
             .height(40)
             .width("100%")
+          }
+            if(this.newPageState == NewPageState.HIDDEN){
+              Row(){
+
+              }
+              .onClick(() => {
+                if(this.newPageState == NewPageState.HIDDEN){
+                  this.newPageState = NewPageState.SHOW;
+                  Prompt.showToast({message:"YES"})
+                }
+              })
+              .justifyContent(FlexAlign.Start)
+              .backgroundColor('#00000000')
+              .height(40)
+              .width("100%")
+            }
+
 
             // toolBar
             if(this.editing || this.editInner){
@@ -175,8 +245,13 @@ export struct mainPage {
                 selectImage: () => {
                   this.noteViewModel.selectImage();
                 },
-                saveNote: () => {
-                  this.noteViewModel.saveNote();
+                saveNote: async () => {
+                  let spans = this.noteViewModel.editorController.controller.getSpans({start:0,end:1});
+                  if (spans.length != 0){
+                    await this.noteViewModel.saveNote();
+                    this.noteViewModel.editorController.cleanAll();
+                    this.newPageState = NewPageState.HIDDEN;
+                  }
                 },
                 toggleBold: () => {
                   this.noteViewModel.toggleBold();
@@ -247,26 +322,14 @@ export struct mainPage {
                 this.editing = edit;
                 if(edit){
                   this.editInner = true;
-                  this.noteViewModel.newNote();
-                  this.translateY += 300;
-                }else{
-                  let spans = this.noteViewModel.editorController.controller.getSpans({start:0,end:1});
-                  if (spans.length != 0){
-                    await this.noteViewModel.saveNote();
-                    this.noteViewModel.editorController.cleanAll();
-                  }
-                  this.translateY -= 300;
-                  this.additionHeight = 0;
                 }
               })
-              .onSubmit(() => {this.additionHeight += 15;})
-              .margin(20)
+              .margin(10)
               .height("60%")
-
           }
           .alignItems(HorizontalAlign.Center)
-          .translate({x:0,y:this.rubber.curPage == PageId.MAIN ? (this.editState ? 0: this.ScreenHeight / 2 -this.translateY - this.additionHeight - 50) : this.ScreenHeight })
-          .height(this.editState ? "100%" : 300 + this.additionHeight)
+          .translate({x:0,y:this.rubber.curPage == PageId.MAIN ? (this.newPageState ? -100 : this.ScreenHeight * 0.5 + 100 ) : this.ScreenHeight })
+          .height(this.editState ? "100%" : 300)
           .width(this.editState ? "100%" : "80%")
           .animation({
             duration:500,
@@ -274,9 +337,10 @@ export struct mainPage {
             delay:0,
             curve:Curve.EaseInOut
           })
+          .hitTestBehavior(HitTestMode.None)
           .backgroundColor("#fff")
           .border({radius:20,width:0,color:"#fff"})
-          .shadow({radius:15,color:"#1d000000",offsetX:0,offsetY:-20})
+          .shadow({radius:20,color:"#1d000000",offsetX:0,offsetY: 0})
           .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
         }
         .hitTestBehavior(HitTestMode.None)
@@ -295,20 +359,7 @@ export struct mainPage {
       }
 
     }
-    .onTouch((event) => {
-      HandleTouch(event, this.touch);
-      if(this.rubberMovable) {
-        if (event.type == TouchType.Down) {
-          this.rubber.down(this.touch.downPos);
-        } else if (event.type == TouchType.Move) {
-
-          this.rubber.move(this.touch.curPos);
-        } else {
-
-          this.rubber.up()
-        }
-      }
-    })
+    .hitTestBehavior(HitTestMode.None)
     .backgroundColor("#fffff8eb")
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
     .width('100%')

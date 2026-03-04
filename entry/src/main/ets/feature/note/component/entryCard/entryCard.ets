@@ -103,6 +103,7 @@ export struct entryCard{
         iterations:1,
         curve:Curve.Linear,
       })
+      .hitTestBehavior(HitTestMode.Block)
       .shadow(this.uiShadow(30 + this.angle,this.depth,20,0.25))
       .backgroundColor("#fff")
       .onClick(() => {
