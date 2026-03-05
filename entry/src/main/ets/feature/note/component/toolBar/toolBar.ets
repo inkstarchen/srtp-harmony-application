@@ -49,7 +49,7 @@ export struct ToolBarComponent{
         end:1
       })
       this.appearAnim.onFrame = (progress) => {
-        this.heightAnim = 48 * progress;
+        this.heightAnim = 36 * progress;
       }
       this.disappearAnim = this.getUIContext().createAnimator({
         duration:1000,
@@ -62,14 +62,14 @@ export struct ToolBarComponent{
         end:1
       })
       this.disappearAnim.onFrame = (progress) => {
-        this.heightAnim = 48 * (1 - progress);
+        this.heightAnim = 36 * (1 - progress);
       }
       this.disappearAnim.onFinish = () => {
         this.changeEditState();
       }
       this.appearAnim.play();
     }else{
-      this.heightAnim = 48;
+      this.heightAnim = 36;
     }
   }
 
@@ -99,7 +99,7 @@ export struct ToolBarComponent{
     // 格式工具栏
     Column() {
       Scroll( ) {
-        Row({ space: 8 }) {  //, verticalAlign: ItemAlign.Center }
+        Row() {
           this.ToolBarButton({ icon: $r('sys.symbol.archivebox_badge_clock'), action: () => this.saveNote() })
           this.ToolBarButton({
             icon: $r('sys.symbol.folder_badge_plus'),
@@ -145,12 +145,12 @@ export struct ToolBarComponent{
         }
         .padding({ left: 12, right: 12 })
         .alignItems(VerticalAlign.Center)
+        .justifyContent(FlexAlign.SpaceBetween)
       }
       .scrollable(ScrollDirection.Horizontal)
       .scrollBar(BarState.Off)
       .edgeEffect(EdgeEffect.None)
-      .clip(true)
-      .height(this.heightAnim)
+
 
       if (this.isColorPickerOpen) {
         Column() {
@@ -182,6 +182,9 @@ export struct ToolBarComponent{
         .alignItems(HorizontalAlign.End)
       }
     }
+    .width("100%")
+    .clip(true)
+    .height(this.heightAnim)
   }
 
   @Builder

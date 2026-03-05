@@ -125,8 +125,6 @@ export struct mainDisplay{
     Row({ space: 10 }) {
       // ==== 时间 START =====
       Stack({alignContent:Alignment.Top}){
-
-
         SlideList({
           display: this.slideDisplay,
           setItem:(item:DateItem) => {

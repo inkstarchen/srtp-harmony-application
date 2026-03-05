@@ -125,6 +125,7 @@ export class PhysicsScroller {
   screenWidth: number;
   screenHeight: number;
   @Trace navDir: NavDirection = NavDirection.NONE;
+  tempNavDir: NavDirection = NavDirection.NONE;
   @Trace mainOffset: TraceVec2 = new TraceVec2();
   @Trace photoOffset: TraceVec2 = new TraceVec2();
   @Trace playGroundOffset: TraceVec2 = new TraceVec2();
@@ -154,10 +155,10 @@ export class PhysicsScroller {
   }
 
   updateOffset(){
-    if(this.navDir == NavDirection.TOP || this.navDir == NavDirection.NONE) return;
-    this.mainOffset.x = PAGE_SETTING[this.curPage][this.navDir].main.x * this.screenWidth;
-    this.photoOffset.x = PAGE_SETTING[this.curPage][this.navDir].photo.x * this.screenWidth;
-    this.playGroundOffset.x = PAGE_SETTING[this.curPage][this.navDir].play.x * this.screenWidth;
+    if(this.tempNavDir == NavDirection.TOP || this.tempNavDir == NavDirection.NONE) return;
+    this.mainOffset.x = PAGE_SETTING[this.curPage][this.tempNavDir].main.x * this.screenWidth;
+    this.photoOffset.x = PAGE_SETTING[this.curPage][this.tempNavDir].photo.x * this.screenWidth;
+    this.playGroundOffset.x = PAGE_SETTING[this.curPage][this.tempNavDir].play.x * this.screenWidth;
     this.pos.x = 0;
     this.pos.y = 0;
   }
@@ -186,7 +187,6 @@ export class PhysicsScroller {
         this.updateOffset();
         this.curPage = this.nextPage;
         this.nextPage = PageId.NONE;
-        this.navDir = NavDirection.NONE;
       }
       this.state = MotionState.IDLE;
       this.animPlay = false;
@@ -195,7 +195,7 @@ export class PhysicsScroller {
 
   down(pos:Vec2){
     if(!this.animPlay){
-      Prompt.showToast({message:"rubber down"});
+      Prompt.showToast({message:"down"})
       this.state = MotionState.DRAG
       this.downPos.x = pos.x;
       this.downPos.y = pos.y;
@@ -231,8 +231,8 @@ export class PhysicsScroller {
   }
 
   up(){
+    if(this.state != MotionState.DRAG) return;
     if(!this.animPlay){
-
       if(this.nextPage != PageId.NONE){
         this.TargetPos = {x:this.screenWidth * ( 1- this.navDir), y:0};
       }else {
@@ -241,6 +241,8 @@ export class PhysicsScroller {
       this.animPlay = true;
       this.lastPos.x = this.pos.x;
       this.lastPos.y = this.pos.y;
+      this.tempNavDir = this.navDir;
+      this.navDir = NavDirection.NONE;
       this.moveAnim.play();
 
     }

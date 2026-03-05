@@ -6,6 +6,7 @@ import { AnimatorOptions, AnimatorResult } from '@kit.ArkUI';
 import { Touch, TouchDown, TouchMove, TouchUp, TOUCH_DEFAULT } from '../shared/utils/TouchManager';
 import { getScreenSize } from '../shared/ui/uiUtils';
 import { getDateStringWithTimeStamp } from '../shared/utils/Time/time';
+import { TraceVec2 } from '../core/math/vec';
 
 
 const  ANIMATION_OPTION: AnimatorOptions = {
@@ -21,6 +22,8 @@ const  ANIMATION_OPTION: AnimatorOptions = {
 
 @ComponentV2
 export struct TestPage {
+  @Require @Param photoOffset: TraceVec2;
+  @Require @Param translatePos: TraceVec2;
   @Local ScreenSize: Size = getScreenSize();
   touch:Touch = {
     phase :0,
@@ -113,6 +116,7 @@ export struct TestPage {
 
     }
     .backgroundColor("#00ffffff")
+    .hitTestBehavior(HitTestMode.Transparent)
     .onTouch(async (event) => {
       if(event.type == TouchType.Down){
         TouchDown(event, this.touch);
@@ -155,6 +159,7 @@ export struct TestPage {
       }
 
     })
+    .translate({x:this.photoOffset.x + this.translatePos.x,y:this.photoOffset.y + this.translatePos.y})
     .width("100%")
     .height("100%")
 
