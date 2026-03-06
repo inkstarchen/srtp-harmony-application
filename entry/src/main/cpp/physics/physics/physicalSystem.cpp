@@ -3,14 +3,16 @@
 //
 // Node APIs are not fully supported. To solve the compilation error of the interface cannot be found,
 // please include "napi/native_api.h".
-
-#include "collision.h"
-#include "physicalSystem.h"
-#include "napi_helpers.h"
-#include "vec.h"
 #include <cassert>
 #include <cstdint>
-
+#include <hilog/log.h>
+#include <string>
+#include "Inertial.h"
+#include "physicalSystem.h"
+#include "buffer.h"
+#include "collision.h"
+#include "napi_helpers.h"
+#include "vec.h"
 
 // 对齐到64空间
 static size_t alignCapacity(size_t v) {
@@ -127,13 +129,25 @@ PhysicsSystem::PhysicsSystem(size_t cap)
     ALLOC_FLOAT(vel_y)
     ALLOC_FLOAT(vel_z)
 
-    ALLOC_FLOAT(acc_x)
-    ALLOC_FLOAT(acc_y)
-    ALLOC_FLOAT(acc_z)
+    ALLOC_FLOAT(angVel_x)
+    ALLOC_FLOAT(angVel_y)
+    ALLOC_FLOAT(angVel_z)
 
     ALLOC_FLOAT(force_x)
     ALLOC_FLOAT(force_y)
     ALLOC_FLOAT(force_z)
+
+    ALLOC_FLOAT(torque_x)
+    ALLOC_FLOAT(torque_y)
+    ALLOC_FLOAT(torque_z)
+
+    ALLOC_FLOAT(impulse_x)
+    ALLOC_FLOAT(impulse_y)
+    ALLOC_FLOAT(impulse_z)
+
+    ALLOC_FLOAT(invInertial_xx)
+    ALLOC_FLOAT(invInertial_yy)
+    ALLOC_FLOAT(invInertial_zz)
 
     ALLOC_FLOAT(scale_x)
     ALLOC_FLOAT(scale_y)
@@ -144,7 +158,7 @@ PhysicsSystem::PhysicsSystem(size_t cap)
     ALLOC_FLOAT(extent_z)
 
     // material
-    ALLOC_FLOAT(mass)
+    ALLOC_FLOAT(invMass)
     ALLOC_FLOAT(restitution)
     ALLOC_FLOAT(friction)
 
@@ -255,23 +269,6 @@ napi_value PhysicsSystem::SetVelocity(napi_env env, napi_callback_info info)
     return nullptr;
 }
 
-napi_value PhysicsSystem::SetAcceleration(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value argv[2], jsThis;
-    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
-
-    uint32_t id;
-    Vector3 acc;
-
-    napi_get_value_uint32(env, argv[0], &id);
-    acc = napi_helpers::parse_vector3(env, argv[1]);
-
-    PhysicsSystem* obj;
-    napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
-    obj->setAcceleration(id, acc);
-    return nullptr;
-}
 
 napi_value PhysicsSystem::SetForce(napi_env env, napi_callback_info info)
 {
@@ -449,12 +446,6 @@ void PhysicsSystem::setVelocity(uint32_t id, Vector3 velocity)
     vel_z[id] = velocity.z;
 }
 
-void PhysicsSystem::setAcceleration(uint32_t id, Vector3 acceleration)
-{
-    acc_x[id] = acceleration.x;
-    acc_y[id] = acceleration.y;
-    acc_z[id] = acceleration.z;
-}
 
 void PhysicsSystem::setForce(uint32_t id, Vector3 force)
 {
@@ -481,7 +472,11 @@ void PhysicsSystem::setShapeType(uint32_t id, int32_t type)
 
 void PhysicsSystem::setMass(uint32_t id, float m)
 {
-    mass[id] = m;
+    if(m < 1e-6) {
+        invMass[id] = INFINITY;
+    }else {
+        invMass[id] = 1 / m;
+    }
 }
 
 
@@ -552,24 +547,6 @@ napi_value PhysicsSystem::GetVel(napi_env env, napi_callback_info info){
     vel_val = napi_helpers::create_vector3(env, vel);
     return vel_val;
 }
-napi_value PhysicsSystem::GetAcc(napi_env env, napi_callback_info info){
-
-    size_t argc = 1;
-    napi_value argv[1], jsThis;
-    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
-
-    napi_value id_val = argv[0];
-    uint32_t id;
-    napi_get_value_uint32(env, id_val, &id);
-
-    PhysicsSystem* obj;
-    napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
-    Vector3 acc = obj->getAcc(id);
-    napi_value acc_val;
-    
-    acc_val = napi_helpers::create_vector3(env, acc);
-    return acc_val;
-}
 napi_value PhysicsSystem::GetFric(napi_env env, napi_callback_info info){
 
     size_t argc = 1;
@@ -592,16 +569,13 @@ napi_value PhysicsSystem::GetFric(napi_env env, napi_callback_info info){
     return f_val;
 }
 float PhysicsSystem::getMass(uint32_t id){
-    return mass[id];
+    return 1 / invMass[id];
 }
-Vector3 PhysicsSystem::getAcc(uint32_t id){
-    return Vector3(acc_x[id],acc_y[id], acc_z[id]);
-}
+
 Vector3 PhysicsSystem::getVel(uint32_t id){
     return Vector3(vel_x[id],vel_y[id], vel_z[id]);
 }
 float PhysicsSystem::getFric(uint32_t id){
-    
     return friction[id];
 }
 
@@ -623,6 +597,25 @@ napi_value PhysicsSystem::Update(napi_env env, napi_callback_info info)
     obj->step(static_cast<float>(d));
     return obj->update(env, info);
 }
+
+napi_value PhysicsSystem::RayCast(napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value argv[1];
+    napi_value jsThis;
+    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
+    
+    napi_value touch_pos_val = argv[0];
+    Vector2 touch_pos = napi_helpers::parse_vector2(env, touch_pos_val);
+    
+    Vector3 cameraPos = Vector3(0.0,0.0,-4.0);
+    Vector3 front = Vector3(0.0,0.0,1.0);
+    Vector3 up = Vector3(0.0,1.0,0.0);
+    Vector3 right = Vector3(1.0,0.0,0.0);
+    Vector3 virtual_pos = (up * touch_pos.y + right * touch_pos.x) * (- cameraPos.z);
+    Vector3 dir = (virtual_pos - cameraPos).normalized();
+    
+}
+
 napi_value PhysicsSystem::update(napi_env env, napi_callback_info info) 
 {
     napi_value result = nullptr;
@@ -655,53 +648,258 @@ napi_value PhysicsSystem::update(napi_env env, napi_callback_info info)
 }
 void PhysicsSystem::step(float dt)
 {
-    // 位置预测
+    detectCollisions();
+
+    buildContacts();
+
+    solveContacts();
+
+    integrateVelocity(dt);
+
+    positionalCorrection();
+
+    integratePosition(dt);
+}
+
+void PhysicsSystem::detectCollisions() {
+    possiblePairs.clear();
+    for(uint32_t i = 0 ; i < count; ++i){
+        for(uint32_t j = i + 1 ; j < count; ++j){
+            if(isStatic[i] && isStatic[j]) continue;
+            if(testCollision(i, j)){
+                OH_LOG_INFO(LOG_APP, "YES");
+                possiblePairs.emplace_back(i,j);
+            }
+        }
+    }
+}
+void PhysicsSystem::buildContacts() {
+    contact.clear();
+    for(auto& pair : possiblePairs)
+    {
+        uint32_t idA = pair.first;
+        uint32_t idB = pair.second;
+        Contact c;
+        c.a = idA;
+        c.b = idB;
+        ContactDispatch::dispatch(*this, idA, idB,c);
+        contact.emplace_back(c);
+    }
+}
+void PhysicsSystem::solveContacts() {
+    for(const auto&c : contact){
+        uint32_t a = c.a;
+        uint32_t b = c.b;
+        
+        // 法向冲量
+        float nx = c.normal.x;
+        float ny = c.normal.y;
+        float nz = c.normal.z;
+        
+        // 相对位置 r = contactPoint - pos
+        float rax = c.point.x - pos_x[a];
+        float ray = c.point.y - pos_y[a];
+        float raz = c.point.z - pos_z[a];
+
+        float rbx = c.point.x - pos_x[b];
+        float rby = c.point.y - pos_y[b];
+        float rbz = c.point.z - pos_z[b];
+        
+         // 速度差 v_rel = (v_b + ω_b × r_b) - (v_a + ω_a × r_a)
+        float cross_ax = angVel_y[a]*raz - angVel_z[a]*ray;
+        float cross_ay = angVel_z[a]*rax - angVel_x[a]*raz;
+        float cross_az = angVel_x[a]*ray - angVel_y[a]*rax;
+
+        float va_rel_x = vel_x[b] + (angVel_y[b]*rbz - angVel_z[b]*rby) - (vel_x[a] + cross_ax);
+        float va_rel_y = vel_y[b] + (angVel_z[b]*rbx - angVel_x[b]*rbz) - (vel_y[a] + cross_ay);
+        float va_rel_z = vel_z[b] + (angVel_x[b]*rby - angVel_y[b]*rbx) - (vel_z[a] + cross_az);
+
+        // 冲量大小 j = -(1 + e) * (v_rel ⋅ n) / (1/m_a + 1/m_b + ...旋转项略)
+        float relVelAlongNormal = va_rel_x*nx + va_rel_y*ny + va_rel_z*nz;
+        float e = std::min(restitution[a], restitution[b]);
+        float invMassSum = invMass[a] + invMass[b]; // 这里暂时忽略角动量的转动影响
+        float j = -(1.0f + e) * relVelAlongNormal / invMassSum;
+
+        // 线性冲量累加
+        float impulseX = j * nx;
+        float impulseY = j * ny;
+        float impulseZ = j * nz;
+
+        impulse_x[a] -= impulseX;
+        impulse_y[a] -= impulseY;
+        impulse_z[a] -= impulseZ;
+
+        impulse_x[b] += impulseX;
+        impulse_y[b] += impulseY;
+        impulse_z[b] += impulseZ;
+
+        // 角冲量累加: τ = r × J
+        torque_x[a] -= ray*impulseZ - raz*impulseY;
+        torque_y[a] -= raz*impulseX - rax*impulseZ;
+        torque_z[a] -= rax*impulseY - ray*impulseX;
+
+        torque_x[b] += rby*impulseZ - rbz*impulseY;
+        torque_y[b] += rbz*impulseX - rbx*impulseZ;
+        torque_z[b] += rbx*impulseY - rby*impulseX;
+    }
+}
+void PhysicsSystem::integrateVelocity(float dt) {
     for (uint32_t i = 0; i < count; ++i)
     {
         if (isStatic[i]){
-            vel_x[i] = 0.0;
-            vel_y[i] = 0.0;
-            vel_z[i] = 0.0;
-            clearForce(i);
+            vel_x[i] = 0.0f;
+            vel_y[i] = 0.0f;
+            vel_z[i] = 0.0f;
+
+            angVel_x[i] = 0.0f;
+            angVel_y[i] = 0.0f;
+            angVel_z[i] = 0.0f;
             continue;
         }
+        
+        // --- 线性冲量积分 ---
+        impulse_x[i] += force_x[i] * dt;
+        impulse_y[i] += force_y[i] * dt;
+        impulse_z[i] += force_z[i] * dt;
 
-        // --- 1. 合力 -> 加速度 ---
-        float invMass = (mass[i] > 0.0f) ? 1.0f / mass[i] : 0.0f;
-//        OH_LOG_INFO(LOG_APP,"PhysicsSystem::Step id:%{public}u invMass:%{public}f, force:%{public}f, friction:%{public}f",i,invMass,force_y[i],friction[i]);
-        acc_x[i] = force_x[i] * invMass;
-        acc_y[i] = force_y[i] * invMass;
-        acc_z[i] = force_z[i] * invMass;
+        vel_x[i] += impulse_x[i] * invMass[i];
+        vel_y[i] += impulse_y[i] * invMass[i];
+        vel_z[i] += impulse_z[i] * invMass[i];
+    
+//        OH_LOG_INFO(LOG_APP, 
+//            "i=%{public}u vel=(%{public}.3f, %{public}.3f, %{public}.3f) impulse=(%{public}.3f, %{public}.3f, %{public}.3f) "
+//            "force=(%{public}.3f, %{public}.3f, %{public}.3f)",
+//            i,
+//            vel_x[i], vel_y[i], vel_z[i],
+//            impulse_x[i], impulse_y[i], impulse_z[i],
+//            force_x[i], force_y[i], force_z[i]
+//        );
+        // --- 线性阻尼 ---
+        float linearDamp = std::max(0.0f, 1.0f - friction[i] * dt);
+        vel_x[i] *= linearDamp;
+        vel_y[i] *= linearDamp;
+        vel_z[i] *= linearDamp;
 
-        // --- 2. 更新速度 ---
-        vel_x[i] += acc_x[i] * dt;
-        vel_y[i] += acc_y[i] * dt;
-        vel_z[i] += acc_z[i] * dt;
+        // --- 角冲量积分 ---
+        angVel_x[i] += torque_x[i] * invInertial_xx[i] * dt;
+        angVel_y[i] += torque_y[i] * invInertial_yy[i] * dt;
+        angVel_z[i] += torque_z[i] * invInertial_zz[i] * dt;
 
-        // --- 3. 线性阻尼（friction） ---
-        float damping = std::max(0.0f, 1.0f - friction[i] * dt);
-        vel_x[i] *= damping;
-        vel_y[i] *= damping;
-        vel_z[i] *= damping;
-        // --- 4. 更新位置 ---
+        // --- 角阻尼 ---
+        float angularDamp = std::max(0.0f, 1.0f - friction[i] * dt);
+        angVel_x[i] *= angularDamp;
+        angVel_y[i] *= angularDamp;
+        angVel_z[i] *= angularDamp;
+    }
+
+    clearForceAll();
+}
+void PhysicsSystem::positionalCorrection(){
+    const float k_slop = 0.01f;      // 容差，防止 jitter
+    const float percent = 0.8f;      // 修正比例，0~1
+
+    for (const auto& c : contact)
+    {
+        uint32_t a = c.a;
+        uint32_t b = c.b;
+
+        if (isStatic[a] && isStatic[b])
+            continue; // 两个静态物体不修正
+
+        // 修正量 = penetration - 容差
+        float penetration = std::max(c.penetration - k_slop, 0.0f);
+        if (penetration <= 0.0f)
+            continue;
+
+        // 质量比例分配
+        float invMassA = isStatic[a] ? 0.0f : invMass[a];
+        float invMassB = isStatic[b] ? 0.0f : invMass[b];
+        float invMassSum = invMassA + invMassB;
+        if (invMassSum == 0.0f) 
+            continue;
+
+        float correction = (penetration / invMassSum) * percent;
+
+        float dx = c.normal.x * correction;
+        float dy = c.normal.y * correction;
+        float dz = c.normal.z * correction;
+
+        // 应用到物体位置
+        if (!isStatic[a])
+        {
+            pos_x[a] -= dx * invMassA;
+            pos_y[a] -= dy * invMassA;
+            pos_z[a] -= dz * invMassA;
+        }
+
+        if (!isStatic[b])
+        {
+            pos_x[b] += dx * invMassB;
+            pos_y[b] += dy * invMassB;
+            pos_z[b] += dz * invMassB;
+        }
+    }
+}
+void PhysicsSystem::integratePosition(float dt)
+{
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        if (isStatic[i])
+            continue;
+
+        // --- 1. 更新位置 ---
         pos_x[i] += vel_x[i] * dt;
         pos_y[i] += vel_y[i] * dt;
         pos_z[i] += vel_z[i] * dt;
 
-        // --- 5. 清空力（非常重要） ---
-        clearForce(i);
-    }
-    
-    // 计算碰撞
-    for (uint32_t i = 0; i < count; ++i) {
-        for (uint32_t j = i + 1; j < count; ++j) {
-            if(isStatic[i] && isStatic[j]) continue;
-            if (testCollision(i, j)) {
-                ResolveCollision(i, j);
-            }
-        }
-    }
+        // --- 2. 更新旋转（四元数） ---
+        // 构造角速度四元数 ω_quat = (0, ωx, ωy, ωz)
+        float wx = angVel_x[i];
+        float wy = angVel_y[i];
+        float wz = angVel_z[i];
 
+        float qx = rot_x[i];
+        float qy = rot_y[i];
+        float qz = rot_z[i];
+        float qw = rot_w[i];
+
+        // 四元数更新公式: q_new = q + 0.5 * dt * ω_quat * q
+        float half_dt = 0.5f * dt;
+
+        float nx =  half_dt * ( wx*qw + wy*qz - wz*qy );
+        float ny =  half_dt * (-wx*qz + wy*qw + wz*qx );
+        float nz =  half_dt * ( wx*qy - wy*qx + wz*qw );
+        float nw =  half_dt * (-wx*qx - wy*qy - wz*qz );
+
+        qx += nx;
+        qy += ny;
+        qz += nz;
+        qw += nw;
+
+        // 归一化四元数
+        float norm = std::sqrt(qx*qx + qy*qy + qz*qz + qw*qw);
+        rot_x[i] = qx / norm;
+        rot_y[i] = qy / norm;
+        rot_z[i] = qz / norm;
+        rot_w[i] = qw / norm;
+    }
+}
+
+void PhysicsSystem::clearForceAll() {
+    for(uint32_t i = 0 ; i < count; i++){
+        force_x[i] = 0.0f;
+        force_y[i] = 0.0f;
+        force_z[i] = 0.0f;
+        
+        impulse_x[i] = 0.0f;
+        impulse_y[i] = 0.0f;
+        impulse_z[i] = 0.0f;
+        
+        torque_x[i] = 0.0f;
+        torque_y[i] = 0.0f;
+        torque_z[i] = 0.0f;
+        
+    }
 }
 
 napi_value PhysicsSystem::AddNode(napi_env env, napi_callback_info info) {
@@ -805,278 +1003,28 @@ napi_value PhysicsSystem::GetNormal(napi_env env, napi_callback_info info)
 
 // ============= 碰撞解算函数 ===================
 
+Body PhysicsSystem::getBody(uint32_t id) {
+    Body b;
+    b.type = static_cast<ShapeType>(shapeType[id]);
+    b.pos = {pos_x[id], pos_y[id], pos_z[id]};
+    b.extent = {extent_x[id],extent_y[id],extent_z[id]};
+    b.rot = {rot_x[id], rot_y[id], rot_z[id], rot_w[id]};
+    b.vel = {vel_x[id], vel_y[id], vel_z[id]};
+    b.angVel = {angVel_x[id], angVel_y[id], angVel_z[id]};
+    b.extent = {extent_x[id], extent_y[id], extent_z[id]};
+    b.invMass = invMass[id];
+    b.invInertia = Matrix3(
+        invInertial_xx[id],0,0,
+        0,invInertial_yy[id],0,
+        0,0,invInertial_zz[id]
+    );
+    b.invInertialWorld = computeInvInertiaWorld(b.invInertia, b.rot);
+    return b;
+}
+
 bool PhysicsSystem::testCollision(uint32_t a, uint32_t b)
 {
-    ShapeType typeA = static_cast<ShapeType>(shapeType[a]);
-    ShapeType typeB = static_cast<ShapeType>(shapeType[b]);
-
-    Vector3 posA = { pos_x[a], pos_y[a], pos_z[a] };
-    Vector3 posB = { pos_x[b], pos_y[b], pos_z[b] };
-
-    Vector3 extA = { extent_x[a], extent_y[a], extent_z[a] };
-    Vector3 extB = { extent_x[b], extent_y[b], extent_z[b] };
-
-    if (typeA == SHAPE_AABB && typeB == SHAPE_AABB)
-        return Collision::AABBvsAABB(posA, extA, posB, extB);
-
-    if (typeA == SHAPE_AABB && typeB == SHAPE_SPHERE)
-        return Collision::AABBvsSphere(posA, extA, posB, extB.x);
-
-    if (typeA == SHAPE_SPHERE && typeB == SHAPE_AABB)
-        return Collision::AABBvsSphere(posB, extB, posA, extA.x);
-
-    return false;
-}
-
-void PhysicsSystem::ResolveCollision(uint32_t a, uint32_t b)
-{
-    float nx, ny, nz;
-    float penetration;
-    
-    ComputeMTV(a, b, nx, ny, nz, penetration);
-    if (penetration <= 0.0f) return;
-    
-    PositionalCorrection(a, b, nx, ny, nz, penetration);
-//    
-    ResolveVelocity(a, b, nx, ny, nz);
-}
-
-void PhysicsSystem::ResolveVelocity(
-    uint32_t a, uint32_t b,
-    float nx, float ny, float nz)
-{
-    float invMassA = isStatic[a] ? 0.0f : 1.0f / mass[a];
-    float invMassB = isStatic[b] ? 0.0f : 1.0f / mass[b];
-    if (invMassA + invMassB == 0.0f) return;
-
-    // 相对速度
-    float rvx = vel_x[a] - vel_x[b];
-    float rvy = vel_y[a] - vel_y[b];
-    float rvz = vel_z[a] - vel_z[b];
-
-    // 法向速度分量
-    float velAlongNormal = rvx * nx + rvy * ny + rvz * nz;
-
-
-    OH_LOG_INFO(LOG_APP, "分离速度:%{public}f 分离方向:%{public}f, 相对速度:%{public}f, apos:%{public}f, bpos:%{public}f,avel:%{public}f, bvel:%{public}f", velAlongNormal,ny,rvy,pos_y[a], pos_y[b],vel_y[a],vel_y[b]);
-    
-    // 正在分离，不需要修正
-    if (velAlongNormal > 0.0f) return;
-
-    // --- 法向冲量 ---
-    float e = std::min(restitution[a], restitution[b]);
-    OH_LOG_INFO(LOG_APP, "物理检索:弹性限度：a:%{public}f b:%{public}f", restitution[a], restitution[b]);
-    float j = -(1.0f + e) * velAlongNormal;
-    j /= (invMassA + invMassB);
-    OH_LOG_INFO(LOG_APP, "物理检索:J IS %{public}f", j);
-
-    float impulseX = j * nx;
-    float impulseY = j * ny;
-    float impulseZ = j * nz;
-    OH_LOG_INFO(LOG_APP,"物理检索:物体A,碰撞前速度%{public}f", vel_y[a]);
-    vel_x[a] += impulseX * invMassA;
-    vel_y[a] += impulseY * invMassA;
-    vel_z[a] += impulseZ * invMassA;
-    OH_LOG_INFO(LOG_APP,"物理检索:物体A,碰撞后速度%{public}f", vel_y[a]); 
-    OH_LOG_INFO(LOG_APP,"物理检索:物体B,碰撞前速度%{public}f", vel_y[b]);
-    vel_x[b] -= impulseX * invMassB;
-    vel_y[b] -= impulseY * invMassB;
-    vel_z[b] -= impulseZ * invMassB;
-    OH_LOG_INFO(LOG_APP,"物理检索:物体B,碰撞后速度%{public}f", vel_y[b]);
-
-    // --- 摩擦冲量 ---
-    // 切向速度
-//    float tx = rvx - velAlongNormal * nx;
-//    float ty = rvy - velAlongNormal * ny;
-//    float tz = rvz - velAlongNormal * nz;
-//
-//    float len = sqrt(tx * tx + ty * ty + tz * tz);
-//    if (len < 1e-6f) return;
-//
-//    tx /= len;
-//    ty /= len;
-//    tz /= len;
-//
-//    float jt = -(rvx * tx + rvy * ty + rvz * tz);
-//    jt /= (invMassA + invMassB);
-//
-//    float mu = sqrt(friction[a] * friction[b]);
-//
-//    float fx, fy, fz;
-//    if (fabs(jt) < j * mu) {
-//        fx = jt * tx;
-//        fy = jt * ty;
-//        fz = jt * tz;
-//    } else {
-//        fx = -j * tx * mu;
-//        fy = -j * ty * mu;
-//        fz = -j * tz * mu;
-//    }
-//
-//    vel_x[a] -= fx * invMassA;
-//    vel_y[a] -= fy * invMassA;
-//    vel_z[a] -= fz * invMassA;
-//
-//    vel_x[b] += fx * invMassB;
-//    vel_y[b] += fy * invMassB;
-//    vel_z[b] += fz * invMassB;
-}
-
-void PhysicsSystem::ComputeMTV(
-    uint32_t a, uint32_t b,
-    float &nx, float &ny, float &nz,
-    float &penetration) 
-{ 
-    ShapeType typeA = static_cast<ShapeType>(shapeType[a]);
-    ShapeType typeB = static_cast<ShapeType>(shapeType[b]);
-
-    if(typeA == SHAPE_AABB && typeB == SHAPE_AABB){
-        ComputeMTV_BoxBox(a, b, nx, ny, nz, penetration);
-    }
-    if(typeA == SHAPE_SPHERE && typeB == SHAPE_SPHERE){
-        ComputeMTV_SphereSphere(a, b, nx, ny, nz, penetration);
-    }
-    if(typeA == SHAPE_SPHERE && typeB == SHAPE_AABB){
-        ComputeMTV_SphereBox(a, b, nx, ny, nz, penetration);
-    }
-    if(typeA == SHAPE_AABB && typeB == SHAPE_SPHERE){
-        ComputeMTV_SphereBox(b, a, nx, ny, nz, penetration);
-        nx = -nx;
-        ny = -ny;
-        nz = -nz;
-    }
-}
-
-
-void PhysicsSystem::ComputeMTV_BoxBox(
-    uint32_t a, uint32_t b,
-    float& nx, float& ny, float& nz,
-    float& penetration)
-{
-    float dx = pos_x[a] - pos_x[b];
-    float px = (extent_x[a] + extent_x[b]) - fabs(dx);
-
-    float dy = pos_y[a] - pos_y[b];
-    float py = (extent_y[a] + extent_y[b]) - fabs(dy);
-
-    float dz = pos_z[a] - pos_z[b];
-    float pz = (extent_z[a] + extent_z[b]) - fabs(dz);
-
-    penetration = px;
-    nx = (dx > 0.0f) ? 1.0f : -1.0f;
-    ny = nz = 0.0f;
-
-    if (py < penetration) {
-        penetration = py;
-        nx = nz = 0.0f;
-        ny = (dy > 0.0f) ? 1.0f : -1.0f;
-    }
-
-    if (pz < penetration) {
-        penetration = pz;
-        nx = ny = 0.0f;
-        nz = (dz > 0.0f) ? 1.0f : -1.0f;
-    }
-}
-
-void PhysicsSystem::ComputeMTV_SphereBox(
-    uint32_t sphere, uint32_t box,
-    float& nx, float& ny, float& nz,
-    float& penetration)
-{
-    float cx = pos_x[sphere];
-    float cy = pos_y[sphere];
-    float cz = pos_z[sphere];
-
-    float bx = pos_x[box];
-    float by = pos_y[box];
-    float bz = pos_z[box];
-
-    float hx = extent_x[box];
-    float hy = extent_y[box];
-    float hz = extent_z[box];
-
-    // 最近点
-    float closestX = clamp(cx, bx - hx, bx + hx);
-    float closestY = clamp(cy, by - hy, by + hy);
-    float closestZ = clamp(cz, bz - hz, bz + hz);
-
-    float dx = cx - closestX;
-    float dy = cy - closestY;
-    float dz = cz - closestZ;
-
-    float distSq = dx*dx + dy*dy + dz*dz;
-    float r = extent_x[sphere];
-
-    if (distSq > r * r) return;
-
-    float dist = sqrt(distSq);
-    if (dist > 1e-6f) {
-        nx = dx / dist;
-        ny = dy / dist;
-        nz = dz / dist;
-    } else {
-        // 球心在盒子内部，退化情况
-        nx = 1.0f; ny = nz = 0.0f;
-    }
-
-    penetration = r - dist;
-}
-
-void PhysicsSystem::ComputeMTV_SphereSphere(
-    uint32_t a, uint32_t b,
-    float& nx, float& ny, float& nz,
-    float& penetration)
-{
-    float dx = pos_x[a] - pos_x[b];
-    float dy = pos_y[a] - pos_y[b];
-    float dz = pos_z[a] - pos_z[b];
-
-    float distSq = dx*dx + dy*dy + dz*dz;
-    float r = extent_x[a] + extent_x[b];
-
-    if (distSq >= r * r) return;
-
-    float dist = sqrt(distSq);
-    if (dist > 1e-6f) {
-        nx = dx / dist;
-        ny = dy / dist;
-        nz = dz / dist;
-    } else {
-        nx = 1.0f; ny = nz = 0.0f;
-    }
-
-    penetration = r - dist;
-    return;
-}
-
-
-void PhysicsSystem::PositionalCorrection(
-    uint32_t a, uint32_t b,
-    float nx, float ny, float nz,
-    float penetration)
-{
-    const float percent = 0.8f;   // 修正比例
-    const float slop = 0.01f;     // 容忍穿透
-
-    float invMassA = isStatic[a] ? 0.0f : 1.0f / mass[a];
-    float invMassB = isStatic[b] ? 0.0f : 1.0f / mass[b];
-
-    float invMassSum = invMassA + invMassB;
-    if (invMassSum == 0.0f) return;
-
-    float correction = fmax(penetration - slop, 0.0f)
-                       / invMassSum * percent;
-    OH_LOG_INFO(LOG_APP,"PositionCorrection::correction:%{public}f ",correction);
-    pos_x[a] += nx * correction * invMassA;
-    pos_y[a] += ny * correction * invMassA;
-    pos_z[a] += nz * correction * invMassA;
-    
-    
-    pos_x[b] -= nx * correction * invMassB;
-    pos_y[b] -= ny * correction * invMassB;
-    pos_z[b] -= nz * correction * invMassB;
-
+    return CollisionDispatch::dispatch(*this,a, b);
 }
 
 // 辅助函数
@@ -1085,6 +1033,12 @@ void PhysicsSystem::clearForce(uint32_t id)
     force_x[id] = 0;
     force_y[id] = 0;
     force_z[id] = 0;
+    torque_x[id] = 0;
+    torque_y[id] = 0;
+    torque_z[id] = 0;
+    impulse_x[id] = 0;
+    impulse_y[id] = 0;
+    impulse_z[id] = 0;
 }
 
 // 注册函数
@@ -1097,7 +1051,6 @@ napi_value PhysicsSystem::Init(napi_env env, napi_value exports)
         { "setPosition", nullptr, SetPosition, nullptr, nullptr, nullptr, napi_default, nullptr},
         { "setRotation", nullptr, PhysicsSystem::SetRotation, nullptr, nullptr, nullptr, napi_default, nullptr },
         { "setVelocity", nullptr, PhysicsSystem::SetVelocity, nullptr, nullptr, nullptr, napi_default, nullptr },
-        { "setAcceleration", nullptr, PhysicsSystem::SetAcceleration, nullptr, nullptr, nullptr, napi_default, nullptr },
         { "setForce", nullptr, PhysicsSystem::SetForce, nullptr, nullptr, nullptr, napi_default, nullptr },
         { "setScale", nullptr, PhysicsSystem::SetScale, nullptr, nullptr, nullptr, napi_default, nullptr },
         { "setExtent", nullptr, PhysicsSystem::SetExtent, nullptr, nullptr, nullptr, napi_default, nullptr },
@@ -1108,14 +1061,12 @@ napi_value PhysicsSystem::Init(napi_env env, napi_value exports)
         { "setIsStatic", nullptr, PhysicsSystem::SetIsStatic, nullptr, nullptr, nullptr, napi_default, nullptr },
         { "getMass", nullptr, PhysicsSystem::GetMass, nullptr, nullptr, nullptr, napi_default, nullptr },
         { "getVel", nullptr, PhysicsSystem::GetVel, nullptr, nullptr, nullptr, napi_default, nullptr },
-        { "getAcc", nullptr, PhysicsSystem::GetAcc, nullptr, nullptr, nullptr, napi_default, nullptr },
         { "getFric", nullptr, PhysicsSystem::GetFric, nullptr, nullptr, nullptr, napi_default, nullptr },
         { "getNormal", nullptr, PhysicsSystem::GetNormal, nullptr, nullptr, nullptr, napi_default, nullptr},
-        
     };
     
     napi_value cons;
-    napi_define_class(env, "PhysicsSystem", NAPI_AUTO_LENGTH, New, nullptr, 19, properties, &cons);
+    napi_define_class(env, "PhysicsSystem", NAPI_AUTO_LENGTH, New, nullptr, 17, properties, &cons);
 
     napi_set_named_property(env, exports, "PhysicsSystem", cons);
     return exports;

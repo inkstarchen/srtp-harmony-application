@@ -29,7 +29,7 @@ export class ImageUtils {
   private static readonly MAX_SIZE: number = 2048;
   private static readonly DEFAULT_QUALITY: number = 85;
 
-  static async TakePictureAndSave(context: Context | undefined):Promise<void>{
+  static async TakePictureAndSave(context: Context | undefined,interPath:string):Promise<void>{
     try {
       // 使用后置摄像头
       let pickerProfile: cameraPicker.PickerProfile =
@@ -41,10 +41,10 @@ export class ImageUtils {
       hilog.info(0x0000, "Camera", 'cameraPicker.pick succeed, uri: ' + JSON.stringify(pickerResult));
       let pixmap = await ImageUtils.uriToPixelMapByFd(pickerResult.resultUri);
       // 暂时使用临时目录需要后续决定如何存储
-      let fileDir = context?.filesDir;
+      let fileDir = context?.getApplicationContext().filesDir;
       if (fileDir && pixmap) {
         // 这里的文件名需要一个标识系统，这里仅仅用作示例
-        await ImageUtils.savePixelMapToFile(pixmap, fileDir + "/capture.png");
+        await ImageUtils.savePixelMapToFile(pixmap, fileDir + interPath + "/capture.png");
       }
     } catch (error){
       let err = error as BusinessError;

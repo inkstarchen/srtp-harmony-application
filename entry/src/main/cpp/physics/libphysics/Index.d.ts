@@ -8,13 +8,11 @@ export class PhysicsSystem {
   update:(dt:number) => ArrayBuffer | undefined;
   getMass:(id:number) => number;
   getVel:(id:number) => Vec3;
-  getAcc:(id:number) => Vec3;
   getFric:(id:number) => number;
   getNormal:(angle:Vec3) => void;
   setPosition:(id:number, position:Vec3) => void;
   setRotation:(id:number, rotation:Vec4) => void;
   setVelocity:(id:number, velocity:Vec3) => void;
-  setAcceleration:(id:number, acceleration:Vec3) => void;
   setForce:(id:number, force:Vec3) => void;
   setScale:(id:number, scale:Vec3) => void;
   setExtent:(id:number, extent:Vec3) => void;
@@ -23,7 +21,4 @@ export class PhysicsSystem {
   setFriction:(id:number, friction:number) => void;
   setShapeType:(id:number, shapeType:number) => void;
   setIsStatic:(id:number, isStatic:number) => void;
-
-
-
 }

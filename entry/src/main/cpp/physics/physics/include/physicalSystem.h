@@ -6,27 +6,15 @@
 
 #ifndef DAYNOTE_NODEPROXY_H
 #define DAYNOTE_NODEPROXY_H
-
+#include "body.h"
+#pragma once
 #include <cstdint>
 #include <vector>
-#pragma once
+#include "contact.h"
+#include "matrix.h"
+#include "quteration.h"
 #include "vec.h"
-#include "buffer.h"
 #include "napi/native_api.h"
-#include <hilog/log.h>
-
-enum ShapeType : int32_t {
-    SHAPE_AABB = 0,
-    SHAPE_SPHERE = 1,
-};
-
-struct CollisionProxy {
-    Vector3 pos;
-    Vector3 ext;
-    float radius;
-    int32_t type;
-};
-
 
 class PhysicsSystem {
 public:
@@ -53,6 +41,7 @@ public:
     static napi_value GetVel(napi_env env, napi_callback_info info);
     static napi_value GetAcc(napi_env env, napi_callback_info info);
     static napi_value GetFric(napi_env env, napi_callback_info info);
+    static napi_value RayCast(napi_env env, napi_callback_info info);
     void removeNode(uint32_t id);
 
     size_t getCount() const;
@@ -61,6 +50,30 @@ public:
     static napi_value Init(napi_env env, napi_value exports);
     static void Destructor(napi_env env, void* nativeObject, void* finalize_hint);
     
+    size_t capacity; // 对齐后
+    size_t count;
+    std::vector<Contact> contact;
+
+    std::vector<std::pair<uint32_t, uint32_t>> possiblePairs;
+    std::vector<uint32_t> free_list;
+    
+    // === SoA pointers ===
+    float *pos_x, *pos_y, *pos_z;
+    float *rot_x, *rot_y, *rot_z, *rot_w;
+    float *vel_x, *vel_y, *vel_z;
+    float *angVel_x, *angVel_y, *angVel_z;
+    float *force_x, *force_y, *force_z;
+    float *torque_x, *torque_y, *torque_z;
+    float *impulse_x, *impulse_y, *impulse_z;
+    float *invInertial_xx, *invInertial_yy, *invInertial_zz;
+    float *scale_x, *scale_y, *scale_z;
+    float *extent_x, *extent_y, *extent_z;
+    
+    float *invMass, *restitution, *friction;
+    
+    int32_t *shapeType;
+    uint8_t *isStatic;
+
 private:
     uint32_t newNode();
     napi_value update(napi_env env, napi_callback_info info);
@@ -78,70 +91,27 @@ private:
     void setIsStatic(uint32_t id, uint8_t isStatic);
     void setGravity(Vector3 gravity);
     
-    
+    Body getBody(uint32_t id);
     
     void clearForce(uint32_t id);
+    void clearForceAll();
     float getMass(uint32_t id);
     Vector3 getVel(uint32_t id);
     Vector3 getAcc(uint32_t id);
     float getFric(uint32_t id);
     
-    
-    
-    
     // 碰撞相关函数
+    void detectCollisions();
     bool testCollision(uint32_t a, uint32_t b);
-    void ResolveCollision(uint32_t a, uint32_t b);
-    void ResolveVelocity(uint32_t a, uint32_t b, float nx, float ny, float nz);
-    void ComputeMTV_BoxBox(uint32_t a, uint32_t b,
-                    float& nx, float& ny, float& nz,
-                    float& penetration);
-    void ComputeMTV(uint32_t a, uint32_t b,
-                    float& nx, float& ny, float& nz,
-                    float& penetration);
-    void ComputeMTV_SphereBox(uint32_t a, uint32_t b,
-                              float &nx, float &ny, float &nz,
-                              float &penetration);
-    void ComputeMTV_SphereSphere(uint32_t a, uint32_t b,
-                                 float &nx, float &ny, float &nz,
-                                 float &penetration);
-    void PositionalCorrection(uint32_t a, uint32_t b,
-                              float nx, float ny, float nz,
-                              float  penetration);
+    void buildContacts();
+    void solveContacts();
+    void integrateVelocity(float dt);
+    void positionalCorrection();
+    void integratePosition(float dt);
     
     void step(float dt);
-    
-    inline CollisionProxy makeProxy(uint32_t id) {
-        return {
-            { pos_x[id], pos_y[id], pos_z[id] },
-            { extent_x[id], extent_y[id], extent_z[id] },
-            extent_x[id],
-            shapeType[id]
-        };
-    }
-    
-    size_t capacity; // 对齐后
-    size_t count;
-    std::vector<uint32_t> free_list;
-    
-    // === SoA pointers ===
-    float *pos_x, *pos_y, *pos_z;
-    float *rot_x, *rot_y, *rot_z, *rot_w;
-    float *vel_x, *vel_y, *vel_z;
-    float *acc_x, *acc_y, *acc_z;
-    float *force_x, *force_y, *force_z;
-    float *scale_x, *scale_y, *scale_z;
-    float *extent_x, *extent_y, *extent_z;
-    
-    float *mass, *restitution, *friction;
-    
-    int32_t *shapeType;
-    uint8_t *isStatic;
-
     void* base_ptr;   // 用于 free
-
     static napi_value New(napi_env env, napi_callback_info info);
-    
     napi_ref buffer_ref_ = nullptr;
     napi_env env_;
     napi_ref wrapper_;

@@ -45,8 +45,7 @@ export struct mainPage {
   })
 
   // Navi
-
-
+  photoBlock:boolean = false;
   rubberMovable: boolean = true;
   @Local rubber: PhysicsScroller = new PhysicsScroller(
     {x:-this.ScreenWidth * 0.12,y:-this.ScreenHeight * 0.12},
@@ -113,7 +112,7 @@ export struct mainPage {
       .backgroundColor("#00ffffff")
       .onTouch((event) => {
         HandleTouch(event, this.touch);
-        if(this.rubberMovable) {
+        if(this.rubberMovable && !this.photoBlock) {
           if (event.type == TouchType.Down) {
             this.rubber.down(this.touch.downPos);
           } else if (event.type == TouchType.Move) {
@@ -125,6 +124,9 @@ export struct mainPage {
       })
       if(this.rubber.curPage == PageId.PHOTO){
         TestPage({
+          setBlock:(flag:boolean) => {
+            this.photoBlock = flag;
+          },
           photoOffset:this.rubber.photoOffset,
           translatePos:this.rubber.pos
         })
