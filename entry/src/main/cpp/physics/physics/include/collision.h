@@ -6,50 +6,49 @@
 
 #ifndef DAYNOTE_COLLISION_H
 #define DAYNOTE_COLLISION_H
-#include <algorithm>
 #pragma once
-#include <cmath>
-#include "vec.h"
+#include <cstdint>
+#include "shape.h"
+#include "contact.h"
 
-inline float clamp(float v, float minv, float maxv) {
-    return std::max(minv, std::min(v, maxv));
-}
+class PhysicsSystem;
+typedef bool (*CollisionFunc)(const PhysicsSystem&, const uint32_t, const uint32_t);
+typedef void (*ContactFunc)(const PhysicsSystem&, uint32_t, uint32_t, Contact&);
 
-namespace Collision {
-
-inline bool AABBvsAABB(
-    const Vector3& aPos, const Vector3& aExt,
-    const Vector3& bPos, const Vector3& bExt)
+class ContactDispatch
 {
-    return
-        std::abs(aPos.x - bPos.x) <= (aExt.x + bExt.x) &&
-        std::abs(aPos.y - bPos.y) <= (aExt.y + bExt.y) &&
-        std::abs(aPos.z - bPos.z) <= (aExt.z + bExt.z);
-}
+public:
+    static ContactFunc table[SHAPE_COUNT][SHAPE_COUNT];
+    
+    static void dispatch(const PhysicsSystem& physics, uint32_t A, uint32_t B, Contact& c);
+        
+private:
+    struct Initializer {
+        Initializer() {
+            ContactDispatch::initContactDispatch();
+        }
+    };
+    
+    static Initializer _initializer;
+    static void initContactDispatch();
+};
 
-inline bool AABBvsSphere(
-    const Vector3& boxPos, const Vector3& boxExt,
-    const Vector3& spherePos, float radius)
+class CollisionDispatch
 {
-    Vector3 closest;
-    closest.x = clamp(
-        spherePos.x,
-        boxPos.x - boxExt.x,
-        boxPos.x + boxExt.x);
+public:
+    static CollisionFunc table[SHAPE_COUNT][SHAPE_COUNT];
+    
+    static bool dispatch(const PhysicsSystem& physics, const uint32_t A, const uint32_t B);
+    
+private:
+    struct Initializer {
+        Initializer() {
+            CollisionDispatch::initCollisionDispatch();
+        }
+    };
+    
+    static Initializer _initializer;
+    static void initCollisionDispatch();
+};
 
-    closest.y = clamp(
-        spherePos.y,
-        boxPos.y - boxExt.y,
-        boxPos.y + boxExt.y);
-
-    closest.z = clamp(
-        spherePos.z,
-        boxPos.z - boxExt.z,
-        boxPos.z + boxExt.z);
-
-    Vector3 delta = spherePos - closest;
-    return delta.dot(delta) <= radius * radius;
-}
-
-}
 #endif //DAYNOTE_COLLISION_H

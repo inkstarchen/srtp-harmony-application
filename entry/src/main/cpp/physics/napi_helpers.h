@@ -8,7 +8,7 @@
 #define DAYNOTE_NAPI_HELPERS_H
 
 #include <napi/native_api.h>
-#include "core/include/vec.h"
+#include "math/vec.h"
 
 
 

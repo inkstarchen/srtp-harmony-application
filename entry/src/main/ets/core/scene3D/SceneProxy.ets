@@ -2,7 +2,8 @@ import { Scene, Node, PostProcessSettings, ToneMappingType, Vec3, Quaternion,
   EnvironmentBackgroundType,
   NodeType,
   Camera,
-  LightType} from "@kit.ArkGraphics3D";
+  LightType,
+  Vec2} from "@kit.ArkGraphics3D";
 import { hilog } from "@kit.PerformanceAnalysisKit";
 import { lookAt, NodeUtil } from "./Utils";
 import { Prompt } from "@kit.ArkUI";
@@ -28,7 +29,9 @@ export class SceneProxy{
     clearInterval(this.renderId);
   }
 
+  rayCast(pos:Vec2){
 
+  }
 
   update(){
     // this.physicalSystem.updateData("Cube");
@@ -76,9 +79,9 @@ export class SceneProxy{
     // let camera = await rf.createCamera({name:'perspectiveCamera'});
     let camera = this.scene.root?.getNodeByPath("Perspective Camera") as Camera;
     camera.enabled = true;
-    // camera.fov = Math.PI / 4;
+    camera.fov = Math.PI / 2;
     // camera.position = {x:0, y:0, z:-4} as Vec3;
-    // lookAt(camera,{x:0,y:0,z:-10}, {x:0,y:0,z:0}, {x:0,y:1,z:0});
+    lookAt(camera,{x:0,y:0,z:-10}, {x:0,y:0,z:0}, {x:0,y:1,z:0});
     this.scene.environment.backgroundType = EnvironmentBackgroundType.BACKGROUND_NONE;
     // camera.clearColor = {r:1,g:1,b:1,a:1};
     camera.postProcess = {
@@ -106,10 +109,10 @@ export class SceneProxy{
     let rf = this.scene.getResourceFactory();
     let camera = await rf.createCamera({name:'perspectiveCamera'});
     camera.enabled = true;
-    camera.fov = Math.PI / 4;
-    camera.position = {x:0, y:0, z:-4} as Vec3;
+    camera.fov = Math.PI / 2;
+    // camera.position = {x:0, y:0, z:-4} as Vec3;
     camera.clearColor = {r:0.0,g:0.0,b:0.0,a:0.001};
-    lookAt(camera,{x:0,y:0,z:-10}, {x:0,y:0,z:0}, {x:0,y:1,z:0});
+    lookAt(camera,{x:0,y:0,z:-6}, {x:0,y:0,z:0}, {x:0,y:1,z:0});
     this.camera = camera;
     this.scene.environment.backgroundType = EnvironmentBackgroundType.BACKGROUND_NONE;
     camera.postProcess = {
@@ -123,7 +126,6 @@ export class SceneProxy{
     this.renderId = setInterval(() => {
       this.update();
     }, 20);
-
   }
 
 
@@ -168,17 +170,17 @@ export class SceneProxy{
     this.physicalSystem.setMass(5,1.0);
   }
 
-  async addCard(ImageUri:string){
-    let node = await this.addNode('card','Cube');
+  async addCard(ImageUri:string,shaderName:string){
+    let node = await this.addNode('card','Cube',shaderName);
     let factory = this.scene?.getResourceFactory();
     if(factory && node){
       NodeUtil.attachShader(
-        node,'Myshader',$rawfile('shaders/Myshader/myshader.shader'),
-        factory,"MyMATERIAL",'Image',ImageUri);
+        node,shaderName,$rawfile('shaders/Myshader/myshader.shader'),
+        factory,"MyMATERIAL" + shaderName,'Image' + shaderName,ImageUri);
     }
   }
 
-  async addNode(res: string, name:string):Promise<Node | undefined>{
+  async addNode(res: string, name:string, reName:string):Promise<Node | undefined>{
     let resource = this.resMap.get(res);
     if(!resource) return;
     let resScene = await Scene.load(resource);
@@ -187,7 +189,7 @@ export class SceneProxy{
     while(nodeQueue.length != 0) {
       let parent = nodeQueue.pop();
       if(parent && parent?.name == name){
-        let node = this.scene?.importNode(name,parent,this.scene.root);
+        let node = this.scene?.importNode(reName,parent,this.scene.root);
         if(node && node.nodeType == NodeType.GEOMETRY){
           this.physicalSystem.registerNode(node,true);
         }

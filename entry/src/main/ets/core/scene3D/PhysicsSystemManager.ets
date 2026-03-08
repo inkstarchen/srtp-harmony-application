@@ -58,10 +58,6 @@ export class PhysicsSystemManager {
     return this.physicsSystem.getVel(id);
   }
 
-  getAcc(id:number):Vec3{
-    return this.physicsSystem.getAcc(id);
-  }
-
   getFric(id:number):number{
     return this.physicsSystem.getFric(id);
   }

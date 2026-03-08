@@ -24,6 +24,13 @@ struct Vector3 {
     Vector3() : x(0.0), y(0.0), z(0.0) {}
     Vector3(double x, double y, double z) : x(x), y(y), z(z) {}
 
+    double& operator[](int i) {
+        return (&x)[i];
+    }
+    
+    const double& operator[](int i) const {
+        return (&x)[i];
+    }
     // ===== 基本运算 =====
     Vector3 operator+(const Vector3& other) const {
         return Vector3(x + other.x, y + other.y, z + other.z);
@@ -129,6 +136,14 @@ struct Vector2 {
     Vector2() : x(0.0), y(0.0) {}
     Vector2(double x, double y) : x(x), y(y) {}
 
+    
+    double& operator[](int i) {
+        return (&x)[i];
+    }
+    
+    const double& operator[](int i) const {
+        return (&x)[i];
+    }
     // ===== 向量运算（成员函数：隐式 inline） =====
     Vector2 operator+(const Vector2& other) const {
         return Vector2(x + other.x, y + other.y);
@@ -209,6 +224,13 @@ struct Vector4 {
     Vector4(double x, double y, double z, double w)
         : x(x), y(y), z(z), w(w) {}
 
+    double& operator[](int i) {
+        return (&x)[i];
+    }
+    
+    const double& operator[](int i) const {
+        return (&x)[i];
+    }
     // ===== 向量运算 =====
     Vector4 operator+(const Vector4& other) const {
         return Vector4(x + other.x, y + other.y, z + other.z, w + other.w);
