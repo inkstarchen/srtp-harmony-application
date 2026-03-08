@@ -150,41 +150,41 @@ export struct ToolBarComponent{
       .scrollable(ScrollDirection.Horizontal)
       .scrollBar(BarState.Off)
       .edgeEffect(EdgeEffect.None)
-
-
-      if (this.isColorPickerOpen) {
-        Column() {
-          Row({ space: 10 }) {
-            ForEach(this.colorRow1, (item: Color) => {
-              this.ColorSwatch({
-                color: item,
-                action: () => {
-                  this.setTextColor(item);
-                }
-              })
-            }, (_item: Color, index: number) => `${index}`)
-          }
-          .margin({ bottom: 8 })
-          .offset({ left: 160 })     //  可手动调节
-          Row({ space: 10 }) {
-            ForEach(this.colorRow2, (item: Color) => {
-              this.ColorSwatch({
-                color: item,
-                action: () => {
-                  this.setTextColor(item);
-                }
-              })
-            }, (_item: Color, index: number) => `${index + 5}`)
-          }
-          .offset({ left: 160 })    //   可手动调节
-        }
-        .padding({ left: 12, right: 12, bottom: 8 })
-        .alignItems(HorizontalAlign.End)
-      }
     }
     .width("100%")
-    .clip(true)
     .height(this.heightAnim)
+  }
+
+  @Builder
+  ColorPalettePopup() {
+    Column() {
+      Row({ space: 10 }) {
+        ForEach(this.colorRow1, (item: Color) => {
+          this.ColorSwatch({
+            color: item,
+            action: () => {
+              this.setTextColor(item);
+            }
+          })
+        }, (_item: Color, index: number) => `p1_${index}`)
+      }
+      .margin({ bottom: 8 })
+
+      Row({ space: 10 }) {
+        ForEach(this.colorRow2, (item: Color) => {
+          this.ColorSwatch({
+            color: item,
+            action: () => {
+              this.setTextColor(item);
+            }
+          })
+        }, (_item: Color, index: number) => `p2_${index}`)
+      }
+    }
+    .padding(8)
+    .backgroundColor('#FFFFFFFF')
+    .borderRadius(10)
+    .shadow({ radius: 12, color: '#22000000', offsetX: 0, offsetY: 4 })
   }
 
   @Builder
@@ -224,6 +224,17 @@ export struct ToolBarComponent{
     .width(28)
     .height(28)
     .backgroundColor('#00000000')
+    .bindPopup(params.isOpen, {
+      builder: this.ColorPalettePopup(),
+      placement: Placement.Bottom,
+      enableArrow: false,
+      onStateChange: (event) => {
+        const visible = event.isVisible;
+        if (visible !== this.isColorPickerOpen) {
+          this.setColorPickerOpen(visible);
+        }
+      }
+    })
     .onClick(params.action)
   }
 

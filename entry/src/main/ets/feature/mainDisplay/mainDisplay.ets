@@ -174,7 +174,7 @@ export struct mainDisplay{
             this.TimeLineOpacity = 0;
           }else{
             this.TimeLineOpacity = 0.5;
-          }
+          }      
           this.setRubber();
         })
         .hitTestBehavior(this.slideDisplay ? HitTestMode.BLOCK_DESCENDANTS : HitTestMode.Default)

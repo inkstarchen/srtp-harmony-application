@@ -330,7 +330,8 @@ export struct mainPage {
               .height("60%")
           }
           .alignItems(HorizontalAlign.Center)
-          .translate({x:0,y:this.rubber.curPage == PageId.MAIN ? (this.newPageState ? -100 : this.ScreenHeight * 0.5 + 100 ) : this.ScreenHeight })
+          .translate({x:0,y:this.rubber.curPage == PageId.MAIN ? (this.newPageState ? -20 : this.ScreenHeight * 0.5 + 100 ) : this.ScreenHeight })
+          // -100 改为了 -20
           .height(this.editState ? "100%" : 300)
           .width(this.editState ? "100%" : "80%")
           .animation({
