@@ -1,0 +1,98 @@
+//
+// Created on 2026/3/9.
+//
+// Node APIs are not fully supported. To solve the compilation error of the interface cannot be found,
+// please include "napi/native_api.h".
+
+// 转 JS EventCommand -> C++ EventCommand
+#include "include/event_queue.h"
+#include <hilog/log.h>
+EventCommand parseEventCommand(napi_env env, napi_value jsCmd) {
+    EventCommand cmd;
+
+    napi_value val;
+
+    // type
+    napi_get_named_property(env, jsCmd, "type", &val);
+    int32_t t;
+    napi_get_value_int32(env, val, &t);
+    cmd.type = static_cast<EventType>(t);
+
+    // priority
+    napi_get_named_property(env, jsCmd, "priority", &val);
+    int32_t p;
+    napi_get_value_int32(env, val, &p);
+    cmd.priority = static_cast<EventPriority>(p);
+
+    // nodeId
+    napi_get_named_property(env, jsCmd, "nodeId", &val);
+    uint32_t nid;
+    napi_get_value_uint32(env, val, &nid);
+    cmd.nodeId = nid;
+
+    // timestamp
+    napi_get_named_property(env, jsCmd, "timestamp", &val);
+    double ts;
+    napi_get_value_double(env, val, &ts);
+    cmd.timestamp = static_cast<uint64_t>(ts);
+
+    // data[]
+    napi_get_named_property(env, jsCmd, "data", &val);
+    bool isArray;
+    napi_is_array(env, val, &isArray);
+    if (isArray) {
+        uint32_t len;
+        napi_get_array_length(env, val, &len);
+        cmd.data.resize(len);
+        for (uint32_t i = 0; i < len; i++) {
+            napi_value elem;
+            napi_get_element(env, val, i, &elem);
+            double num;
+            napi_get_value_double(env, elem, &num);
+            if (i == 0) {
+                cmd.data[0] = static_cast<uint64_t>(static_cast<int64_t>(num));
+            } else {
+                double  d = static_cast<double>(num);
+                uint64_t raw;
+                std::memcpy(&raw, &d, sizeof(double ));
+                cmd.data[i] = raw;
+            }
+        }
+    }
+
+    return cmd;
+}
+
+// 解析 EventCommand[][]
+std::vector<std::vector<EventCommand>> parseEventQueue(napi_env env, napi_value jsQueue) {
+    std::vector<std::vector<EventCommand>> queue;
+
+    bool isArray;
+    napi_is_array(env, jsQueue, &isArray);
+    if (!isArray) return queue;
+
+    uint32_t outerLen;
+    napi_get_array_length(env, jsQueue, &outerLen);
+//    OH_LOG_INFO(LOG_APP,"EVENTCOMMAND| OUTER %{public}d", outerLen);
+    queue.resize(outerLen);
+    for (uint32_t i = 0; i < outerLen; i++) {
+        napi_value innerArray;
+        napi_get_element(env, jsQueue, i, &innerArray);
+
+        bool innerIsArray;
+        napi_is_array(env, innerArray, &innerIsArray);
+        if (!innerIsArray) continue;
+
+        uint32_t innerLen;
+        napi_get_array_length(env, innerArray, &innerLen);
+//        OH_LOG_INFO(LOG_APP,"EVENTCOMMAND| INNER %{public}d", innerLen);
+        queue[i].reserve(innerLen);
+        for (uint32_t j = 0; j < innerLen; j++) {
+            napi_value jsCmd;
+            napi_get_element(env, innerArray, j, &jsCmd);
+            queue[i].push_back(parseEventCommand(env, jsCmd));
+        }
+    }
+
+    return queue;
+}

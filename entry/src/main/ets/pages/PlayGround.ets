@@ -1,12 +1,12 @@
 import image from '@ohos.multimedia.image'
 import { ImageUtils } from '../shared/utils/ImageUtils';
-import { SceneProxy } from '../core/scene3D/SceneProxy';
 import { RaycastParameters, ShaderMaterial, Vec2, Vec3, Vec4 } from '@kit.ArkGraphics3D';
 import { AnimatorOptions, AnimatorResult } from '@kit.ArkUI';
 import { getTouchDefault, Touch, TouchDown, TouchMove, TouchUp, TOUCH_DEFAULT } from '../shared/utils/TouchManager';
 import { getScreenSize } from '../shared/ui/uiUtils';
 import { getDateStringWithTimeStamp } from '../shared/utils/Time/time';
 import { TraceVec2 } from '../core/math/vec';
+import { SceneProxy } from '../core/scene3D/GlobalSceneProxy';
 
 
 const  ANIMATION_OPTION: AnimatorOptions = {
@@ -26,14 +26,14 @@ export struct PlayGround {
   @Require @Param translatePos: TraceVec2;
   @Local ScreenSize: Size = getScreenSize();
   touch:Touch = getTouchDefault();
-  uiContext: UIContext = this.getUIContext();
   @Local imageUri: string = '';
   @Local backId: number = 0;
-  @Local sceneProxy: SceneProxy = new SceneProxy(this.getUIContext());
+  @Local sceneProxy: SceneProxy = SceneProxy.getInstance();
   @Local backAnimator: AnimatorResult | undefined = undefined;
   step: number = 0;
   material: ShaderMaterial | null = null;
   @Local init:boolean = false;
+
   aboutToAppear(): void {
     this.sceneProxy.loadScene('demo1').then(() => {
       this.sceneProxy.scene1_init();
@@ -55,7 +55,7 @@ export struct PlayGround {
   }
 
   aboutToDisappear(): void {
-    this.sceneProxy.release();
+    this.sceneProxy.releaseScene();
   }
 
   build() {
@@ -69,48 +69,45 @@ export struct PlayGround {
       }
     }
     .hitTestBehavior(HitTestMode.Transparent)
-    .onTouch(async (event) => {
-      if(event.type == TouchType.Down){
-        TouchDown(event, this.touch);
-        const info = this.uiContext.getComponentUtils().getRectangleById('3D');
-
-        let x = this.uiContext.vp2px(event.touches[0].x);
-        let y = this.uiContext.vp2px(event.touches[0].y);
-        {
-        // console.info('RayCastTest | size' + info.size.width.toString() + '/' + info.size.height.toString());
-        // console.info('RayCastTest | TouchPos ' + x.toString() + '/' + y.toString());
-        // console.info('RayCastTest | offset ' + info.windowOffset.x.toString() + '/' + info.windowOffset.y.toString() );
-        // console.info('RayCastTest | touchOffset ' + (x - info.windowOffset.x).toString() + '/' + (y - info.windowOffset.y).toString());
-        }
-        let fx = x / this.ScreenSize.width;
-        let fy = y / this.ScreenSize.height;
-        let raycastParams: RaycastParameters = {};
-        let node = this.sceneProxy.scene?.root;
-        if(node){
-          raycastParams.rootNode = node;
-          let result = await this.sceneProxy.camera?.raycast({x:fx,y:fy} as Vec2,raycastParams);
-          if(result){
-            for(let i = 0; i < result.length; i++){
-              console.info('RayCastTest | Results ' + result[i].node.name);
-            }
-            this.sceneProxy.touchRotate.target = result[0].node;
-          }
-        }
-      }
-      if(event.type == TouchType.Move){
-        if(this.sceneProxy.touchRotate.target){
-          TouchMove(event,this.touch);
-          let id = this.sceneProxy.physicalSystem.getId(this.sceneProxy.touchRotate.target.path + "/" + this.sceneProxy.touchRotate.target.name);
-          if(id != undefined){
-            this.sceneProxy.physicalSystem.setRotation(id,this.sceneProxy.touchRotate.update(this.touch));
-          }
-        }
-      }
-      if(event.type == TouchType.Up){
-        TouchUp(event,this.touch);
-      }
-
-    })
+    // .onTouch((event) => {
+    //   if(event.type == TouchType.Down){
+    //     TouchDown(event, this.touch);
+    //     const info = this.uiContext.getComponentUtils().getRectangleById('3D');
+    //
+    //     let x = this.uiContext.vp2px(event.touches[0].x);
+    //     let y = this.uiContext.vp2px(event.touches[0].y);
+    //
+    //     // 转换为归一化坐标
+    //     let fx = x / this.ScreenSize.width;
+    //     let fy = y / this.ScreenSize.height;
+    //
+    //     // 通过事件队列发送 Raycast 请求
+    //     // this.sceneProxy.eventQueue.pushRaycastRequest(fx, fy);
+    //     // 刷新队列，触发 C++ 处理
+    //     // this.sceneProxy.eventQueue.flush();
+    //   }
+    //   if(event.type == TouchType.Move){
+    //     TouchMove(event, this.touch);
+    //     if(this.sceneProxy.touchRotate.target){
+    //       // 计算触摸增量
+    //       let dx = this.touch.curPos.x - this.touch.lastPos.x;
+    //       let dy = this.touch.curPos.y - this.touch.lastPos.y;
+    //
+    //       // 通过事件队列发送 Rotate 请求
+    //       let id = this.sceneProxy.physicalSystem.getId(
+    //         this.sceneProxy.touchRotate.target.path + "/" + this.sceneProxy.touchRotate.target.name
+    //       );
+    //       if(id != undefined){
+    //         // this.sceneProxy.eventQueue.pushRotateRequest(id, dx, dy);
+    //         // 刷新队列，触发 C++ 处理
+    //         // this.sceneProxy.eventQueue.flush();
+    //       }
+    //     }
+    //   }
+    //   if(event.type == TouchType.Up){
+    //     TouchUp(event, this.touch);
+    //   }
+    // })
     .translate({x:this.playOffset.x + this.translatePos.x,y:this.playOffset.y + this.translatePos.y})
     .width("100%")
     .height("100%")

@@ -1,6 +1,5 @@
 import image from '@ohos.multimedia.image'
 import { ImageUtils } from '../shared/utils/ImageUtils';
-import { SceneProxy } from '../core/scene3D/SceneProxy';
 import { RaycastParameters, ShaderMaterial, Vec2, Vec3, Vec4 } from '@kit.ArkGraphics3D';
 import { AnimatorOptions, AnimatorResult } from '@kit.ArkUI';
 import { Touch, TouchDown, TouchMove, TouchUp, TOUCH_DEFAULT } from '../shared/utils/TouchManager';
@@ -9,6 +8,7 @@ import { getDateByTimeStamp, getDateStringWithTimeStamp } from '../shared/utils/
 import { TraceVec2 } from '../core/math/vec';
 import { ComponentSnapshot } from '@ohos.arkui.UIContext';
 import { NoteViewModel } from '../feature/note/NoteVeiwModel';
+import { SceneProxy } from '../core/scene3D/GlobalSceneProxy';
 
 
 const  ANIMATION_OPTION: AnimatorOptions = {
@@ -41,7 +41,7 @@ export struct TestPage {
   @Local imageUri: string = '';
   @Local backId: number = 0;
   @Event showCard: (imageUri:string) => void;
-  @Local sceneProxy: SceneProxy = new SceneProxy(this.getUIContext());
+  @Local sceneProxy: SceneProxy = SceneProxy.getInstance();
   @Local delta: Vec3 = {x:0,y:0,z:0};
   @Local backAnimator: AnimatorResult | undefined = undefined;
   step: number = 0;
@@ -92,7 +92,7 @@ export struct TestPage {
   }
 
   aboutToDisappear(): void {
-    this.sceneProxy.release();
+    this.sceneProxy.releaseScene();
   }
 
   build() {
@@ -167,7 +167,7 @@ export struct TestPage {
         }
         let fx = (2 * x) / this.ScreenSize.width  - 1;
         let fy = 1 - (2 * y) / this.ScreenSize.height ;
-        this.sceneProxy.rayCast({x:fx,y:fy});
+        // this.sceneProxy.rayCast({x:fx,y:fy});
         let node = this.sceneProxy.scene?.root;
         if(node){
           // raycastParams.rootNode = node;
@@ -185,13 +185,7 @@ export struct TestPage {
 
       }
       if(event.type == TouchType.Move){
-        if(this.sceneProxy.touchRotate.target){
           TouchMove(event,this.touch);
-          let id = this.sceneProxy.physicalSystem.getId(this.sceneProxy.touchRotate.target.path + "/" + this.sceneProxy.touchRotate.target.name);
-          if(id != undefined){
-            this.sceneProxy.physicalSystem.setRotation(id,this.sceneProxy.touchRotate.update(this.touch));
-          }
-        }
       }
       if(event.type == TouchType.Up){
         TouchUp(event,this.touch);

@@ -19,7 +19,6 @@ export class PhysicsAdapter {
     const position = node.position;
     const rotation = node.rotation as Vec4;
     const scale = node.scale;
-    const radius = (scale[0] + scale[1] + scale[2]) / 6;
     let geom = node as Geometry;
     let aabb = geom.mesh.aabb;
 
@@ -43,7 +42,7 @@ export class PhysicsAdapter {
       scale: scale,
       extent: extent,
       shapeType: shapeType,
-      isStatic: isStatic ? 0 : 1,
+      isStatic: isStatic ? 1 : 0,
     } as PhysicsData;
   }
 }

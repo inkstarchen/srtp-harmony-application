@@ -7,12 +7,14 @@
 #include <cstdint>
 #include <hilog/log.h>
 #include <string>
+#include <cmath>
 #include "Inertial.h"
 #include "physicalSystem.h"
 #include "buffer.h"
 #include "collision.h"
 #include "napi_helpers.h"
 #include "vec.h"
+#include "shape.h"
 
 // 对齐到64空间
 static size_t alignCapacity(size_t v) {
@@ -76,13 +78,29 @@ napi_value PhysicsSystem::New(napi_env env, napi_callback_info info)
     }
 }
 
+napi_value PhysicsSystem::Release(napi_env env, napi_callback_info info){
+    OH_LOG_INFO(LOG_APP,"NAPI RELEASE");
+    size_t argc = 0;
+    napi_value jsThis;
+    napi_get_cb_info(env, info, &argc, nullptr, &jsThis, nullptr);
+    
+    PhysicsSystem* obj;
+    napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
+
+    obj->ReleaseScene();
+    return nullptr;
+}
+
 // 初始化获取足够的内存空间
 PhysicsSystem::PhysicsSystem(size_t cap)
-    : count(0), env_(nullptr), wrapper_(nullptr) 
+    : count(0), env_(nullptr), wrapper_(nullptr), gravity(Vector3(0.0f,0.0f,1.0f))
 {
-    
+    initHandlers();
     capacity = alignCapacity(cap);
     free_list.reserve(capacity);
+    for (int32_t i = capacity-1; i >= 0; i--) {
+        free_list.push_back(static_cast<uint32_t>(i));
+    }
     
     // 计算 float / int / byte 数量
     const size_t floatCount = 
@@ -173,8 +191,6 @@ PhysicsSystem::PhysicsSystem(size_t cap)
     std::memset(base_ptr, 0, bytes);
 }
 
-
-
 // 销毁删除结构体
 PhysicsSystem::~PhysicsSystem()
 {
@@ -188,12 +204,16 @@ uint32_t PhysicsSystem::newNode()
 {
     uint32_t id;
     if(!free_list.empty()) {
+        OH_LOG_INFO(LOG_APP,"free_list not empty");
         id = free_list.back();
         free_list.pop_back();
+        count++;
     } else {
+        OH_LOG_INFO(LOG_APP,"free_list empty");
         id = count++;
         assert(id < capacity && "Exceed capacity");
     }
+    OH_LOG_INFO(LOG_APP, "id test | %{public}d", id);
     return id;
 }
 
@@ -211,410 +231,329 @@ void FinalizeCallback(napi_env env, void *finalize_data, void *finalize_hint)
     delete bufferData;
 }
 
-// 设置属性函数
-napi_value PhysicsSystem::SetPosition(napi_env env, napi_callback_info info) 
-{  
+// 步进模拟函数
+napi_value PhysicsSystem::Update(napi_env env, napi_callback_info info)
+{
     size_t argc = 2;
     napi_value argv[2];
     napi_value jsThis;
     napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
-
-    napi_value id_val = argv[0];
-    napi_value position_val = argv[1];
-    uint32_t id;
-    Vector3 position;
-    napi_get_value_uint32(env, id_val, &id);
-    position = napi_helpers::parse_vector3(env, position_val);
     
-    PhysicsSystem* obj;
-    napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
+    auto eventQueue = parseEventQueue(env, argv[0]);
     
-    obj->setPosition(id, position);
-    return nullptr;
-}
-
-napi_value PhysicsSystem::SetRotation(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value argv[2], jsThis;
-    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
-
-    uint32_t id;
-    Vector4 rotation;
-
-    napi_get_value_uint32(env, argv[0], &id);
-    rotation = napi_helpers::parse_vector4(env, argv[1]);
-
-    PhysicsSystem* obj;
-    napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
-    obj->setRotation(id, rotation);
-    return nullptr;
-}
-
-napi_value PhysicsSystem::SetVelocity(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value argv[2], jsThis;
-    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
-
-    uint32_t id;
-    Vector3 velocity;
-
-    napi_get_value_uint32(env, argv[0], &id);
-    velocity = napi_helpers::parse_vector3(env, argv[1]);
-
-    PhysicsSystem* obj;
-    napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
-    obj->setVelocity(id, velocity);
-    return nullptr;
-}
-
-
-napi_value PhysicsSystem::SetForce(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value argv[2], jsThis;
-    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
-
-    uint32_t id;
-    Vector3 force;
-
-    napi_get_value_uint32(env, argv[0], &id);
-    force = napi_helpers::parse_vector3(env, argv[1]);
-
-    PhysicsSystem* obj;
-    napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
-    obj->setForce(id, force);
-    return nullptr;
-}
-
-napi_value PhysicsSystem::SetScale(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value argv[2], jsThis;
-    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
-
-    uint32_t id;
-    Vector3 scale;
-
-    napi_get_value_uint32(env, argv[0], &id);
-    scale = napi_helpers::parse_vector3(env, argv[1]);
-
-    PhysicsSystem* obj;
-    napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
-    obj->setScale(id, scale);
-    return nullptr;
-}
-
-napi_value PhysicsSystem::SetExtent(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value argv[2], jsThis;
-    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
-
-    uint32_t id;
-    Vector3 extent;
-
-    napi_get_value_uint32(env, argv[0], &id);
-    extent = napi_helpers::parse_vector3(env, argv[1]);
-
-    PhysicsSystem* obj;
-    napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
-    obj->setExtent(id, extent);
-    return nullptr;
-}
-
-napi_value PhysicsSystem::SetMass(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value argv[2], jsThis;
-    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
-
-    uint32_t id;
-    double mass;
-
-    napi_get_value_uint32(env, argv[0], &id);
-    napi_get_value_double(env, argv[1], &mass);
-
-    PhysicsSystem* obj;
-    napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
-    obj->setMass(id, static_cast<float>(mass));
-    return nullptr;
-}
-
-napi_value PhysicsSystem::SetRestitution(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value argv[2], jsThis;
-    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
-
-    uint32_t id;
-    double r;
-
-    napi_get_value_uint32(env, argv[0], &id);
-    napi_get_value_double(env, argv[1], &r);
-
-    PhysicsSystem* obj;
-    napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
-    obj->setRestitution(id, static_cast<float>(r));
-    return nullptr;
-}
-
-napi_value PhysicsSystem::SetFriction(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value argv[2], jsThis;
-    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
-
-    uint32_t id;
-    double f;
-
-    napi_get_value_uint32(env, argv[0], &id);
-    napi_get_value_double(env, argv[1], &f);
-
-    PhysicsSystem* obj;
-    napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
-    obj->setFriction(id, static_cast<float>(f));
-    return nullptr;
-}
-
-napi_value PhysicsSystem::SetShapeType(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value argv[2], jsThis;
-    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
-
-    uint32_t id;
-    int32_t type;
-
-    napi_get_value_uint32(env, argv[0], &id);
-    napi_get_value_int32(env, argv[1], &type);
-
-    PhysicsSystem* obj;
-    napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
-    obj->setShapeType(id, type);
-    return nullptr;
-}
-
-napi_value PhysicsSystem::SetIsStatic(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value argv[2], jsThis;
-    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
-
-    uint32_t id;
-    uint32_t isStatic;
-
-    napi_get_value_uint32(env, argv[0], &id);
-    napi_get_value_uint32(env, argv[1], &isStatic);
-
-    PhysicsSystem* obj;
-    napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
-    obj->setIsStatic(id, static_cast<uint8_t>(isStatic));
-    return nullptr;
-}
-
-
-void PhysicsSystem::setPosition(uint32_t id, Vector3 position)
-{
-    pos_x[id] = position.x;
-    pos_y[id] = position.y;
-    pos_z[id] = position.z;
-}
-
-void PhysicsSystem::setRotation(uint32_t id, Vector4 rotation)
-{
-    rot_x[id] = rotation.x;
-    rot_y[id] = rotation.y;
-    rot_z[id] = rotation.z;
-    rot_w[id] = rotation.w;
-}
-
-void PhysicsSystem::setScale(uint32_t id, Vector3 scale)
-{
-    scale_x[id] = scale.x;
-    scale_y[id] = scale.y;
-    scale_z[id] = scale.z;
-}
-
-// ================= Motion =================
-
-void PhysicsSystem::setVelocity(uint32_t id, Vector3 velocity)
-{
-    vel_x[id] = velocity.x;
-    vel_y[id] = velocity.y;
-    vel_z[id] = velocity.z;
-}
-
-
-void PhysicsSystem::setForce(uint32_t id, Vector3 force)
-{
-    force_x[id] = force.x;
-    force_y[id] = force.y;
-    force_z[id] = force.z;
-}
-
-// ================= Collision =================
-
-void PhysicsSystem::setExtent(uint32_t id, Vector3 extent)
-{
-    extent_x[id] = extent.x;
-    extent_y[id] = extent.y;
-    extent_z[id] = extent.z;
-}
-
-void PhysicsSystem::setShapeType(uint32_t id, int32_t type)
-{
-    shapeType[id] = type;
-}
-
-// ================= Physical Params =================
-
-void PhysicsSystem::setMass(uint32_t id, float m)
-{
-    if(m < 1e-6) {
-        invMass[id] = INFINITY;
-    }else {
-        invMass[id] = 1 / m;
-    }
-}
-
-
-void PhysicsSystem::setRestitution(uint32_t id, float r)
-{
-    restitution[id] = r;
-}
-
-void PhysicsSystem::setFriction(uint32_t id, float f)
-{
-    friction[id] = f;
-}
-
-// ================= Flags =================
-
-void PhysicsSystem::setIsStatic(uint32_t id, uint8_t value)
-{
-    isStatic[id] = value;
-}
-
-void PhysicsSystem::setGravity(Vector3 gravity) 
-{
-    for(uint32_t i = 0; i < count; i++){
-        force_y[i] = gravity.y;
-        force_x[i] = gravity.x;
-        force_z[i] = -gravity.z;
-    }
-}
-
-// 获取属性函数
-
-napi_value PhysicsSystem::GetMass(napi_env env, napi_callback_info info){
-
-    size_t argc = 1;
-    napi_value argv[1], jsThis;
-    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
-
-    napi_value id_val = argv[0];
-    uint32_t id;
-    napi_get_value_uint32(env, id_val, &id);
-
-    PhysicsSystem* obj;
-    napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
-    float m = obj->getMass(id);
-    napi_value mass_val;
-    double mass = static_cast<float >(m);
-    napi_status status = napi_create_double(env, mass, &mass_val);
-    if(status != napi_ok){
-        napi_throw_error(env, nullptr, "create double fail");
-    }
-    return mass_val;
-}
-napi_value PhysicsSystem::GetVel(napi_env env, napi_callback_info info){
-
-    size_t argc = 1;
-    napi_value argv[1], jsThis;
-    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
-
-    napi_value id_val = argv[0];
-    uint32_t id;
-    napi_get_value_uint32(env, id_val, &id);
-
-    PhysicsSystem* obj;
-    napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
-    Vector3 vel = obj->getVel(id);
-    napi_value vel_val;
-    
-    vel_val = napi_helpers::create_vector3(env, vel);
-    return vel_val;
-}
-napi_value PhysicsSystem::GetFric(napi_env env, napi_callback_info info){
-
-    size_t argc = 1;
-    napi_value argv[1], jsThis;
-    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
-
-    napi_value id_val = argv[0];
-    uint32_t id;
-    napi_get_value_uint32(env, id_val, &id);
-
-    PhysicsSystem* obj;
-    napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
-    float f = obj->getFric(id);
-    napi_value f_val;
-    double friction = static_cast<float >(f);
-    napi_status status = napi_create_double(env, friction, &f_val);
-    if(status != napi_ok){
-        napi_throw_error(env, nullptr, "create double fail");
-    }
-    return f_val;
-}
-float PhysicsSystem::getMass(uint32_t id){
-    return 1 / invMass[id];
-}
-
-Vector3 PhysicsSystem::getVel(uint32_t id){
-    return Vector3(vel_x[id],vel_y[id], vel_z[id]);
-}
-float PhysicsSystem::getFric(uint32_t id){
-    return friction[id];
-}
-
-// 步进模拟函数
-napi_value PhysicsSystem::Update(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value argv[1];
-    napi_value jsThis;
-    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
-    
-    napi_value time_val = argv[0];
+    napi_value time_val = argv[1];
     double d;
     napi_get_value_double(env, time_val, &d);
     
     PhysicsSystem* obj;
-    
     napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
+    
+    obj->processEventQueueFromJS(eventQueue);
     obj->step(static_cast<float>(d));
     return obj->update(env, info);
 }
 
-napi_value PhysicsSystem::RayCast(napi_env env, napi_callback_info info) {
-    size_t argc = 1;
-    napi_value argv[1];
-    napi_value jsThis;
-    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
-    
-    napi_value touch_pos_val = argv[0];
-    Vector2 touch_pos = napi_helpers::parse_vector2(env, touch_pos_val);
-    
-    Vector3 cameraPos = Vector3(0.0,0.0,-4.0);
-    Vector3 front = Vector3(0.0,0.0,1.0);
-    Vector3 up = Vector3(0.0,1.0,0.0);
-    Vector3 right = Vector3(1.0,0.0,0.0);
-    Vector3 virtual_pos = (up * touch_pos.y + right * touch_pos.x) * (- cameraPos.z);
-    Vector3 dir = (virtual_pos - cameraPos).normalized();
-    
+//napi_value PhysicsSystem::RayCast(napi_env env, napi_callback_info info) {
+//    size_t argc = 1;
+//    napi_value argv[1];
+//    napi_value jsThis;
+//    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
+//
+//    napi_value touch_pos_val = argv[0];
+//    Vector2 touch_pos = napi_helpers::parse_vector2(env, touch_pos_val);
+//
+//    Vector3 cameraPos = Vector3(0.0,0.0,-4.0);
+//    Vector3 front = Vector3(0.0,0.0,1.0);
+//    Vector3 up = Vector3(0.0,1.0,0.0);
+//    Vector3 right = Vector3(1.0,0.0,0.0);
+//    Vector3 virtual_pos = (up * touch_pos.y + right * touch_pos.x) * (- cameraPos.z);
+//    Vector3 dir = (virtual_pos - cameraPos).normalized();
+//}
+
+// 处理 ArkTS 传递的事件队列
+void PhysicsSystem::processEventQueueFromJS(const std::vector<std::vector<EventCommand>> &events) {
+//    OH_LOG_INFO(LOG_APP,"EVENTCOMMAND | START %{public}d", events.size());
+    // 按优先级处理事件（HIGH → NORMAL → LOW）
+    for (const auto& queue : events) {       // 外层队列
+//        OH_LOG_INFO(LOG_APP,"EVENTCOMMAND | MID %{public}d", queue.size());
+        for (const auto& event : queue) {    // 内层事件
+            auto func = handlers[static_cast<uint8_t>(event.type)];
+            if (func) {
+//                OH_LOG_INFO(LOG_APP,"EVENTCOMMAND | %{public}d",static_cast<uint8_t>(event.type));
+                if(static_cast<uint8_t>(event.type) == 103){
+                    const double * values = reinterpret_cast<const double *>(event.data.data());
+//                    OH_LOG_INFO(LOG_APP,"ANGLE C++ IS %{public}.3f, %{public}.3f, %{public}.3f",values[0], values[1],values[2]);
+                }
+                (this->*func)(event);
+            }
+        }
+    }
 }
+
+// 射线-AABB 相交测试（slab 方法）
+inline bool raycastAABB(
+    const Vector3& origin,
+    const Vector3& dir,
+    const Vector3& center,
+    const Vector3& halfExtent,
+    double& tmin,
+    double& tmax
+) {
+    tmin = 0.0;
+    tmax = FLT_MAX;
+
+    Vector3 bmin(center.x - halfExtent.x, center.y - halfExtent.y, center.z - halfExtent.z);
+    Vector3 bmax(center.x + halfExtent.x, center.y + halfExtent.y, center.z + halfExtent.z);
+
+    for (int i = 0; i < 3; i++) {
+        double o = origin[i];
+        double d = dir[i];
+
+        if (std::abs(d) < 1e-8) {
+            // 射线平行于 slab
+            if (o < bmin[i] || o > bmax[i]) {
+                return false;
+            }
+        } else {
+            double t1 = (bmin[i] - o) / d;
+            double t2 = (bmax[i] - o) / d;
+
+            if (t1 > t2) std::swap(t1, t2);
+
+            tmin = std::max(tmin, t1);
+            tmax = std::min(tmax, t2);
+
+            if (tmin > tmax) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+// 获取 OBB 的三个轴（从四元数旋转）
+inline void getOBBAxis(
+    const Quaternion& rot,
+    Vector3 axis[3])
+{
+    float xx = rot.x * rot.x;
+    float yy = rot.y * rot.y;
+    float zz = rot.z * rot.z;
+
+    float xy = rot.x * rot.y;
+    float xz = rot.x * rot.z;
+    float yz = rot.y * rot.z;
+
+    float wx = rot.w * rot.x;
+    float wy = rot.w * rot.y;
+    float wz = rot.w * rot.z;
+
+    axis[0] = Vector3(
+        1.0f - 2.0f * (yy + zz),
+        2.0f * (xy + wz),
+        2.0f * (xz - wy)
+    );
+
+    axis[1] = Vector3(
+        2.0f * (xy - wz),
+        1.0f - 2.0f * (xx + zz),
+        2.0f * (yz + wx)
+    );
+
+    axis[2] = Vector3(
+        2.0f * (xz + wy),
+        2.0f * (yz - wx),
+        1.0f - 2.0f * (xx + yy)
+    );
+}
+
+// 射线 - 球体相交测试
+inline bool raycastSphere(
+    const Vector3& origin,
+    const Vector3& dir,
+    const Vector3& center,
+    float radius,
+    double& t)
+{
+    Vector3 oc = origin - center;
+    double a = dir.dot(dir);
+    double b = 2.0 * oc.dot(dir);
+    double c = oc.dot(oc) - static_cast<double>(radius) * static_cast<double>(radius);
+
+    double discriminant = b * b - 4.0 * a * c;
+    if (discriminant < 0) return false;
+
+    double sqrtDisc = std::sqrt(discriminant);
+    double t0 = (-b - sqrtDisc) / (2.0 * a);
+    double t1 = (-b + sqrtDisc) / (2.0 * a);
+
+    if (t0 > 0) { t = t0; return true; }
+    if (t1 > 0) { t = t1; return true; }
+    return false;
+}
+
+// 射线-OBB 相交测试（变换到局部空间后用 slab 方法）
+inline bool raycastOBB(
+    const Vector3& origin,
+    const Vector3& dir,
+    const Vector3& center,
+    const Quaternion& rotation,
+    const Vector3& halfExtent,
+    double& t)
+{
+    // 计算 OBB 的三个轴
+    Vector3 axis[3];
+    getOBBAxis(rotation, axis);
+
+    // 将射线变换到 OBB 局部空间
+    Vector3 p = origin - center;
+    Vector3 localOrigin;
+    localOrigin.x = p.dot(axis[0]);
+    localOrigin.y = p.dot(axis[1]);
+    localOrigin.z = p.dot(axis[2]);
+
+    Vector3 localDir;
+    localDir.x = dir.dot(axis[0]);
+    localDir.y = dir.dot(axis[1]);
+    localDir.z = dir.dot(axis[2]);
+
+    // 使用 slab 方法在局部空间进行射线-AABB 测试
+    double tmin = 0.0, tmax = FLT_MAX;
+
+    for (int i = 0; i < 3; i++) {
+        double o = localOrigin[i];
+        double d = localDir[i];
+        float e = static_cast<float>(halfExtent[i]);
+
+        if (std::abs(d) < 1e-8) {
+            // 射线平行于 slab
+            if (o < -e || o > e) return false;
+        } else {
+            double t1 = (-e - o) / d;
+            double t2 = (e - o) / d;
+            if (t1 > t2) std::swap(t1, t2);
+            tmin = std::max(tmin, t1);
+            tmax = std::min(tmax, t2);
+            if (tmin > tmax) return false;
+        }
+    }
+
+    t = tmin;
+    return tmin >= 0;
+}
+
+// 处理 Raycast 请求 - 根据 shapeType 选择精确的射线检测
+void PhysicsSystem::processRaycast(float touchX, float touchY) {
+    Vector3 cameraPos = Vector3(0.0, 0.0, -4.0);
+    Vector3 up = Vector3(0.0, 1.0, 0.0);
+    Vector3 right = Vector3(1.0, 0.0, 0.0);
+
+    // 将屏幕坐标转换为世界空间射线方向
+    Vector3 virtual_pos = (up * touchY + right * touchX) * (-cameraPos.z);
+    Vector3 rayDir = (virtual_pos - cameraPos).normalized();
+
+    uint32_t closestId = 0;
+    double closestT = FLT_MAX;
+
+    // 遍历所有物体
+    for (uint32_t i = 0; i < count; ++i) {
+        if (isStatic[i]) continue;
+
+        Vector3 center(pos_x[i], pos_y[i], pos_z[i]);
+        double t;
+        bool hit = false;
+
+        // 根据 shapeType 选择检测函数
+        switch (shapeType[i]) {
+            case SHAPE_SPHERE: {
+                // 球体：使用 extent_x 作为半径
+                float radius = extent_x[i] * 0.5f;
+                hit = raycastSphere(cameraPos, rayDir, center, radius, t);
+                break;
+            }
+            case SHAPE_BOX: {
+                // OBB：使用旋转和半长轴
+                Vector3 halfExtent(extent_x[i] * 0.5f, extent_y[i] * 0.5f, extent_z[i] * 0.5f);
+                Quaternion rot(rot_x[i], rot_y[i], rot_z[i], rot_w[i]);
+                hit = raycastOBB(cameraPos, rayDir, center, rot, halfExtent, t);
+                break;
+            }
+            default:
+                break;
+        }
+
+        if (hit && t > 0 && t < closestT) {
+            closestT = t;
+            closestId = i;
+        }
+    }
+
+    // 保存选中的节点 ID
+//    selectedNodeId_ = closestId;
+
+    if (closestId != 0) {
+        OH_LOG_INFO(LOG_APP, "Raycast hit node id=%{public}u at t=%{public}f", closestId, closestT);
+    }
+}
+
+// 处理 Rotate 请求 - 旋转选中的节点
+//void PhysicsSystem::processRotate(float deltaX, float deltaY) {
+//    if (selectedNodeId_ == 0) return;
+//
+//    const float ROTATE_SPEED = 0.05f;
+//
+//    // 获取当前旋转（四元数）
+//    float qx = rot_x[selectedNodeId_];
+//    float qy = rot_y[selectedNodeId_];
+//    float qz = rot_z[selectedNodeId_];
+//    float qw = rot_w[selectedNodeId_];
+//
+//    // 根据 deltaX 创建绕 Y 轴的旋转（Yaw）
+//    float yawAngle = deltaX * ROTATE_SPEED;
+//    float yawHalf = yawAngle * 0.5f;
+//    float yawSin = std::sin(yawHalf);
+//    float yawCos = std::cos(yawHalf);
+//
+//    Quaternion deltaYaw(0.0f, yawSin, 0.0f, yawCos);
+//
+//    // 根据 deltaY 创建绕 X 轴的旋转（Pitch）
+//    float pitchAngle = deltaY * ROTATE_SPEED;
+//    float pitchHalf = pitchAngle * 0.5f;
+//    float pitchSin = std::sin(pitchHalf);
+//    float pitchCos = std::cos(pitchHalf);
+//
+//    Quaternion deltaPitch(pitchSin, 0.0f, 0.0f, pitchCos);
+//
+//    // 组合旋转：delta = deltaPitch * deltaYaw
+//    Quaternion deltaRot;
+//    deltaRot.w = deltaPitch.w * deltaYaw.w - deltaPitch.x * deltaYaw.x -
+//                 deltaPitch.y * deltaYaw.y - deltaPitch.z * deltaYaw.z;
+//    deltaRot.x = deltaPitch.w * deltaYaw.x + deltaPitch.x * deltaYaw.w +
+//                 deltaPitch.y * deltaYaw.z - deltaPitch.z * deltaYaw.y;
+//    deltaRot.y = deltaPitch.w * deltaYaw.y - deltaPitch.x * deltaYaw.z +
+//                 deltaPitch.y * deltaYaw.w + deltaPitch.z * deltaYaw.x;
+//    deltaRot.z = deltaPitch.w * deltaYaw.z + deltaPitch.x * deltaYaw.y -
+//                 deltaPitch.y * deltaYaw.x + deltaPitch.z * deltaYaw.w;
+//
+//    // 新旋转 = deltaRot × 当前旋转
+//    float newQx = deltaRot.w * qx + deltaRot.x * qw + deltaRot.y * qz - deltaRot.z * qy;
+//    float newQy = deltaRot.w * qy - deltaRot.x * qz + deltaRot.y * qw + deltaRot.z * qx;
+//    float newQz = deltaRot.w * qz + deltaRot.x * qy - deltaRot.y * qx + deltaRot.z * qw;
+//    float newQw = deltaRot.w * qw - deltaRot.x * qx - deltaRot.y * qy - deltaRot.z * qz;
+//
+//    // 归一化
+//    float norm = std::sqrt(newQx * newQx + newQy * newQy + newQz * newQz + newQw * newQw);
+//    if (norm > 1e-6f) {
+//        rot_x[selectedNodeId_] = newQx / norm;
+//        rot_y[selectedNodeId_] = newQy / norm;
+//        rot_z[selectedNodeId_] = newQz / norm;
+//        rot_w[selectedNodeId_] = newQw / norm;
+//    }
+//
+//    OH_LOG_INFO(LOG_APP, "Rotate node %{public}u by (%{public}f, %{public}f)",
+//                selectedNodeId_, deltaX, deltaY);
+//}
 
 napi_value PhysicsSystem::update(napi_env env, napi_callback_info info) 
 {
@@ -646,18 +585,26 @@ napi_value PhysicsSystem::update(napi_env env, napi_callback_info info)
     napi_create_reference(env, outputArray, 1, &buffer_ref_);
     return outputArray;
 }
+
 void PhysicsSystem::step(float dt)
 {
+
+    // 1. 碰撞检测
     detectCollisions();
 
+    // 2. 构建接触点
     buildContacts();
 
+    // 3. 解算接触点
     solveContacts();
 
+    // 4. 速度积分
     integrateVelocity(dt);
 
+    // 5. 位置修正
     positionalCorrection();
 
+    // 6. 位置积分
     integratePosition(dt);
 }
 
@@ -667,7 +614,7 @@ void PhysicsSystem::detectCollisions() {
         for(uint32_t j = i + 1 ; j < count; ++j){
             if(isStatic[i] && isStatic[j]) continue;
             if(testCollision(i, j)){
-                OH_LOG_INFO(LOG_APP, "YES");
+//                OH_LOG_INFO(LOG_APP, "YES");
                 possiblePairs.emplace_back(i,j);
             }
         }
@@ -754,17 +701,26 @@ void PhysicsSystem::integrateVelocity(float dt) {
             angVel_x[i] = 0.0f;
             angVel_y[i] = 0.0f;
             angVel_z[i] = 0.0f;
+//            OH_LOG_INFO(LOG_APP,"STATIC TEST | %{public}d",i);  
             continue;
         }
-        
+        OH_LOG_INFO(LOG_APP, 
+            "i=%{public}u vel=(%{public}.3f, %{public}.3f, %{public}.3f) impulse=(%{public}.3f, %{public}.3f, %{public}.3f) "
+            "force=(%{public}.3f, %{public}.3f, %{public}.3f) dt = %{public}.3f, invMass=%{public}.3f, gravity=(%{public}.3f,%{public}.3f,%{public}.3f)",
+            i,
+            vel_x[i], vel_y[i], vel_z[i],
+            impulse_x[i], impulse_y[i], impulse_z[i],
+            force_x[i], force_y[i], force_z[i],dt,invMass[i],
+            gravity.x,gravity.y,gravity.z
+        );
         // --- 线性冲量积分 ---
         impulse_x[i] += force_x[i] * dt;
         impulse_y[i] += force_y[i] * dt;
         impulse_z[i] += force_z[i] * dt;
 
-        vel_x[i] += impulse_x[i] * invMass[i];
-        vel_y[i] += impulse_y[i] * invMass[i];
-        vel_z[i] += impulse_z[i] * invMass[i];
+        vel_x[i] += impulse_x[i] * invMass[i] + gravity.x * dt;
+        vel_y[i] += impulse_y[i] * invMass[i] + gravity.y * dt;
+        vel_z[i] += impulse_z[i] * invMass[i] + gravity.z * dt;
     
 //        OH_LOG_INFO(LOG_APP, 
 //            "i=%{public}u vel=(%{public}.3f, %{public}.3f, %{public}.3f) impulse=(%{public}.3f, %{public}.3f, %{public}.3f) "
@@ -977,28 +933,7 @@ napi_value PhysicsSystem::AddNode(napi_env env, napi_callback_info info) {
     return id_val;
 }
 
-// 根据手机姿态设置重力的函数
-napi_value PhysicsSystem::GetNormal(napi_env env, napi_callback_info info)
-{
-    size_t arc = 1;
-    napi_value argv[1];
-    napi_value jsThis;
-    napi_get_cb_info(env, info, &arc, argv, &jsThis, nullptr);
-    
-    PhysicsSystem* obj;
-    
-    napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
-    
-    Vector3 angle = napi_helpers::parse_vector3(env, argv[0]);
-    Vector3 normal = Vector3(0.0, 0.0, -1.0);
-    angle = angle / 180.0 * 3.141592;
-    normal = Vector3::RotateAroundAxis(normal, Vector3(0.0,1.0,0.0), -angle.y);
-    normal = Vector3::RotateAroundAxis(normal, Vector3(1.0,0.0,0.0), angle.x);
-    Vector3 g = Vector3(0.0, 0.0, -1.0);
-    Vector3 g_l = g - normal * g.dot(normal);
-    obj->setGravity(normal);
-    return nullptr;
-}
+
 
 
 // ============= 碰撞解算函数 ===================
@@ -1025,6 +960,7 @@ Body PhysicsSystem::getBody(uint32_t id) {
 bool PhysicsSystem::testCollision(uint32_t a, uint32_t b)
 {
     return CollisionDispatch::dispatch(*this,a, b);
+//    return false;
 }
 
 // 辅助函数
@@ -1043,30 +979,16 @@ void PhysicsSystem::clearForce(uint32_t id)
 
 // 注册函数
 
-napi_value PhysicsSystem::Init(napi_env env, napi_value exports) 
+napi_value PhysicsSystem::Init(napi_env env, napi_value exports)
 {
     napi_property_descriptor properties[] = {
         { "addNode", nullptr, AddNode, nullptr, nullptr, nullptr, napi_default, nullptr},
         { "update", nullptr, Update, nullptr, nullptr, nullptr, napi_default, nullptr},
-        { "setPosition", nullptr, SetPosition, nullptr, nullptr, nullptr, napi_default, nullptr},
-        { "setRotation", nullptr, PhysicsSystem::SetRotation, nullptr, nullptr, nullptr, napi_default, nullptr },
-        { "setVelocity", nullptr, PhysicsSystem::SetVelocity, nullptr, nullptr, nullptr, napi_default, nullptr },
-        { "setForce", nullptr, PhysicsSystem::SetForce, nullptr, nullptr, nullptr, napi_default, nullptr },
-        { "setScale", nullptr, PhysicsSystem::SetScale, nullptr, nullptr, nullptr, napi_default, nullptr },
-        { "setExtent", nullptr, PhysicsSystem::SetExtent, nullptr, nullptr, nullptr, napi_default, nullptr },
-        { "setMass", nullptr, PhysicsSystem::SetMass, nullptr, nullptr, nullptr, napi_default, nullptr },
-        { "setRestitution", nullptr, PhysicsSystem::SetRestitution, nullptr, nullptr, nullptr, napi_default, nullptr },
-        { "setFriction", nullptr, PhysicsSystem::SetFriction, nullptr, nullptr, nullptr, napi_default, nullptr },
-        { "setShapeType", nullptr, PhysicsSystem::SetShapeType, nullptr, nullptr, nullptr, napi_default, nullptr },
-        { "setIsStatic", nullptr, PhysicsSystem::SetIsStatic, nullptr, nullptr, nullptr, napi_default, nullptr },
-        { "getMass", nullptr, PhysicsSystem::GetMass, nullptr, nullptr, nullptr, napi_default, nullptr },
-        { "getVel", nullptr, PhysicsSystem::GetVel, nullptr, nullptr, nullptr, napi_default, nullptr },
-        { "getFric", nullptr, PhysicsSystem::GetFric, nullptr, nullptr, nullptr, napi_default, nullptr },
-        { "getNormal", nullptr, PhysicsSystem::GetNormal, nullptr, nullptr, nullptr, napi_default, nullptr},
+        { "release", nullptr, PhysicsSystem::Release, nullptr, nullptr, nullptr, napi_default, nullptr}
     };
-    
+
     napi_value cons;
-    napi_define_class(env, "PhysicsSystem", NAPI_AUTO_LENGTH, New, nullptr, 17, properties, &cons);
+    napi_define_class(env, "PhysicsSystem", NAPI_AUTO_LENGTH, New, nullptr, 3, properties, &cons);
 
     napi_set_named_property(env, exports, "PhysicsSystem", cons);
     return exports;
