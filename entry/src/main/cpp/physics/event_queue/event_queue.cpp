@@ -96,3 +96,63 @@ std::vector<std::vector<EventCommand>> parseEventQueue(napi_env env, napi_value 
 
     return queue;
 }
+
+napi_value toJsEventResult(napi_env env, const EventResult& res)
+{
+    napi_value obj;
+    napi_create_object(env, &obj);
+
+    napi_value val;
+
+    // type
+    napi_create_int32(env, static_cast<int32_t>(res.type), &val);
+    napi_set_named_property(env, obj, "type", val);
+
+    // nodeId
+    napi_create_uint32(env, res.nodeId, &val);
+    napi_set_named_property(env, obj, "nodeId", val);
+
+    // timestamp
+    napi_create_double(env, static_cast<double>(res.timestamp), &val);
+    napi_set_named_property(env, obj, "timestamp", val);
+
+    // status
+    napi_create_uint32(env, res.status, &val);
+    napi_set_named_property(env, obj, "status", val);
+
+    // data[]
+    napi_value arr;
+    napi_create_array_with_length(env, res.data.size(), &arr);
+
+    for (size_t i = 0; i < res.data.size(); i++) {
+        double d;
+
+        if (i == 0) {
+            d = static_cast<double>(static_cast<int64_t>(res.data[i]));
+        } else {
+            uint64_t raw = res.data[i];
+            std::memcpy(&d, &raw, sizeof(double));
+        }
+
+        napi_value num;
+        napi_create_double(env, d, &num);
+        napi_set_element(env, arr, i, num);
+    }
+
+    napi_set_named_property(env, obj, "data", arr);
+
+    return obj;
+}
+
+napi_value toJsEventResults(napi_env env, const std::vector<EventResult>& results)
+{
+    napi_value arr;
+    napi_create_array_with_length(env, results.size(), &arr);
+
+    for (size_t i = 0; i < results.size(); i++) {
+        napi_value jsRes = toJsEventResult(env, results[i]);
+        napi_set_element(env, arr, i, jsRes);
+    }
+
+    return arr;
+}

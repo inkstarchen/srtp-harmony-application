@@ -93,7 +93,7 @@ napi_value PhysicsSystem::Release(napi_env env, napi_callback_info info){
 
 // 初始化获取足够的内存空间
 PhysicsSystem::PhysicsSystem(size_t cap)
-    : count(0), env_(nullptr), wrapper_(nullptr), gravity(Vector3(0.0f,0.0f,1.0f))
+    : count(0), env_(nullptr), wrapper_(nullptr), gravity(Vector3(0.0f,0.0f,1.0f)), cameraPos(Vector3(0.0f,0.0f,-4.0f)), fov(1.57f),ratio(1.0f)
 {
     initHandlers();
     capacity = alignCapacity(cap);
@@ -247,10 +247,22 @@ napi_value PhysicsSystem::Update(napi_env env, napi_callback_info info)
     
     PhysicsSystem* obj;
     napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
-    
+    obj->clearEventResults();
     obj->processEventQueueFromJS(eventQueue);
     obj->step(static_cast<float>(d));
-    return obj->update(env, info);
+    napi_value bufferData = obj->update(env, info);
+    napi_value eventResult_v = obj->getEventResults(env);
+        // 创建返回对象
+    napi_value returnObj;
+    napi_create_object(env, &returnObj);
+
+    // bufferData
+    napi_set_named_property(env, returnObj, "bufferData", bufferData);
+
+    // results
+    napi_set_named_property(env, returnObj, "results", eventResult_v);
+
+    return returnObj;
 }
 
 //napi_value PhysicsSystem::RayCast(napi_env env, napi_callback_info info) {
@@ -445,21 +457,22 @@ inline bool raycastOBB(
 
 // 处理 Raycast 请求 - 根据 shapeType 选择精确的射线检测
 void PhysicsSystem::processRaycast(float touchX, float touchY) {
-    Vector3 cameraPos = Vector3(0.0, 0.0, -4.0);
     Vector3 up = Vector3(0.0, 1.0, 0.0);
-    Vector3 right = Vector3(1.0, 0.0, 0.0);
+    Vector3 right = Vector3(-1.0, 0.0, 0.0);
 
     // 将屏幕坐标转换为世界空间射线方向
-    Vector3 virtual_pos = (up * touchY + right * touchX) * (-cameraPos.z);
+    Vector3 virtual_pos = (up * touchY + right * touchX / ratio) * (-cameraPos.z);
     Vector3 rayDir = (virtual_pos - cameraPos).normalized();
 
-    uint32_t closestId = 0;
+    uint32_t closestId = capacity;
     double closestT = FLT_MAX;
-
+//    setPosition(6, 2 * rayDir + cameraPos);
+//    OH_LOG_INFO(LOG_APP,"RAYTEST | POS %{public}.3f %{public}.3f", virtual_pos.y, virtual_pos.x);
     // 遍历所有物体
     for (uint32_t i = 0; i < count; ++i) {
 //        if (isStatic[i]) continue;
 
+        if(i == 6) continue;
         Vector3 center(pos_x[i], pos_y[i], pos_z[i]);
         double t;
         bool hit = false;
@@ -468,18 +481,18 @@ void PhysicsSystem::processRaycast(float touchX, float touchY) {
         switch (shapeType[i]) {
             case SHAPE_SPHERE: {
                 // 球体：使用 extent_x 作为半径
-                float radius = extent_x[i] * 0.5f;
-                OH_LOG_INFO(LOG_APP, "Raycast hit test | cameraPos:%{public}.3f , %{public}.3f, %{public}.3f \n rayDir : %{public}.3f, %{public}.3f, %{public}.3f, \n center: %{public}.3f,%{public}.3f,%{public}.3f"
-                            , cameraPos.x, cameraPos.y, cameraPos.z, rayDir.x, rayDir.y, rayDir.z, center.x, center.y, center.z);
+                float radius = extent_x[i];
+//                OH_LOG_INFO(LOG_APP, "Raycast hit test | cameraPos:%{public}.3f , %{public}.3f, %{public}.3f \n rayDir : %{public}.3f, %{public}.3f, %{public}.3f, \n center: %{public}.3f,%{public}.3f,%{public}.3f"
+//                            , cameraPos.x, cameraPos.y, cameraPos.z, rayDir.x, rayDir.y, rayDir.z, center.x, center.y, center.z);
                 hit = raycastSphere(cameraPos, rayDir, center, radius, t);
                 break;
             }
             case SHAPE_BOX: {
                 // OBB：使用旋转和半长轴
-                Vector3 halfExtent(extent_x[i] * 0.5f, extent_y[i] * 0.5f, extent_z[i] * 0.5f);
+                Vector3 halfExtent(extent_x[i], extent_y[i], extent_z[i]);
                 Quaternion rot(rot_x[i], rot_y[i], rot_z[i], rot_w[i]);
-                OH_LOG_INFO(LOG_APP, "Raycast hit test | cameraPos:%{public}.3f , %{public}.3f, %{public}.3f \n rayDir : %{public}.3f, %{public}.3f, %{public}.3f, \n center: %{public}.3f,%{public}.3f,%{public}.3f"
-                , cameraPos.x, cameraPos.y, cameraPos.z, rayDir.x, rayDir.y, rayDir.z, center.x, center.y, center.z);
+//                OH_LOG_INFO(LOG_APP, "Raycast hit test | cameraPos:%{public}.3f , %{public}.3f, %{public}.3f \n rayDir : %{public}.3f, %{public}.3f, %{public}.3f, \n center: %{public}.3f,%{public}.3f,%{public}.3f"
+//                , cameraPos.x, cameraPos.y, cameraPos.z, rayDir.x, rayDir.y, rayDir.z, center.x, center.y, center.z);
                 hit = raycastOBB(cameraPos, rayDir, center, rot, halfExtent, t);
                 break;
             }
@@ -496,10 +509,53 @@ void PhysicsSystem::processRaycast(float touchX, float touchY) {
     // 保存选中的节点 ID
 //    selectedNodeId_ = closestId;
 
-    if (closestId != 0) {
-        OH_LOG_INFO(LOG_APP, "Raycast hit node id=%{public}u at t=%{public}f", closestId, closestT);
-    }else{
-        OH_LOG_INFO(LOG_APP, "Raycast hit test");
+    if (closestId != capacity) {
+
+        OH_LOG_INFO(LOG_APP,
+        "Raycast hit node id=%{public}u at t=%{public}f",
+        closestId, closestT);
+
+        EventResult result;
+
+        result.type = EventType::RAYCAST_REQUEST;
+        result.nodeId = closestId;
+        result.timestamp = 0; // 你自己的函数
+        result.status = 1;
+
+        result.data.reserve(4);
+
+        // data[0] nodeId
+        result.data.push_back(static_cast<uint64_t>(closestId));
+
+        // data[1] distance
+        uint64_t raw;
+        double d = closestT;
+        std::memcpy(&raw, &d, sizeof(double));
+        result.data.push_back(raw);
+
+        // data[2..4] hit position
+        Vector3 hitPos = cameraPos + rayDir * closestT;
+
+        double v;
+
+        v = hitPos.x;
+        std::memcpy(&raw, &v, sizeof(double));
+        result.data.push_back(raw);
+
+        v = hitPos.y;
+        std::memcpy(&raw, &v, sizeof(double));
+        result.data.push_back(raw);
+
+        v = hitPos.z;
+        std::memcpy(&raw, &v, sizeof(double));
+        result.data.push_back(raw);
+
+        eventResults.push_back(result);
+
+    } else {
+
+        OH_LOG_INFO(LOG_APP, "Raycast hit test miss");
+
     }
 }
 

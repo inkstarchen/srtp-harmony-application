@@ -7,7 +7,7 @@ import { getScreenSize } from '../shared/ui/uiUtils';
 import { getDateByTimeStamp, getDateStringWithTimeStamp } from '../shared/utils/Time/time';
 import { TraceVec2 } from '../core/math/vec';
 import { ComponentSnapshot } from '@ohos.arkui.UIContext';
-import { NoteViewModel } from '../feature/note/NoteVeiwModel';
+import { NoteViewModel } from '../feature/note/NoteViewModel';
 import { SceneProxy } from '../core/scene3D/GlobalSceneProxy';
 
 
@@ -51,7 +51,7 @@ export struct TestPage {
   @Local options: RichEditorOptions = { controller: this.noteViewModel.getController() };
 
   aboutToAppear(): void {
-    this.sceneProxy.loadScene('emptyscene');
+    this.sceneProxy.loadScene('emptyscene',this.getUIContext());
     this.backAnimator = this.getUIContext().createAnimator(ANIMATION_OPTION);
     this.backAnimator.onFrame = () => {
       this.step++;

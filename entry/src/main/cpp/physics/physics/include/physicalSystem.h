@@ -14,7 +14,7 @@
 #include <atomic>
 #include "contact.h"
 #include "matrix.h"
-#include "quteration.h"
+#include "quaternion.h"
 #include "vec.h"
 #include "napi/native_api.h"
 #include "../../event_queue/include/event_queue.h"
@@ -44,6 +44,17 @@ public:
 
     std::vector<std::pair<uint32_t, uint32_t>> possiblePairs;
     std::vector<uint32_t> free_list;
+    std::vector<EventResult> eventResults;
+
+    void clearEventResults() {
+        eventResults.clear();
+    }
+    Vector2 touchDown;
+    Vector2 touchLast;
+    Vector2 touchCur;
+    Vector3 cameraPos;
+    float fov;
+    float ratio;
     
     // === SoA pointers ===
     Vector3 gravity;
@@ -68,12 +79,17 @@ private:
         handlers.fill(nullptr);
         handlers[static_cast<uint8_t>(EventType::TOUCH_DOWN)] = &PhysicsSystem::handleTouchDown;
         handlers[static_cast<uint8_t>(EventType::TOUCH_MOVE)] = &PhysicsSystem::handleTouchMove;
+        handlers[static_cast<uint8_t>(EventType::TOUCH_UP)] = &PhysicsSystem::handleTouchUp;
+        handlers[static_cast<uint8_t>(EventType::ROTATE_REQUEST)] = &PhysicsSystem::handleRotateRequest;
         handlers[static_cast<uint8_t>(EventType::SET_PROPERTY_REQUEST)] = &PhysicsSystem::handleSetProperty;
         handlers[static_cast<uint8_t>(EventType::RESET_GRAVITY)] = &PhysicsSystem::handleResetGravity;
         handlers[static_cast<uint8_t>(EventType::RAYCAST_REQUEST)] = &PhysicsSystem::handleRayCast;
     }
     uint32_t newNode();
     napi_value update(napi_env env, napi_callback_info info);
+    napi_value getEventResults(napi_env env){
+        return toJsEventResults(env,eventResults);
+    }
     void ReleaseScene(){
         count = 0;
         OH_LOG_INFO(LOG_APP,"Release Scene %{public}d", count);
@@ -153,6 +169,11 @@ private:
         impulse_y[id] = impulse.y;
         impulse_z[id] = impulse.z;
     }
+    void setCamera(Vector3 pos, float fov_v, float ratio_v){
+        cameraPos = pos;
+        fov = fov_v;
+        ratio = ratio_v;
+    }
     
     Body getBody(uint32_t id);
     
@@ -181,16 +202,30 @@ private:
 
     // 事件处理方法
     void handleTouchDown(const EventCommand& e) {
-        int id = static_cast<int32_t>(e.data[0]);
-//        float* floats = reinterpret_cast<float*>(e.data.data() + 1);
+        int id = static_cast<int64_t>(e.data[0]);
+
+        const double* values = reinterpret_cast<const double*>(e.data.data() + 1);
+        touchDown.x = values[0];
+        touchDown.y = values[1];
+        touchLast.x = values[0];
+        touchLast.y = values[1];
+        OH_LOG_INFO(LOG_APP,"TOUCHEVENT DOWN Pos:%{public}.3f %{public}.3f",touchDown.x, touchDown.y);
         // floats[0], floats[1], floats[2] ... 可以直接访问
         // TODO: 实际处理逻辑
     }
 
     void handleTouchMove(const EventCommand& e) {
-        int id = static_cast<int32_t>(e.data[0]);
-//        float* floats = reinterpret_cast<float*>(e.data.data() + 1);
+        int id = static_cast<int64_t>(e.data[0]);
+
+        const double* values = reinterpret_cast<const double*>(e.data.data() + 1);
+        touchCur.x = values[0];
+        touchCur.y = values[1];
+        OH_LOG_INFO(LOG_APP,"TOUCHEVENT MOVE Pos:%{public}.3f %{public}.3f",touchCur.x, touchCur.y);
         // TODO: 处理 TouchMove
+    }
+    
+    void handleTouchUp(const EventCommand& e) {
+        OH_LOG_INFO(LOG_APP,"TOUCHEVENT UP");
     }
     
     void handleRayCast(const EventCommand& e) {
@@ -207,7 +242,7 @@ private:
     void handleResetGravity(const  EventCommand& e){
         const double * values = reinterpret_cast<const double *>(e.data.data() + 1);
         Vector3 angle = Vector3(values[0],values[1],values[2]);
-        OH_LOG_INFO(LOG_APP,"ANGLE C++ IS %{public}.3f, %{public}.3f, %{public}.3f",values[0], values[1],values[2]);
+//        OH_LOG_INFO(LOG_APP,"ANGLE C++ IS %{public}.3f, %{public}.3f, %{public}.3f",values[0], values[1],values[2]);
         Vector3 normal = Vector3(0.0, 0.0, 1.0);
         angle = angle / 180.0 * 3.141592;
         normal = Vector3::RotateAroundAxis(normal, Vector3(0.0,1.0,0.0), angle.y);
@@ -215,6 +250,21 @@ private:
         Vector3 g = Vector3(0.0f, 0.0f, 1.0f);
         Vector3 g_l = g - normal * g.dot(normal);
         setGravity(normal);
+    }
+    
+    void handleRotateRequest(const EventCommand& e){
+        uint32_t id = e.nodeId;
+        if(id == 0) return;
+        Vector2 distance = touchCur - touchLast;
+        touchLast.x = touchCur.x;
+        touchLast.y = touchCur.y;
+        Quaternion q = Quaternion::rotationFromTouchDelta(distance.x,distance.y);
+        Quaternion cur_q = Quaternion(rot_x[id],rot_y[id],rot_z[id],rot_w[id]);
+        Quaternion result_q = (q * cur_q).normalized();
+        rot_x[id] = result_q.x;
+        rot_y[id] = result_q.y;
+        rot_z[id] = result_q.z;
+        rot_w[id] = result_q.w;
     }
 
 void handleSetProperty(const EventCommand& e) {
@@ -263,6 +313,10 @@ void handleSetProperty(const EventCommand& e) {
         }
         case static_cast<int>(Property::IMPULSE): {
             applyImpulse(e.nodeId, Vector3(values[0], values[1], values[2]));
+            break;
+        }
+        case static_cast<int >(Property::CAMERA): {
+            setCamera(Vector3(values[0],values[1],values[2]), values[3], values[4]);
             break;
         }
         default:

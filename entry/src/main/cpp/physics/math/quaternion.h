@@ -50,6 +50,26 @@ struct Quaternion {
             w * other.w - x * other.x - y * other.y - z * other.z
         );
     }
+    
+    inline static Quaternion rotationFromTouchDelta(double dx, double dy)
+    {
+        const double ROTATE_SPEED = 0.01; // 根据你的 TS 常量设置
+    
+        // X 方向滑动 → 绕 Y 轴
+        Quaternion qYaw = Quaternion::fromAxisAngle(
+            Vector3(0.0, 1.0, 0.0),
+            dx * ROTATE_SPEED
+        );
+    
+        // Y 方向滑动 → 绕 X 轴
+        Quaternion qPitch = Quaternion::fromAxisAngle(
+            Vector3(1.0, 0.0, 0.0),
+            -dy * ROTATE_SPEED
+        );
+    
+        // 先 pitch 再 yaw
+        return (qYaw * qPitch).normalized();
+    }
 
     // 共轭
     Quaternion conjugate() const {

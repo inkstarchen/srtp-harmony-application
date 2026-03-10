@@ -7,6 +7,7 @@ import { Prompt } from "@kit.ArkUI";
 import { EventQueueManager } from "./EventQueue";
 import { PhysicsSystemManager } from "./PhysicsSystemManager";
 import { getScreenSize } from "../../shared/ui/uiUtils";
+import { Property } from "./EventTypes";
 
 
 const DOMAIN = 0x1;
@@ -15,7 +16,8 @@ const TAG = "SceneProxy"
 @ObservedV2
 export class SceneProxy {
   private static instance: SceneProxy | null = null;
-
+  static ratio: number = 1.5;
+  static sceneSize: Size = {width:1600, height:2500};
   static getInstance(context?:Context): SceneProxy {
     if (!SceneProxy.instance) {
       if (!context) throw new Error("SceneProxy not initialized yet! Please provide UIContext.");
@@ -109,6 +111,10 @@ export class SceneProxy {
     }
   }
 
+  initCamera(camera:Camera){
+    this.eventQueue.pushSetRequest(0,Property.CAMERA,[camera.position.x,camera.position.y, camera.position.z,camera.fov,SceneProxy.ratio]);
+  }
+
   async loadSceneFrom() {
     const resource = $rawfile("NewProject/assets/default.scene");
     this.scene = await Scene.load(resource);
@@ -141,7 +147,7 @@ export class SceneProxy {
     }, 20);
   }
 
-  async loadScene(sceneName: string) {
+  async loadScene(sceneName: string,ui:UIContext) {
     const resource = this.resMap.get(sceneName);
     if (!resource) return;
 
@@ -155,6 +161,7 @@ export class SceneProxy {
     camera.fov = Math.PI / 2;
     camera.clearColor = { r: 0, g: 0, b: 0, a: 0.001 };
     lookAt(camera, { x: 0, y: 0, z: -6 }, { x: 0, y: 0, z: 0 }, { x: 0, y: 1, z: 0 });
+    this.initCamera(camera);
     this.camera = camera;
     this.scene.environment.backgroundType = EnvironmentBackgroundType.BACKGROUND_NONE;
     camera.postProcess = { toneMapping: { type: ToneMappingType.ACES, exposure: 1 } } as PostProcessSettings;
@@ -230,9 +237,24 @@ export class SceneProxy {
   }
 
   rayCast(pos:Vec2,ui:UIContext){
-    let fx =  (2 * ui.vp2px(pos.x) / this.screenSize.width) - 1;
-    let fy = 1 - (2 * ui.vp2px(pos.y) / this.screenSize.height);
+    let fx =  (2 * ui.vp2px(pos.x) / SceneProxy.sceneSize.width) - 1;
+    let fy = 1 - (2 * ui.vp2px(pos.y) / SceneProxy.sceneSize.height);
     this.eventQueue.pushRayCastRequest(fx,fy);
+  }
+
+  sendTouchDown(pos:Vec2){
+    this.eventQueue.pushTouchDown(pos.x, pos.y);
+  }
+
+  sendTouchMove(pos:Vec2){
+    this.eventQueue.pushTouchMove(pos.x,pos.y);
+    if(this.physicalSystem.selectId != 0){
+      this.eventQueue.pushRotateRequest(this.physicalSystem.selectId);
+    }
+  }
+
+  sendTouchUp(){
+    this.eventQueue.pushTouchUp();
   }
 
   getNode(name:string): Node | undefined{

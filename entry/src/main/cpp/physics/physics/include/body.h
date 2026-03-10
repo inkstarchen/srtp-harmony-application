@@ -7,7 +7,7 @@
 #ifndef DAYNOTE_BODY_H
 #define DAYNOTE_BODY_H
 #include "matrix.h"
-#include "quteration.h"
+#include "quaternion.h"
 #include "shape.h"
 #include "vec.h"
 struct Body

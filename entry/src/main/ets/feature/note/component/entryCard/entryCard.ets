@@ -3,7 +3,7 @@ import { LengthMetrics, LengthUnit } from "@kit.ArkUI";
 import { lerp } from "../../../../core/math/mathUtil";
 import { ColorUtil } from "../../../../shared/utils/ColorUtil";
 import { NoteInfo } from "../../NoteState";
-import { NoteViewModel } from "../../NoteVeiwModel";
+import { NoteViewModel } from "../../NoteViewModel";
 import { ThemeManager, ThemeState } from "../../../../theme/core/ThemeManager";
 
 enum State{

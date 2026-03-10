@@ -69,6 +69,14 @@ struct EventCommand {
         , timestamp(0){}
 };
 
+struct EventResult {
+    EventType type;
+    uint32_t nodeId;
+    uint64_t timestamp;
+    uint32_t status;
+    std::vector<uint64_t> data;
+};
+
 
 // ================= 事件优先级辅助函数 =================
 namespace EventPriorityUtils {
@@ -108,7 +116,10 @@ enum class Property : uint8_t {
     RESTITUTION   = 7,  // 弹性
     FRICTION      = 8,  // 摩擦
     STATIC        = 9,  // 是否静态
-    IMPULSE       = 10  // 冲量
+    IMPULSE       = 10,  // 冲量
+
+    // System Property
+    CAMERA        = 50, // 相机参数
 };
 
 // 转 JS EventCommand -> C++ EventCommand
@@ -116,4 +127,6 @@ EventCommand parseEventCommand(napi_env env, napi_value jsCmd);
 
 // 解析 EventCommand[][]
 std::vector<std::vector<EventCommand>> parseEventQueue(napi_env env, napi_value jsQueue);
+napi_value toJsEventResult(napi_env env, const EventResult& res);
+napi_value toJsEventResults(napi_env env, const std::vector<EventResult>& results);
 #endif // DAYNOTE_EVENT_QUEUE_H

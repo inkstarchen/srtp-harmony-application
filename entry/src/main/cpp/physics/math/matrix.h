@@ -6,7 +6,7 @@
 
 #ifndef DAYNOTE_MATRIX_H
 #define DAYNOTE_MATRIX_H
-#include "quteration.h"
+#include "quaternion.h"
 #include "vec.h"
 struct Matrix3
 {

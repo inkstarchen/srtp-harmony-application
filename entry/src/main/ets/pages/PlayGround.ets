@@ -1,7 +1,7 @@
 import image from '@ohos.multimedia.image'
 import { ImageUtils } from '../shared/utils/ImageUtils';
 import { RaycastParameters, ShaderMaterial, Vec2, Vec3, Vec4 } from '@kit.ArkGraphics3D';
-import { AnimatorOptions, AnimatorResult } from '@kit.ArkUI';
+import { AnimatorOptions, AnimatorResult, UIContext } from '@kit.ArkUI';
 import { getTouchDefault, Touch, TouchDown, TouchMove, TouchUp, TOUCH_DEFAULT } from '../shared/utils/TouchManager';
 import { getScreenSize } from '../shared/ui/uiUtils';
 import { getDateStringWithTimeStamp } from '../shared/utils/Time/time';
@@ -35,7 +35,7 @@ export struct PlayGround {
   @Local init:boolean = false;
 
   aboutToAppear(): void {
-    this.sceneProxy.loadScene('demo1').then(() => {
+    this.sceneProxy.loadScene('demo1',this.getUIContext()).then(() => {
       this.sceneProxy.scene1_init();
     })
     this.backAnimator = this.getUIContext().createAnimator(ANIMATION_OPTION);
@@ -62,8 +62,8 @@ export struct PlayGround {
     Stack({alignContent:Alignment.Center}){
       if(this.sceneProxy.options){
         Component3D(this.sceneProxy.options)
-          .renderWidth('100%')
           .renderHeight('100%')
+          .renderWidth('100%')
           .id('3D')
           .hitTestBehavior(HitTestMode.None)
       }
@@ -71,8 +71,12 @@ export struct PlayGround {
     .hitTestBehavior(HitTestMode.Transparent)
     .onTouch((event) => {
       if(event.type == TouchType.Down){
-
+        this.sceneProxy.sendTouchDown({x:event.touches[0].x, y:event.touches[0].y});
         this.sceneProxy.rayCast({x:event.touches[0].x, y:event.touches[0].y},this.getUIContext());
+      }else if(event.type == TouchType.Move){
+        this.sceneProxy.sendTouchMove({x:event.touches[0].x, y:event.touches[0].y});
+      }else if(event.type == TouchType.Up){
+        this.sceneProxy.sendTouchUp();
       }
     })
     // .onTouch((event) => {

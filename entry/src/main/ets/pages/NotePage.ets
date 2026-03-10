@@ -1,6 +1,6 @@
 import { common } from "@kit.AbilityKit";
 import { ToolBarComponent } from "../feature/note/component/toolBar/toolBar";
-import { NoteViewModel } from "../feature/note/NoteVeiwModel";
+import { NoteViewModel } from "../feature/note/NoteViewModel";
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { getDateByTimeStamp } from "../shared/utils/Time/time";
 

@@ -53,21 +53,21 @@ export class EventQueueManager {
       priority: getDefaultPriority(EventType.TOUCH_DOWN),
       nodeId: 0,
       timestamp: systemDateTime.getUptime(systemDateTime.TimeType.ACTIVE, false),
-      data:[x,y]
+      data:[0,x,y]
     }
     this.push(e);
   }
 
   pushTouchMove(x: number, y: number): void {
     if(this.lastTouchMove){
-      this.lastTouchMove.data = [x,y];
+      this.lastTouchMove.data = [0,x,y];
     }else{
       let e:EventCommand = {
         type:EventType.TOUCH_MOVE,
         priority:getDefaultPriority(EventType.TOUCH_MOVE),
         nodeId: 0,
         timestamp: systemDateTime.getUptime(systemDateTime.TimeType.ACTIVE,false),
-        data:[x,y]
+        data:[0,x,y]
       };
       this.push(e);
       this.lastTouchMove = e;

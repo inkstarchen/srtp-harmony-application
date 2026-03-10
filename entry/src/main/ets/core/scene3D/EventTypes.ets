@@ -77,6 +77,19 @@ export enum Property{
   FRICTION = 8,
   STATIC = 9,
   IMPULSE = 10,
-  // Custom Func 50-149
+  // System Property 50-99
+  CAMERA = 50,
+}
 
+export interface  EventResult {
+  type:EventType;
+  nodeId:number;
+  timestamp:number;
+  status:number;
+  data:number[];
+};
+
+export interface ReturnData{
+  bufferData: ArrayBuffer;
+  results: EventResult[];
 }

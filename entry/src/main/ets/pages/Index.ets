@@ -1,102 +1,109 @@
 import { getScreenSize } from "../shared/ui/uiUtils";
-import { getTouchDefault,
+import {
+  getTouchDefault,
   HandleTouch,
-  Touch, TouchDown, TouchMove, TouchUp, TOUCH_DEFAULT } from "../shared/utils/TouchManager";
-import { PageId, PhysicsScroller, PosLimiter } from "../shared/utils/PosLimiter";
+  Touch,
+  TouchDown,
+  TouchMove,
+  TouchUp,
+  TOUCH_DEFAULT
+} from "../shared/utils/TouchManager";
+import { PageId, PhysicsScroller } from "../shared/utils/PosLimiter";
 import { mainDisplay } from "../feature/mainDisplay/mainDisplay";
 import { Constants } from "../shared/constants";
 import { hilog } from "@kit.PerformanceAnalysisKit";
-import { NoteViewModel } from "../feature/note/NoteVeiwModel";
+import { NoteViewModel } from "../feature/note/NoteViewModel";
 import { ToolBarComponent } from "../feature/note/component/toolBar/toolBar";
-import { ColorUtil, RGB } from "../shared/utils/ColorUtil";
+import { ColorUtil } from "../shared/utils/ColorUtil";
 import { AnimatorResult, Prompt } from "@kit.ArkUI";
-import { NavDirection, Test } from "../feature/TestComponent";
+import { Test } from "../feature/TestComponent";
 import { TestPage } from "./TestPage";
 import { PlayGround } from "./PlayGround";
 import { ThemeManager, ThemeState } from "../theme/core/ThemeManager";
-import { deviceAdapter, DeviceAdapter } from "../theme/core/DeviceAdapter";
+import { DeviceAdapter } from "../theme/core/DeviceAdapter";
 import { DeviceType } from "../theme/config/DeviceConfig";
+import { SceneProxy } from "../core/scene3D/GlobalSceneProxy";
 
-
-enum NewPageState{
+/**
+ * 页面状态枚举
+ */
+enum NewPageState {
   HIDDEN = 0,
   SHOW = 1
 }
 
 @Entry
 @ComponentV2
-export struct mainPage {
-
-  // 基础变量
-  @Local deviceManager:DeviceAdapter = DeviceAdapter.getInstance();
+export struct MainPage {
+  initFlag:boolean = false;
+  // ==================== 基础变量 ====================
+  @Local deviceManager: DeviceAdapter = DeviceAdapter.getInstance();
   @Local deviceType: DeviceType = this.deviceManager.currentDeviceInfo.type;
-  @Local themeManager:ThemeManager = ThemeManager.getInstance();
-  @Local themeState:ThemeState = this.themeManager.getThemeState();
-  ScreenSize: Size = getScreenSize();
-  ScreenHeight: number = this.getUIContext().px2vp(this.ScreenSize.height);
-  ScreenWidth: number = this.getUIContext().px2vp(this.ScreenSize.width);
+  @Local themeManager: ThemeManager = ThemeManager.getInstance();
+  @Local themeState: ThemeState = this.themeManager.getThemeState();
+  @Local screenSize: Size = getScreenSize();
+  @Local screenHeight: number = this.getUIContext().px2vp(this.screenSize.height);
+  @Local screenWidth: number = this.getUIContext().px2vp(this.screenSize.width);
   @Local touch: Touch = getTouchDefault();
 
-  // 前屏遮挡变量
+  // ==================== 前屏遮挡变量 ====================
   @Local frontVisible: boolean = true;
-  @Local fadeColor:string = "#fff";
-  fadeAnim:AnimatorResult = this.getUIContext().createAnimator({
-    duration:500,
-    iterations:1,
-    direction:"normal",
-    fill:"forwards",
-    delay:1000,
-    begin:0,
-    easing:"ease-in",
-    end:1
-  })
+  @Local fadeColor: string = "#fff";
+  @Local fadeAnim: AnimatorResult = this.getUIContext().createAnimator({
+    duration: 500,
+    iterations: 1,
+    direction: "normal",
+    fill: "forwards",
+    delay: 1000,
+    begin: 0,
+    easing: "ease-in",
+    end: 1
+  });
 
-  // Navi
-  photoBlock:boolean = false;
-  rubberMovable: boolean = true;
+  // ==================== 导航变量 ====================
+  @Local photoBlock: boolean = false;
+  @Local rubberMovable: boolean = true;
   @Local rubber: PhysicsScroller = new PhysicsScroller(
-    {x:-this.ScreenWidth * 0.12,y:-this.ScreenHeight * 0.12},
-    {x:this.ScreenWidth * 0.12,y: this.ScreenHeight * 0.12}
-    ,this.getUIContext(),
-    {width:this.ScreenWidth,height:this.ScreenHeight}
+    { x: -this.screenWidth * 0.12, y: -this.screenHeight * 0.12 },
+    { x: this.screenWidth * 0.12, y: this.screenHeight * 0.12 },
+    this.getUIContext(),
+    { width: this.screenWidth, height: this.screenHeight }
   );
 
-  // LightEffect
-  backId:number = 0;
+  // ==================== 灯光效果变量 ====================
+  @Local backId: number = 0;
   @Local timeNow: number = 0.01;
 
-  // 编辑
+  // ==================== 编辑变量 ====================
   @Local newPageState: NewPageState = NewPageState.HIDDEN;
-  @Local editPageVisible:boolean = true;
+  @Local editPageVisible: boolean = true;
   @Local selectedTextColor: Color = Color.Black;
   @Local isColorPickerOpen: boolean = false;
   @Local editing: boolean = false;
   @Local editInner: boolean = false;
   @Local noteViewModel: NoteViewModel = new NoteViewModel(this.getUIContext().getHostContext());
   @Local options: RichEditorOptions = { controller: this.noteViewModel.getController() };
-  @Local translateY:number = 0;
+  @Local translateY: number = 0;
   @Local additionHeight: number = 0;
   @Local editState: boolean = false;
 
-
   aboutToAppear(): void {
-    Prompt.showToast({message:this.deviceManager.currentDeviceInfo.type.toString()})
+    // Prompt.showToast({ message: this.deviceManager.currentDeviceInfo.type.toString() });
     this.noteViewModel.newNote();
+
     // 灯光效果参数
     this.backId = setInterval(() => {
       this.timeNow += 0.05;
-    },10);
+    }, 10);
 
     // 前屏淡出动画
-    {
-      this.fadeAnim.onFrame = (progress) => {
-        this.fadeColor = ColorUtil.rgbaToHex(255,255,255,1 - progress);
-      }
-      this.fadeAnim.onFinish = () => {
-        this.frontVisible = false;
-      }
-      this.fadeAnim?.play();
-    }
+    this.fadeAnim.onFrame = (progress) => {
+      this.fadeColor = ColorUtil.rgbaToHex(255, 255, 255, 1 - progress);
+    };
+    this.fadeAnim.onFinish = () => {
+      this.frontVisible = false;
+    };
+    this.fadeAnim?.play();
   }
 
   aboutToDisappear(): void {
@@ -105,8 +112,6 @@ export struct mainPage {
 
   build() {
     Stack({ alignContent: Alignment.Center}) {
-
-
       // NavigatorBack
       Test({
         navDirection:this.rubber.navDir,
@@ -117,8 +122,17 @@ export struct mainPage {
       }
       .width("100%")
       .height("100%")
+      .id("ratio_test")
       .backgroundColor("#00ffffff")
       .onTouch((event) => {
+        if(!this.initFlag){
+          let info = this.getUIContext().getComponentUtils().getRectangleById("ratio_test");
+          let componentSize: Size = info.size;
+          SceneProxy.sceneSize.width = componentSize.width;
+          SceneProxy.sceneSize.height = componentSize.height;
+          SceneProxy.ratio = componentSize.height / componentSize.width;
+          this.initFlag = true;
+        }
         HandleTouch(event, this.touch);
         if(this.rubberMovable && !this.photoBlock) {
           if (event.type == TouchType.Down) {
@@ -231,7 +245,6 @@ export struct mainPage {
               .onClick(() => {
                 if(this.newPageState == NewPageState.HIDDEN){
                   this.newPageState = NewPageState.SHOW;
-                  Prompt.showToast({message:"YES"})
                 }
               })
               .justifyContent(FlexAlign.Start)
@@ -338,7 +351,7 @@ export struct mainPage {
               .height("60%")
           }
           .alignItems(HorizontalAlign.Center)
-          .translate({x:0,y:this.rubber.curPage == PageId.MAIN ? (this.newPageState ? -20 : this.ScreenHeight * 0.5 + 100 ) : this.ScreenHeight })
+          .translate({x:0,y:this.rubber.curPage == PageId.MAIN ? (this.newPageState ? -20 : this.screenHeight * 0.5 + 100 ) : this.screenHeight })
           // -100 改为了 -20
           .height(this.editState ? "100%" : 300)
           .width(this.editState ? "100%" : "80%")
@@ -364,7 +377,7 @@ export struct mainPage {
       if(this.frontVisible){
         Rect()
           .width("100%")
-          .height(this.ScreenHeight)
+          .height(this.screenHeight)
           .fill(this.fadeColor)
           .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
       }

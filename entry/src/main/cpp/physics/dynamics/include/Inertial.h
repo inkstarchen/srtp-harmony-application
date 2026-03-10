@@ -8,7 +8,7 @@
 #define DAYNOTE_INERTIAL_H
 
 #include "math/matrix.h"
-#include "math/quteration.h"
+#include "math/quaternion.h"
 Vector3 computeBoxInvInertiaBody(
     const Vector3& extent,
     float invMass

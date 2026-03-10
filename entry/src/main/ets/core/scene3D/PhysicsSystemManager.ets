@@ -4,11 +4,12 @@ import { PhysicsSystem } from "libphysics.so";
 import { gamePerformance } from "@kit.GameServiceKit";
 import { systemDateTime } from "@kit.BasicServicesKit";
 import { sensor } from "@kit.SensorServiceKit";
-import { EventCommand } from "./EventTypes";
+import { EventCommand, EventType, ReturnData } from "./EventTypes";
 
 export class PhysicsSystemManager {
   private idMap: Map<string, number> = new Map();
   private nodeMap: Map<string, Node> = new Map();
+  selectId: number = 0;
   available: boolean = false;
   private capacity: number = 128;
   private lastTime: number = systemDateTime.getUptime(systemDateTime.TimeType.ACTIVE, false);
@@ -55,7 +56,18 @@ export class PhysicsSystemManager {
     // this.physicsSystem.getNormal(this.angle);
     let nowTime = systemDateTime.getUptime(systemDateTime.TimeType.ACTIVE, false);
     let dt = (nowTime - this.lastTime) / 1000 ;
-    let buffer = this.physicsSystem.update(eventCommands,dt);
+    let returnData:ReturnData = this.physicsSystem.update(eventCommands,dt);
+    let buffer = returnData.bufferData;
+    let eventResult = returnData.results;
+    eventResult.forEach((result) => {
+      if(result.type == EventType.RAYCAST_REQUEST){
+        if(result.status == 1){
+          this.selectId = result.nodeId;
+          let data = result.data;
+          // console.info("Raycast ArkTs | nodeId " + result.nodeId.toString() + "\ndistance " + data[1].toString() + "\npos " + data[2].toString() + '/' + data[3].toString() + '/' + data[4].toString());
+        }
+      }
+    })
     this.lastTime = nowTime;
     // console.info("update info buffer length is" + buffer?.byteLength);
     this.nodeMap.forEach((node:Node, key:string) => {
