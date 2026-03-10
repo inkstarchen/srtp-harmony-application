@@ -458,7 +458,7 @@ void PhysicsSystem::processRaycast(float touchX, float touchY) {
 
     // 遍历所有物体
     for (uint32_t i = 0; i < count; ++i) {
-        if (isStatic[i]) continue;
+//        if (isStatic[i]) continue;
 
         Vector3 center(pos_x[i], pos_y[i], pos_z[i]);
         double t;
@@ -469,6 +469,8 @@ void PhysicsSystem::processRaycast(float touchX, float touchY) {
             case SHAPE_SPHERE: {
                 // 球体：使用 extent_x 作为半径
                 float radius = extent_x[i] * 0.5f;
+                OH_LOG_INFO(LOG_APP, "Raycast hit test | cameraPos:%{public}.3f , %{public}.3f, %{public}.3f \n rayDir : %{public}.3f, %{public}.3f, %{public}.3f, \n center: %{public}.3f,%{public}.3f,%{public}.3f"
+                            , cameraPos.x, cameraPos.y, cameraPos.z, rayDir.x, rayDir.y, rayDir.z, center.x, center.y, center.z);
                 hit = raycastSphere(cameraPos, rayDir, center, radius, t);
                 break;
             }
@@ -476,6 +478,8 @@ void PhysicsSystem::processRaycast(float touchX, float touchY) {
                 // OBB：使用旋转和半长轴
                 Vector3 halfExtent(extent_x[i] * 0.5f, extent_y[i] * 0.5f, extent_z[i] * 0.5f);
                 Quaternion rot(rot_x[i], rot_y[i], rot_z[i], rot_w[i]);
+                OH_LOG_INFO(LOG_APP, "Raycast hit test | cameraPos:%{public}.3f , %{public}.3f, %{public}.3f \n rayDir : %{public}.3f, %{public}.3f, %{public}.3f, \n center: %{public}.3f,%{public}.3f,%{public}.3f"
+                , cameraPos.x, cameraPos.y, cameraPos.z, rayDir.x, rayDir.y, rayDir.z, center.x, center.y, center.z);
                 hit = raycastOBB(cameraPos, rayDir, center, rot, halfExtent, t);
                 break;
             }
@@ -494,6 +498,8 @@ void PhysicsSystem::processRaycast(float touchX, float touchY) {
 
     if (closestId != 0) {
         OH_LOG_INFO(LOG_APP, "Raycast hit node id=%{public}u at t=%{public}f", closestId, closestT);
+    }else{
+        OH_LOG_INFO(LOG_APP, "Raycast hit test");
     }
 }
 

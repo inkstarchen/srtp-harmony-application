@@ -1,10 +1,12 @@
 // GlobalSceneProxy.ts
-import { Scene, Node, PostProcessSettings, ToneMappingType, Vec3, EnvironmentBackgroundType, NodeType, Camera, LightType } from "@kit.ArkGraphics3D";
+import { Scene, Node, PostProcessSettings, ToneMappingType, Vec3, EnvironmentBackgroundType, NodeType, Camera, LightType,
+  Vec2 } from "@kit.ArkGraphics3D";
 import { hilog } from "@kit.PerformanceAnalysisKit";
 import { lookAt, NodeUtil } from "./Utils";
 import { Prompt } from "@kit.ArkUI";
 import { EventQueueManager } from "./EventQueue";
 import { PhysicsSystemManager } from "./PhysicsSystemManager";
+import { getScreenSize } from "../../shared/ui/uiUtils";
 
 
 const DOMAIN = 0x1;
@@ -36,6 +38,7 @@ export class SceneProxy {
   @Trace scene: Scene | undefined;
   @Trace options: SceneOptions | undefined;
   @Trace physicalSystem: PhysicsSystemManager = new PhysicsSystemManager();
+  private screenSize: Size = getScreenSize();
   private renderId: number | undefined;
   private context: Context;
 
@@ -224,6 +227,12 @@ export class SceneProxy {
     this.eventQueue.setMass(3,1.0);
     this.eventQueue.setMass(4,1.0);
     this.eventQueue.setMass(5,1.0);
+  }
+
+  rayCast(pos:Vec2,ui:UIContext){
+    let fx =  (2 * ui.vp2px(pos.x) / this.screenSize.width) - 1;
+    let fy = 1 - (2 * ui.vp2px(pos.y) / this.screenSize.height);
+    this.eventQueue.pushRayCastRequest(fx,fy);
   }
 
   getNode(name:string): Node | undefined{

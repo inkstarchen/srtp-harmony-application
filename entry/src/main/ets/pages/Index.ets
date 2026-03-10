@@ -13,6 +13,9 @@ import { AnimatorResult, Prompt } from "@kit.ArkUI";
 import { NavDirection, Test } from "../feature/TestComponent";
 import { TestPage } from "./TestPage";
 import { PlayGround } from "./PlayGround";
+import { ThemeManager, ThemeState } from "../theme/core/ThemeManager";
+import { deviceAdapter, DeviceAdapter } from "../theme/core/DeviceAdapter";
+import { DeviceType } from "../theme/config/DeviceConfig";
 
 
 enum NewPageState{
@@ -25,6 +28,10 @@ enum NewPageState{
 export struct mainPage {
 
   // 基础变量
+  @Local deviceManager:DeviceAdapter = DeviceAdapter.getInstance();
+  @Local deviceType: DeviceType = this.deviceManager.currentDeviceInfo.type;
+  @Local themeManager:ThemeManager = ThemeManager.getInstance();
+  @Local themeState:ThemeState = this.themeManager.getThemeState();
   ScreenSize: Size = getScreenSize();
   ScreenHeight: number = this.getUIContext().px2vp(this.ScreenSize.height);
   ScreenWidth: number = this.getUIContext().px2vp(this.ScreenSize.width);
@@ -73,6 +80,7 @@ export struct mainPage {
 
 
   aboutToAppear(): void {
+    Prompt.showToast({message:this.deviceManager.currentDeviceInfo.type.toString()})
     this.noteViewModel.newNote();
     // 灯光效果参数
     this.backId = setInterval(() => {
@@ -340,7 +348,7 @@ export struct mainPage {
             delay:0,
             curve:Curve.EaseInOut
           })
-          .hitTestBehavior(HitTestMode.None)
+          .hitTestBehavior(HitTestMode.BLOCK_HIERARCHY)
           .backgroundColor("#fff")
           .border({radius:20,width:0,color:"#fff"})
           .shadow({radius:20,color:"#1d000000",offsetX:0,offsetY: 0})
@@ -363,7 +371,7 @@ export struct mainPage {
 
     }
     .hitTestBehavior(HitTestMode.None)
-    .backgroundColor("#fffff8eb")
+    .backgroundColor(this.themeState.tokens.background)
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
     .width('100%')
     .height('100%')

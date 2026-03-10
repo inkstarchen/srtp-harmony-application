@@ -8,6 +8,7 @@ import { DateItem, SlidingDateModel } from "../../shared/utils/Time/SlideTimeMod
 import { SlideList } from "../SlideList/SlideList";
 import { clipNum } from "../../core/math/mathUtil";
 import { TraceVec2 } from "../../core/math/vec";
+import { ThemeManager, ThemeState } from "../../theme/core/ThemeManager";
 
 const CARD_DISAPPEAR_DUR = 100;
 const CARD_APPEAR_DUR = 500;
@@ -15,6 +16,8 @@ const CARD_APPEAR_DUR = 500;
 @ComponentV2
 export struct mainDisplay{
 
+  @Local themeManager:ThemeManager = ThemeManager.getInstance();
+  @Local themeState:ThemeState = this.themeManager.getThemeState();
   @Require @Param mainOffset: TraceVec2;
   @Param curPage:PageId = PageId.NONE;
   @Local cardDisappearAnim:AnimatorResult = this.getUIContext().createAnimator({

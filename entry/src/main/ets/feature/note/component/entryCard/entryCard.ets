@@ -4,6 +4,7 @@ import { lerp } from "../../../../core/math/mathUtil";
 import { ColorUtil } from "../../../../shared/utils/ColorUtil";
 import { NoteInfo } from "../../NoteState";
 import { NoteViewModel } from "../../NoteVeiwModel";
+import { ThemeManager, ThemeState } from "../../../../theme/core/ThemeManager";
 
 enum State{
   NONE = 0,
@@ -20,7 +21,8 @@ enum CardState{
 export struct entryCard{
 
   // @Require @Param data: NoteData;
-
+  @Local themeManager:ThemeManager = ThemeManager.getInstance();
+  @Local themeState:ThemeState = this.themeManager.getThemeState();
   @Local noteViewModel: NoteViewModel = new NoteViewModel(this.getUIContext().getHostContext());
   private options: RichEditorOptions = { controller: this.noteViewModel.getController() };
 
@@ -65,11 +67,6 @@ export struct entryCard{
   build(){
       Column() {
         Column(){
-          // Text(this.text)
-          //   .fontColor("#000")
-          //   .fontSize(10)
-          //   .lineSpacing({ value: 40, unit: LengthUnit.PX })
-          //   .fontWeight(FontWeight.Bold)
           RichEditor(this.options)
             .hitTestBehavior(HitTestMode.None)
             .barState(BarState.Off)
@@ -82,7 +79,7 @@ export struct entryCard{
         Column() {
           Text(this.noteInfo.time)
             .fontSize(10)
-            .fontColor("#ffa5a5a5")
+            .fontColor(this.themeState.tokens.onPrimaryContainer)
             .margin({ right: 20 })
         }
         .alignItems(HorizontalAlign.End)
@@ -105,7 +102,7 @@ export struct entryCard{
       })
       .hitTestBehavior(HitTestMode.Block)
       .shadow(this.uiShadow(30 + this.angle,this.depth,20,0.25))
-      .backgroundColor("#fff")
+      .backgroundColor(this.themeState.tokens.primaryContainer)
       .onClick(() => {
         this.Choose();
         if(this.state == State.NONE){

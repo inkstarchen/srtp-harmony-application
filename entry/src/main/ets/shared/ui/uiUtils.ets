@@ -1,5 +1,8 @@
 import { display, Size } from "@kit.ArkUI";
 
+/**
+ * 获取屏幕尺寸
+ */
 export function getScreenSize(): Size{
   try{
     let data = display.getDefaultDisplaySync();
@@ -10,3 +13,4 @@ export function getScreenSize(): Size{
     return {width: 1280, height: 1960};
   }
 }
+

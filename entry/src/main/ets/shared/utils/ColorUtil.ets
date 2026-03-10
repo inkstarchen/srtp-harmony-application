@@ -4,6 +4,32 @@ export interface RGB {
   b: number
 }
 
+/**
+ * 给颜色字符串添加透明度
+ * @param color 颜色字符串，例如 #1976d2 或 1976d2
+ * @param alpha 透明度 0~1
+ * @returns #AARRGGBB 格式颜色
+ */
+export function colorWithAlpha(color: string, alpha: number): string {
+  // 去掉 #
+  let hex = color.replace('#', '');
+
+  if (hex.length !== 6) {
+    throw new Error('color must be #RRGGBB format');
+  }
+
+  // 限制 alpha 范围
+  const a = Math.max(0, Math.min(1, alpha));
+
+  // 转换为 0~255
+  const alphaInt = Math.round(a * 255);
+
+  // 转为两位十六进制
+  const alphaHex = alphaInt.toString(16).padStart(2, '0');
+
+  return `#${alphaHex}${hex}`;
+}
+
 export class ColorUtil {
   /* ---------- 基础工具 ---------- */
 

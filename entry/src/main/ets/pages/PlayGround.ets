@@ -69,6 +69,12 @@ export struct PlayGround {
       }
     }
     .hitTestBehavior(HitTestMode.Transparent)
+    .onTouch((event) => {
+      if(event.type == TouchType.Down){
+
+        this.sceneProxy.rayCast({x:event.touches[0].x, y:event.touches[0].y},this.getUIContext());
+      }
+    })
     // .onTouch((event) => {
     //   if(event.type == TouchType.Down){
     //     TouchDown(event, this.touch);

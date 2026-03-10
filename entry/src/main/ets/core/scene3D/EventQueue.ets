@@ -94,7 +94,7 @@ export class EventQueueManager {
         priority:getDefaultPriority(EventType.RAYCAST_REQUEST),
         nodeId:0,
         timestamp:systemDateTime.getUptime(systemDateTime.TimeType.ACTIVE,false),
-        data:[fx,fy]
+        data:[0,fx,fy]
       };
       this.pendingRayCast = e;
       this.push(e);

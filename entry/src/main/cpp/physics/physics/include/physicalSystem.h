@@ -70,6 +70,7 @@ private:
         handlers[static_cast<uint8_t>(EventType::TOUCH_MOVE)] = &PhysicsSystem::handleTouchMove;
         handlers[static_cast<uint8_t>(EventType::SET_PROPERTY_REQUEST)] = &PhysicsSystem::handleSetProperty;
         handlers[static_cast<uint8_t>(EventType::RESET_GRAVITY)] = &PhysicsSystem::handleResetGravity;
+        handlers[static_cast<uint8_t>(EventType::RAYCAST_REQUEST)] = &PhysicsSystem::handleRayCast;
     }
     uint32_t newNode();
     napi_value update(napi_env env, napi_callback_info info);
@@ -190,6 +191,12 @@ private:
         int id = static_cast<int32_t>(e.data[0]);
 //        float* floats = reinterpret_cast<float*>(e.data.data() + 1);
         // TODO: 处理 TouchMove
+    }
+    
+    void handleRayCast(const EventCommand& e) {
+        int id = static_cast<int64_t>(e.data[0]);
+        const double* values = reinterpret_cast<const double*>(e.data.data() + 1);
+        processRaycast(values[0], values[1]);
     }
 
     void handleButton(const EventCommand& e) {

@@ -5,6 +5,8 @@ import Prompt from "@system.prompt";
 import { AnimatorResult } from "@kit.ArkUI";
 import { DateItem, SlidingDateModel } from "../../shared/utils/Time/SlideTimeModel";
 import { circularDelta } from "../../core/math/mathUtil";
+import { ThemeManager, ThemeState } from "../../theme/core/ThemeManager";
+import { colorWithAlpha } from "../../shared/utils/ColorUtil";
 
 export enum TouchState{
   IDLE = 0,
@@ -23,6 +25,8 @@ const ITEM_HEIGHT = 40;
 @ComponentV2
 export struct SlideList{
   init:boolean = false;
+  @Local themeManager:ThemeManager = ThemeManager.getInstance();
+  @Local themeState:ThemeState = this.themeManager.getThemeState();
   @Local touchM:Touch = getTouchDefault();
   slidingDateModel:SlidingDateModel = new SlidingDateModel();
   @Local DisplayList: DisplayItem[] = [];
@@ -130,9 +134,11 @@ export struct SlideList{
         Column(){
           Text(item.dataInfo.weekStr)
             .fontSize(12)
+            .fontColor(this.themeState.tokens.onBackground)
           Text(item.dataInfo.dayStr)
             .fontSize(20)
             .fontWeight(500)
+            .fontColor(this.themeState.tokens.onBackground)
         }
         .translate({y:circularDelta(item.index,this.selectedIndex,7) * (ITEM_HEIGHT + ITEM_SPACE) + this.distance.y})
         .width(ITEM_WIDTH)
@@ -146,7 +152,12 @@ export struct SlideList{
         .fill("#00ffffff")
         .width("100%")
         .height("100%")
-        .linearGradient({direction:GradientDirection.Top,colors:[["#fffff8eb",0.0],["#fffff8eb",0.2],["#00fff8eb",0.5],["#fffff8eb",0.8],["#fffff8eb",1.0]]})
+        .linearGradient({direction:GradientDirection.Top,colors:[
+          [this.themeState.tokens.background,0.0],
+          [this.themeState.tokens.background,0.2],
+          [colorWithAlpha(this.themeState.tokens.background,0),0.5],
+          [this.themeState.tokens.background,0.8],
+          [this.themeState.tokens.background,1.0]]})
     }
     .width(50)
     .height(280)
