@@ -1,5 +1,5 @@
 import { NoteData } from "../../model/NoteSpanData"
-import { LengthMetrics, LengthUnit } from "@kit.ArkUI";
+import { LengthMetrics, LengthUnit, Prompt, SymbolGlyphModifier } from "@kit.ArkUI";
 import { lerp } from "../../../../core/math/mathUtil";
 import { ColorUtil } from "../../../../shared/utils/ColorUtil";
 import { NoteInfo } from "../../NoteState";
@@ -19,8 +19,14 @@ enum CardState{
 @Preview
 @ComponentV2
 export struct entryCard{
+  @Event editNote:(noteInfo: NoteInfo) => void;
+  @Event deleteNote:(noteInfo: NoteInfo) => void;
 
+  @Local editIconModifier: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.pencil_waveform')).fontSize('24vp');
+  @Local trashIconModifier: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.ohos_trash')).fontSize('24vp');
   // @Require @Param data: NoteData;
+  @Local opacityAnim: number = 0;
+  @Local yAnim: number = 20;
   @Local themeManager:ThemeManager = ThemeManager.getInstance();
   @Local themeState:ThemeState = this.themeManager.getThemeState();
   @Local noteViewModel: NoteViewModel = new NoteViewModel(this.getUIContext().getHostContext());
@@ -33,6 +39,22 @@ export struct entryCard{
   @Require @Param angle:number;
   @Require @Param depth:number;
   @Local state: State = State.NONE;
+
+  @Builder
+  MyMenu(onDelete: () => void, onEdit: () => void) {
+    Menu() {
+      MenuItem({ symbolStartIcon: this.editIconModifier, content: "编辑" })
+        .onChange(() => {
+          onEdit();
+        })
+      MenuItem({ symbolStartIcon: this.trashIconModifier, content: "删除"})
+        .onChange(() => {
+          Prompt.showToast({message:"delete"})
+          onDelete();
+        })
+    }
+  }
+
 
   uiShadow(angle:number,baseDepth:number,baseRadius:number,baseAlpha:number) {
     const rad = angle * Math.PI / 180
@@ -59,6 +81,8 @@ export struct entryCard{
   }
 
   async aboutToAppear() {
+    this.opacityAnim = 1;
+    this.yAnim = 0;
     this.noteViewModel.noteState.setDir(this.noteInfo.fileDir);
     this.noteViewModel.noteState.setId(this.removeJsonExtension(this.noteInfo.fileName));
     await this.noteViewModel.loadCurrentNoteMain();
@@ -66,14 +90,31 @@ export struct entryCard{
 
   build(){
       Column() {
-        Column(){
+        Row(){
           RichEditor(this.options)
             .hitTestBehavior(HitTestMode.None)
             .barState(BarState.Off)
             .maxLength(39)
             .height(80)
-            .width('100%')
+            .width('80%')
+
+          Button({ type: ButtonType.Circle }) {
+            SymbolGlyph($r("sys.symbol.close_sidebar"))
+              .fontSize(20)
+              .fontColor([Color.Black]) //?
+          }
+          .bindMenu(this.MyMenu(() => {
+              this.deleteNote(this.noteInfo);
+            },
+            () => {
+              this.editNote(this.noteInfo);
+            }))
+          .backgroundColor('#00000000')
+          .width(40)
+          .height(40)
         }
+        .height(80)
+        .width('100%')
         .clip(true)
 
         Column() {
@@ -93,14 +134,15 @@ export struct entryCard{
       // .shadow({radius:20,offsetX:-15,offsetY:-15,color:"#37292929"})
       .width("100%")
       .height(130)
+      .opacity(this.opacityAnim)
+      .translate({x:0,y:this.yAnim})
       // .height(this.state == State.NONE ? 120 : 800)
       .animation({
-        duration:500,
+        duration:1000,
         delay:0,
         iterations:1,
         curve:Curve.Linear,
       })
-      .hitTestBehavior(HitTestMode.Block)
       .shadow(this.uiShadow(30 + this.angle,this.depth,20,0.25))
       .backgroundColor(this.themeState.tokens.primaryContainer)
       .onClick(() => {

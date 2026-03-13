@@ -10,7 +10,7 @@ export interface NoteInfo{
 export class NoteState{
   dir: string;
   id: string;
-  @Trace title: string = '未命名的笔记';
+  @Trace title: string = '无标题';
   content: NoteSpanData[] | undefined;
 
   constructor(dir: string, id: string) {

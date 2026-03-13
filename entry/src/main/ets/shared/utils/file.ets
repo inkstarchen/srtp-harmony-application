@@ -5,6 +5,15 @@ import { BusinessError } from '@kit.BasicServicesKit';
 const TAG: string = '[FileService]';
 const DOMAIN_NUMBER: number = 0xF000;
 
+
+export async function deleteFile(path: string): Promise<void> {
+  try {
+    await fs.unlink(path);
+  } catch (err) {
+    hilog.error(DOMAIN_NUMBER, "FILE", `删除文件失败 ${path}`);
+  }
+}
+
 export async function cleanupUnusedImageFiles(usedImagePaths: Set<string>,currentPath: string): Promise<void> {
   try {
     // 使用笔记专属的图片目录

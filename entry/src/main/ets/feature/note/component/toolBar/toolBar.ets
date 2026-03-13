@@ -22,55 +22,11 @@ export struct ToolBarComponent{
   @Require @Param setColorPickerOpen:(open: boolean) => void;
   @Require @Param changeEditState: () => void;
 
-  @Require @Param editing:boolean;
-  @Param playAnim: boolean = false;
-  @Local heightAnim: number = 0;
-  appearAnim:AnimatorResult | undefined;
-  disappearAnim:AnimatorResult | undefined;
 
-  @Monitor("editing")
-  onEditChange(monitor:IMonitor) {
-    let editState = monitor.value()?.now as boolean;
-    if(!editState) {
-      this.disappearAnim?.play();
-    }
-  }
+
 
   aboutToAppear(): void {
-    if(this.playAnim){
-      this.appearAnim = this.getUIContext().createAnimator({
-        duration:1000,
-        fill:"forwards",
-        easing:'ease-in-out',
-        delay:0,
-        direction:"normal",
-        iterations:1,
-        begin:0,
-        end:1
-      })
-      this.appearAnim.onFrame = (progress) => {
-        this.heightAnim = 36 * progress;
-      }
-      this.disappearAnim = this.getUIContext().createAnimator({
-        duration:1000,
-        fill:"forwards",
-        easing:'ease-in-out',
-        delay:0,
-        direction:"normal",
-        iterations:1,
-        begin:0,
-        end:1
-      })
-      this.disappearAnim.onFrame = (progress) => {
-        this.heightAnim = 36 * (1 - progress);
-      }
-      this.disappearAnim.onFinish = () => {
-        this.changeEditState();
-      }
-      this.appearAnim.play();
-    }else{
-      this.heightAnim = 36;
-    }
+
   }
 
 
@@ -151,8 +107,11 @@ export struct ToolBarComponent{
       .scrollBar(BarState.Off)
       .edgeEffect(EdgeEffect.None)
     }
+    // .backgroundColor("#fff")
+    // .border({radius:15,width:0})
+    // .translate({x:0,y:-300})
     .width("100%")
-    .height(this.heightAnim)
+    .height(36)
   }
 
   @Builder

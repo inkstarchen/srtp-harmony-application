@@ -107,35 +107,82 @@ export struct TestPage {
       .height("100%")
       .backgroundColor("#00fff8eb")
 
-      Stack({alignContent:Alignment.Center}){
+      Stack({alignContent:Alignment.BottomStart}){
+        Stack(){
+          Column() {
+            Column() {
+              // 标题区域
+              Row() {  //, verticalAlign: ItemAlign.Center
+                TextInput({ text: "无标题" })
+                  .layoutWeight(1)
+                  .fontSize(20)
+                  .fontWeight(FontWeight.Bold)
+                  .backgroundColor(Color.Transparent)
+                  .maxLines(1)
+                  .textAlign(TextAlign.Start)
+              }
+              .width('100%')
+              .padding({ left: 12, right: 12, top: 8, bottom: 4 })
+              .alignItems(VerticalAlign.Center)
+            }
+            .width('100%')
+            .height("15%")
+            .backgroundColor(Color.White)
+            .borderRadius(8)
+            .padding({ top: 4, bottom: 4 })
 
-        RichEditor(this.options)
-          .onSelectionChange((range: RichEditorRange) => {
-            if (range.start === undefined || range.end === undefined) {
-              return;
+            Divider().strokeWidth(4).color('#F1F3F5').width("80%")
+
+            // 富文本编辑器区域
+            Column() {
+              RichEditor(this.options)
+                .placeholder('开始记录您的想法...', {
+                  fontColor: Color.Gray,
+                  font: {
+                    size: 16,
+                    weight: FontWeight.Normal,
+                    family: "HarmonyOS Sans",
+                    style: FontStyle.Normal
+                  }
+                })
+                .onSelectionChange((range: RichEditorRange) => {
+                  if (range.start === undefined || range.end === undefined) {
+                    return;
+                  }
+                  const start = range.start;
+                  const end = range.end;
+                  // hilog.debug(DOMAIN_NUMBER, TAG, `选中范围: [${start}, ${end}]`);
+                  this.noteViewModel.updateSelection(start, end);
+                })
+                .backgroundColor("#ffffffff")
+                .width('100%')
+                .height('100%')
             }
-            const start = range.start;
-            const end = range.end;
-            // hilog.debug(DOMAIN_NUMBER, TAG, `选中范围: [${start}, ${end}]`);
-            this.noteViewModel.updateSelection(start, end);
-          })
-          // .aboutToIMEInput((value: RichEditorInsertValue) => {
-          //   hilog.debug(DOMAIN_NUMBER, TAG, `即将输入: ${value.insertValue}`);
-          //   return true;
-          // })
-          .placeholder('开始记录您的想法...', {
-            fontColor: Color.Gray,
-            font: {
-              size: 16,
-              weight: FontWeight.Normal,
-              family: "HarmonyOS Sans",
-              style: FontStyle.Normal
-            }
-          })
-          .backgroundColor(Color.White)
+            .layoutWeight(1)
+            .width("100%")
+            .padding({top:5,left:10,right:10,bottom:20})
+            .margin({top:10})
+            .backgroundColor('#00ffffff')
+          }
+          .backgroundColor('#ffffffff')
+          .padding(10)
+          .width("100%")
+          .height('100%')
           .id("page")
-          .width('60%')
-          .height("60%")
+        }
+        .clip(true)
+        .border({radius: 15,width:0})
+        .shadow(ShadowStyle.OUTER_DEFAULT_XS)
+        .width("60%")
+        .height('60%')
+
+      }
+      .hitTestBehavior(HitTestMode.None)
+      .backgroundColor("#00ffffff")
+      .width("100%")
+      .height("100%")
+
+      Stack({alignContent:Alignment.Center}){
         if(this.sceneProxy.options){
           Component3D(this.sceneProxy.options)
             .renderWidth('100%')
@@ -152,46 +199,15 @@ export struct TestPage {
     }
     .backgroundColor("#00ffffff")
     .hitTestBehavior(HitTestMode.Transparent)
-    .onTouch(async (event) => {
+    .onTouch((event) => {
       if(event.type == TouchType.Down){
-        TouchDown(event, this.touch);
-        const info = this.uiContext.getComponentUtils().getRectangleById('3D');
-
-        let x = this.uiContext.vp2px(event.touches[0].x);
-        let y = this.uiContext.vp2px(event.touches[0].y);
-        {
-        // console.info('RayCastTest | size' + info.size.width.toString() + '/' + info.size.height.toString());
-        // console.info('RayCastTest | TouchPos ' + x.toString() + '/' + y.toString());
-        // console.info('RayCastTest | offset ' + info.windowOffset.x.toString() + '/' + info.windowOffset.y.toString() );
-        // console.info('RayCastTest | touchOffset ' + (x - info.windowOffset.x).toString() + '/' + (y - info.windowOffset.y).toString());
-        }
-        let fx = (2 * x) / this.ScreenSize.width  - 1;
-        let fy = 1 - (2 * y) / this.ScreenSize.height ;
-        // this.sceneProxy.rayCast({x:fx,y:fy});
-        let node = this.sceneProxy.scene?.root;
-        if(node){
-          // raycastParams.rootNode = node;
-          // let result = await this.sceneProxy.camera?.raycast({x:fx,y:fy} as Vec2,raycastParams);
-          // if(result){
-          //   if(event.type == TouchType.Down && result.length != 0){
-          //     this.setBlock(true);
-          //   }
-          //   for(let i = 0; i < result.length; i++){
-          //     console.info('RayCastTest | Results ' + result[i].node.name);
-          //   }
-          //   this.sceneProxy.touchRotate.target = result[0].node;
-          // }
-        }
-
+        this.sceneProxy.sendTouchDown({x:event.touches[0].x, y:event.touches[0].y});
+        this.sceneProxy.rayCast({x:event.touches[0].x, y:event.touches[0].y},this.getUIContext());
+      }else if(event.type == TouchType.Move){
+        this.sceneProxy.sendTouchMove({x:event.touches[0].x, y:event.touches[0].y});
+      }else if(event.type == TouchType.Up){
+        this.sceneProxy.sendTouchUp();
       }
-      if(event.type == TouchType.Move){
-          TouchMove(event,this.touch);
-      }
-      if(event.type == TouchType.Up){
-        TouchUp(event,this.touch);
-        this.setBlock(false);
-      }
-
     })
     .translate({x:this.photoOffset.x + this.translatePos.x,y:this.photoOffset.y + this.translatePos.y})
     .width("100%")

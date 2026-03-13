@@ -247,14 +247,14 @@ private:
         angle = angle / 180.0 * 3.141592;
         normal = Vector3::RotateAroundAxis(normal, Vector3(0.0,1.0,0.0), angle.y);
         normal = Vector3::RotateAroundAxis(normal, Vector3(1.0,0.0,0.0), -angle.x);
-        Vector3 g = Vector3(0.0f, 0.0f, 1.0f);
+        Vector3 g = Vector3(0.0f, 0.0f, 9.8f);
         Vector3 g_l = g - normal * g.dot(normal);
         setGravity(normal);
     }
     
     void handleRotateRequest(const EventCommand& e){
         uint32_t id = e.nodeId;
-        if(id == 0) return;
+        if(id == capacity) return;
         Vector2 distance = touchCur - touchLast;
         touchLast.x = touchCur.x;
         touchLast.y = touchCur.y;

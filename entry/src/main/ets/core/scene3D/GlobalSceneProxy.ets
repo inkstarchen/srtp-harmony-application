@@ -248,7 +248,7 @@ export class SceneProxy {
 
   sendTouchMove(pos:Vec2){
     this.eventQueue.pushTouchMove(pos.x,pos.y);
-    if(this.physicalSystem.selectId != 0){
+    if(this.physicalSystem.selectId != 128){
       this.eventQueue.pushRotateRequest(this.physicalSystem.selectId);
     }
   }

@@ -1,11 +1,11 @@
 import { NoteService } from "./NoteService";
-import { NoteState } from "./NoteState";
+import { NoteInfo, NoteState } from "./NoteState";
 import { hilog } from '@kit.PerformanceAnalysisKit'
 import { EditorController } from "./EditorController";
 import fs from '@ohos.file.fs';
 import { convertEditorContentToPersistentData } from "./utils/contentConvert";
 import { NoteData } from "./model/NoteSpanData";
-import { cleanupUnusedImageFiles, ensureDirectoryExists, writeStringToFile } from "../../shared/utils/file";
+import { cleanupUnusedImageFiles, deleteFile, ensureDirectoryExists, writeStringToFile } from "../../shared/utils/file";
 import { Prompt } from '@kit.ArkUI';
 import { ImageUtils } from "../../shared/utils/ImageUtils";
 import { Constants } from "../../shared/constants";
@@ -69,6 +69,28 @@ export class NoteViewModel {
     }
   }
 
+  async loadFromNoteInfo(info: NoteInfo): Promise<void> {
+    try {
+        const latestFile = info.fileName;
+        const noteId = latestFile.replace('.json', '');
+        this.noteState.setDir(info.fileDir);
+        this.noteState.setId(noteId);
+        let path = `${info.fileDir}/${noteId}.json`;
+        hilog.info(DOMAIN_NUMBER, TAG, '笔记目录是 is ' + path);
+        let noteData = await NoteService.loadNote(path);
+        this.noteState.fromNoteData(noteData);
+        hilog.info(DOMAIN_NUMBER, TAG,'笔记内容是' + this.noteState.printNoteData());
+        let data = this.noteState.getNoteData();
+        if(!data) return;
+        await this.editorController.rebuildEditorContent(data);
+
+        hilog.info(DOMAIN_NUMBER, TAG, '加载了笔记' + info.fileName);
+    } catch (error) {
+      hilog.error(DOMAIN_NUMBER, TAG, `加载最近笔记失败: ${error.message}`);
+      this.newNote();
+    }
+  }
+
   async loadRecentNote(notesDir: string): Promise<void> {
     try {
       const files = await fs.listFile(notesDir);
@@ -106,13 +128,57 @@ export class NoteViewModel {
     let id = `note_${timeArray[3]}_${timeArray[4]}_${timeArray[5]}`;
     this.noteState.setDir(`${this.baseDir}${timeArray[0]}/${timeArray[1]}/${timeArray[2]}/`);
     this.noteState.setId(id);
-    this.editorController.cleanAll();
+    // this.editorController.cleanAll();
   }
 
   async selectImage() {
     let ImageUrl = await ImageUtils.selectImageFromGallery();
     // Prompt.showToast({message:'Image Url is:' + ImageUrl});
     await this.editorController.insertImageToEditor(ImageUrl);
+  }
+
+
+  async deleteNote(info:NoteInfo): Promise<void> {
+    if (!info.fileName) return;
+
+    try {
+      hilog.info(Constants.DOMAIN_SERVICE_NOTE, "SERVICE-NOTE-DELETE", '开始删除笔记');
+
+      const filePath = info.fileDir + '/' + info.fileName;
+      const dirPath = info.fileDir;
+
+      // 1. 删除笔记文件
+      hilog.info(Constants.DOMAIN_SERVICE_NOTE, "SERVICE-NOTE-DELETE", `删除文件: ${filePath}`);
+      await deleteFile(filePath);
+
+      // // 2. 删除笔记目录（包含图片）
+      // hilog.info(Constants.DOMAIN_SERVICE_NOTE, "SERVICE-NOTE-DELETE", `删除目录: ${dirPath}`);
+      // await deleteDirectory(dirPath);
+
+      // this.saveStatus = '删除成功!';
+      hilog.info(Constants.DOMAIN_SERVICE_NOTE, "SERVICE-NOTE-DELETE", '删除笔记成功');
+
+      // setTimeout(() => {
+      //   this.saveStatus = '';
+      // }, 2000);
+
+      Prompt.showToast({
+        message: '笔记已删除',
+        duration: 1500
+      });
+
+    } catch (error) {
+      hilog.error(
+        Constants.DOMAIN_SERVICE_NOTE,
+        "SERVICE-NOTE-DELETE",
+        `删除笔记失败: ${error.message}`
+      );
+
+      // this.saveStatus = '删除失败!';
+      // setTimeout(() => {
+      //   this.saveStatus = '';
+      // }, 2000);
+    }
   }
 
   async saveNote(): Promise<void> {
