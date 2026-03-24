@@ -72,7 +72,7 @@ const DEFAULT_LIGHT_PALETTE: ColorTokens = {
   primary: '#1976d2',
   primaryLight: '#BBDEFB',
   primaryDark: '#0D47A1',
-  primaryContainer: '#E3F2FD',
+  primaryContainer: '#fff3f6f6',
   onPrimary: '#FFFFFF',
   onPrimaryContainer: '#0D47A1',
 
@@ -99,7 +99,7 @@ const DEFAULT_LIGHT_PALETTE: ColorTokens = {
   info: '#2196F3',
 
   // 背景色 - 浅色系
-  background: '#FAFAFA',
+  background: '#f8f3f0',
   backgroundVariant: '#F5F5F5',
   surface: '#FFFFFF',
   surfaceVariant: '#F0F0F0',
