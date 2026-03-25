@@ -1,0 +1,78 @@
+/*
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "core_render_node_factory.h"
+
+#include <render/intf_plugin.h>
+#include <render/namespace.h>
+
+#include "node/render_node_back_buffer.h"
+#include "node/render_node_bloom.h"
+#include "node/render_node_combined_post_process.h"
+#include "node/render_node_compute_generic.h"
+#include "node/render_node_create_gpu_buffers.h"
+#include "node/render_node_create_gpu_images.h"
+#include "node/render_node_default_acceleration_structure_staging.h"
+#include "node/render_node_end_frame_staging.h"
+#include "node/render_node_fullscreen_generic.h"
+#include "node/render_node_mip_chain_post_process.h"
+#include "node/render_node_render_post_processes_generic.h"
+#include "node/render_node_shader_passes_generic.h"
+#include "node/render_node_single_post_process.h"
+#include "node/render_node_staging.h"
+#include "nodecontext/render_node_manager.h"
+
+using namespace CORE_NS;
+
+RENDER_BEGIN_NAMESPACE()
+template<class RenderNodeType>
+RenderNodeTypeInfo FillRenderNodeType()
+{
+    return { { RenderNodeTypeInfo::UID }, RenderNodeType::UID, RenderNodeType::TYPE_NAME, RenderNodeType::Create,
+        RenderNodeType::Destroy, RenderNodeType::BACKEND_FLAGS, RenderNodeType::CLASS_TYPE, {}, {} };
+}
+
+void RegisterCoreRenderNodes(RenderNodeManager& renderNodeManager)
+{
+    // 注册后缓冲区渲染节点，用于处理屏幕空间的最终输出
+    renderNodeManager.AddRenderNodeFactory(FillRenderNodeType<RenderNodeBackBuffer>());
+    // 注册组合后处理渲染节点，用于执行多个后处理效果的组合
+    renderNodeManager.AddRenderNodeFactory(FillRenderNodeType<RenderNodeCombinedPostProcess>());
+     // 注册通用计算渲染节点，用于执行通用GPU计算任务
+    renderNodeManager.AddRenderNodeFactory(FillRenderNodeType<RenderNodeComputeGeneric>());
+    // 注册GPU缓冲区创建渲染节点，用于在GPU上创建和管理缓冲区资源
+    renderNodeManager.AddRenderNodeFactory(FillRenderNodeType<RenderNodeCreateGpuBuffers>());
+    // 注册GPU图像创建渲染节点，用于在GPU上创建和管理图像/纹理资源
+    renderNodeManager.AddRenderNodeFactory(FillRenderNodeType<RenderNodeCreateGpuImages>());
+    // 注册泛光效果渲染节点，用于实现Bloom后处理效果
+    renderNodeManager.AddRenderNodeFactory(FillRenderNodeType<RenderNodeBloom>());
+    // 注册帧结束暂存渲染节点，用于在帧结束时进行数据暂存和同步操作
+    renderNodeManager.AddRenderNodeFactory(FillRenderNodeType<RenderNodeEndFrameStaging>());
+    // 注册全屏通用渲染节点，用于执行全屏的通用渲染操作
+    renderNodeManager.AddRenderNodeFactory(FillRenderNodeType<RenderNodeFullscreenGeneric>());
+    // 注册着色器通道通用渲染节点，用于管理通用的着色器通道执行
+    renderNodeManager.AddRenderNodeFactory(FillRenderNodeType<RenderNodeShaderPassesGeneric>());
+    // 注册Mip链后处理渲染节点，用于处理纹理Mipmap链的后处理操作
+    renderNodeManager.AddRenderNodeFactory(FillRenderNodeType<RenderNodeMipChainPostProcess>());
+    // 注册单一后处理渲染节点，用于执行单个后处理效果
+    renderNodeManager.AddRenderNodeFactory(FillRenderNodeType<RenderNodeSinglePostProcess>());
+
+    renderNodeManager.AddRenderNodeFactory(FillRenderNodeType<RenderNodeStaging>());
+
+    renderNodeManager.AddRenderNodeFactory(FillRenderNodeType<RenderNodeDefaultAccelerationStructureStaging>());
+    
+    renderNodeManager.AddRenderNodeFactory(FillRenderNodeType<RenderNodeRenderPostProcessesGeneric>());
+}
+RENDER_END_NAMESPACE()

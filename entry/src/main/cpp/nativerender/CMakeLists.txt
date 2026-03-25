@@ -12,7 +12,15 @@ include_directories(
     ${NATIVERENDER_ROOT_PATH}/include
     ${NATIVERENDER_ROOT_PATH}/render
     ${NATIVERENDER_ROOT_PATH}/manager
+    ${NATIVERENDER_ROOT_PATH}/LumeBase/api
+    ${NATIVERENDER_ROOT_PATH}/LumeEngine/api
+    ${NATIVERENDER_ROOT_PATH}/LumeRender/api
 )
+
+# Add subdirectories in dependency order
+add_subdirectory(LumeBase)
+add_subdirectory(LumeEngine)
+add_subdirectory(LumeRender)
 
 add_library(nativerender SHARED
     render/egl_core.cpp
@@ -71,4 +79,8 @@ find_library(
 )
 
 target_link_libraries(nativerender PUBLIC
-    ${EGL-lib} ${GLES-lib} ${hilog-lib} ${libace-lib} ${libnapi-lib} ${libuv-lib} libnative_window.so)
+    ${EGL-lib} ${GLES-lib} ${hilog-lib} ${libace-lib} ${libnapi-lib} ${libuv-lib} libnative_window.so
+    LumeBase
+    libAGPEngine
+    lume_render
+)
