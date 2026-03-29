@@ -23,6 +23,7 @@
 // NOTE: macro defined by cmake as CORE_STATIC_PLUGIN_HEADER="${CORE_ROOT_DIRECTORY}/src/static_plugin_decl.h"
 // this is so that the core include directories are not leaked here, but we want this one header in this case.
 #include CORE_STATIC_PLUGIN_HEADER
+
 #endif
 
 CORE_BEGIN_NAMESPACE()

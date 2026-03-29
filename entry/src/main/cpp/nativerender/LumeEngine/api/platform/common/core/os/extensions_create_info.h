@@ -19,7 +19,7 @@
 #include <base/namespace.h>
 #include <base/util/uid.h>
 #include <core/namespace.h>
-#include <core/os/platform_trace_info.h>
+#include <platform/ohos/core/os/platform_trace_info.h>
 
 CORE_BEGIN_NAMESPACE()
 constexpr const int32_t PLATFORM_EXTENSION_UNDEFINED = 0;

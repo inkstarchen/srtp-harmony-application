@@ -21,9 +21,7 @@
 #include <base/containers/string.h>
 #include <core/namespace.h>
 
-namespace OHOS::Global::Resource {
-class ResourceManager;
-}
+#include "rawfile/raw_file_manager.h"
 
 CORE_BEGIN_NAMESPACE()
 struct PlatformData {
@@ -40,7 +38,7 @@ struct PlatformData {
     BASE_NS::string hapPath = "./";
     BASE_NS::string bundleName = "./";
     BASE_NS::string moduleName = "./";
-    std::shared_ptr<OHOS::Global::Resource::ResourceManager> resourceManager = nullptr;
+    NativeResourceManager* resourceManager = nullptr;
 };
 
 /** Interface for platform-specific functions. */

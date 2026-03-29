@@ -24,6 +24,8 @@ class MyNodeController extends NodeController {
   public column: typeNode.Column | undefined = undefined;
   public attachButton: typeNode.Button | undefined = undefined;
   public detachButton: typeNode.Button | undefined = undefined;
+  private isBound: boolean = false;
+
   makeNode(uiContext: UIContext): FrameNode | null {
     this.node = new FrameNode(uiContext);
     this.column = typeNode.createNode(uiContext, 'Column')
@@ -41,7 +43,15 @@ class MyNodeController extends NodeController {
       .id(this.xComponentId)
       .focusable(true)
       .focusOnTouch(true)
-    native.bindNode(this.xComponentId, this.xComponent)
+      .onAttach(() => {
+        // Wait for node to attach to window before binding
+        if (!this.isBound && this.xComponent) {
+          console.info('XComponent attached to window, binding node...');
+          native.bindNode(this.xComponentId, this.xComponent);
+          this.isBound = true;
+        }
+      })
+
     try {
       this.column.appendChild(this.xComponent);
     } catch (error) {
@@ -52,7 +62,10 @@ class MyNodeController extends NodeController {
   }
 
   aboutToDisappear(): void {
-    native.unbindNode(this.xComponentId)
+    if (this.isBound) {
+      native.unbindNode(this.xComponentId)
+      this.isBound = false;
+    }
     try {
       this.node?.removeChild(this.xComponent);
     } catch (error) {
@@ -107,15 +120,9 @@ export struct PageThree {
           }
         }.height(200)
 
-        Button('创建/销毁').onClick(() => {
-          this.isShow = !this.isShow;
-        }).width('50%')
-          .margin({
-            top: 10,
-            bottom: 10,
-            left: 12,
-            right: 12
-          })
+        Button('加载场景').onClick(() => {
+          native.loadScene(this.myNodeController.xComponentId, 'dir/card.gltf');
+        })
 
         Column() {
           Text('期望帧率设置：')
@@ -133,7 +140,7 @@ export struct PageThree {
             step: 1
           }).onChange((value: number, mode: SliderChangeMode) => {
             this.minRate = value;
-            native.setFrameRate(this.myNodeController.xComponentId, this.minRate, this.maxRate, this.expected)
+            native.setFrameRate(this.myNodeController.xComponentId, this.expected)
           }).width('100%')
             .id('minSlider')
           Text('max: ' + this.maxRate)
@@ -144,7 +151,7 @@ export struct PageThree {
             step: 1
           }).onChange((value: number, mode: SliderChangeMode) => {
             this.maxRate = value;
-            native.setFrameRate(this.myNodeController.xComponentId, this.minRate, this.maxRate, this.expected)
+            native.setFrameRate(this.myNodeController.xComponentId, this.expected)
           }).width('100%')
             .id('maxSlider')
           Text('expected: ' + this.expected)
@@ -155,7 +162,7 @@ export struct PageThree {
             step: 1
           }).onChange((value: number, mode: SliderChangeMode) => {
             this.expected = value;
-            native.setFrameRate(this.myNodeController.xComponentId, this.minRate, this.maxRate, this.expected)
+            native.setFrameRate(this.myNodeController.xComponentId,this.expected)
           }).width('100%')
             .id('expectedSlider')
         }.backgroundColor('#F0FAFF')

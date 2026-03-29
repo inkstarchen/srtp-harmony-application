@@ -76,7 +76,7 @@ IFile::Ptr OhosFilesystem::OpenFile(const BASE_NS::string_view path, const IFile
 }
 
 OhosFilesystem::OhosFilesystem(const BASE_NS::string_view hapPath, const BASE_NS::string_view bundleName,
-    const BASE_NS::string_view moduleName, std::shared_ptr<OHOS::Global::Resource::ResourceManager> resourceManager)
+    const BASE_NS::string_view moduleName, NativeResourceManager* resourceManager)
     : hapInfo_({ hapPath, bundleName, moduleName, resourceManager })
 {
     resManager_ = BASE_NS::refcnt_ptr<OhosResMgr>(new OhosResMgr(hapInfo_));

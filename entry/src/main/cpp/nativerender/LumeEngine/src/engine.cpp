@@ -39,7 +39,7 @@
 #include <core/io/intf_filesystem_api.h>
 #include <core/log.h>
 #include <core/namespace.h>
-#include <core/os/intf_platform.h>
+#include <platform/ohos/core/os/intf_platform.h>
 #include <core/plugin/intf_class_factory.h>
 #include <core/plugin/intf_class_register.h>
 #include <core/plugin/intf_interface.h>

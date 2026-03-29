@@ -12,22 +12,15 @@
 # limitations under the License.
 
 cmake_minimum_required(VERSION 3.18)
-project(LumeEngine)
 
 set(LUME_ENGINE_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Build options
 option(CORE_LOG_ENABLED "Enable core logging" ON)
-option(CORE_DEV_ENABLED "Enable dev mode" OFF)
+# option(CORE_DEV_ENABLED "Enable dev mode" OFF)
 option(USE_STB_IMAGE "Use stb image" ON)
-option(USE_LIB_PNG_JPEG "Use lib png jpeg" OFF)
+# option(USE_LIB_PNG_JPEG "Use lib png jpeg" OFF)
 option(LUME_OHOS_BUILD "Build for OHOS platform" ON)
-
-# Build type
-set(BUILDTYPE "Debug")
-if(CMAKE_BUILD_TYPE)
-    set(BUILDTYPE ${CMAKE_BUILD_TYPE})
-endif()
 
 # Set library names
 set(LIB_ENGINE_CORE "AGPEngine")
@@ -42,22 +35,6 @@ set(LUME_BASE_API_INCLUDE_DIRS
     ${NATIVERENDER_ROOT_PATH}/LumeBase/api
 )
 
-set(LUME_BASE_API_DEFINITIONS
-    BASE_TESTS_ENABLED=0
-    BASE_WARNINGS_AS_ERRORS=0
-)
-
-if(CORE_LOG_ENABLED)
-    list(APPEND LUME_BASE_API_DEFINITIONS
-        CORE_LOG_DISABLED=0
-        CORE_LOG_DEBUG=1
-    )
-else()
-    list(APPEND LUME_BASE_API_DEFINITIONS
-        CORE_LOG_DISABLED=1
-        CORE_LOG_DEBUG=0
-    )
-endif()
 
 # ============================================================================
 # Config: lume_engine_api
@@ -66,71 +43,16 @@ set(LUME_ENGINE_API_INCLUDE_DIRS
     ${LUME_ENGINE_ROOT}/api
 )
 
-if(LUME_OHOS_BUILD)
-    list(APPEND LUME_ENGINE_API_INCLUDE_DIRS
-        ${LUME_ENGINE_ROOT}/api/platform/ohos/
-    )
-endif()
-
-set(LUME_ENGINE_API_DEFINITIONS
-    CORE_BUILD_BASE=1
-    CORE_HIDE_SYMBOLS=1
-    CORE_PERF_ENABLED=0
-    CORE_USE_COMPILER_GENERATED_STATIC=1
+# ============================================================================
+# Config: ecshelper
+# ============================================================================
+set(LUME_COMPONENT_HELP_INCLUDE_DIRS
+    ${LUME_ENGINE_ROOT}/ecshelper
 )
-
-if(BUILDTYPE STREQUAL "Release" OR BUILDTYPE STREQUAL "MinSizeRel" OR BUILDTYPE STREQUAL "RelWithDebInfo")
-    list(APPEND LUME_ENGINE_API_DEFINITIONS
-        CORE_LOG_NO_DEBUG=0
-    )
-endif()
 
 # ============================================================================
 # Config: lume_default
 # ============================================================================
-set(LUME_DEFAULT_C_FLAGS
-    -Wno-unused-function
-    -Wno-unused-parameter
-    -Wno-sign-compare
-    -Wno-unused-variable
-    -Wno-unused-private-field
-    -Wno-tautological-unsigned-zero-compare
-    -Wno-logical-op-parentheses
-    -fno-rtti
-    -fvisibility=hidden
-    -ffunction-sections
-    -fdata-sections
-    -fno-asynchronous-unwind-tables
-    -fno-unwind-tables
-    -fno-exceptions
-)
-
-set(LUME_DEFAULT_CXX_FLAGS
-    -std=c++17
-    -Wno-thread-safety-attributes
-    -fvisibility=hidden
-    -fdata-sections
-    -ffunction-sections
-    -fno-rtti
-    -fvisibility-inlines-hidden
-    -fno-asynchronous-unwind-tables
-    -fno-unwind-tables
-    -fno-exceptions
-)
-
-set(LUME_DEFAULT_LINKER_FLAGS
-    -fuse-ld=lld
-    -flto=thin
-    -Wl,--gc-sections
-    -Wl,--exclude-libs,ALL
-)
-
-set(LUME_DEFAULT_DEFINITIONS)
-if(LUME_OHOS_BUILD)
-    list(APPEND LUME_DEFAULT_DEFINITIONS
-        __OHOS_PLATFORM__
-    )
-endif()
 
 list(APPEND LUME_DEFAULT_DEFINITIONS
     LIB_ENGINE_CORE=${LIB_ENGINE_CORE}
@@ -143,31 +65,15 @@ list(APPEND LUME_DEFAULT_DEFINITIONS
 # ============================================================================
 # External paths - adjust these to your project structure
 set(LUME_CORE_PATH ${NATIVERENDER_ROOT_PATH}/LumeEngine)
-set(STB_IMAGE_PATH ${NATIVERENDER_ROOT_PATH}/3rdparty/stb)
+# set(STB_IMAGE_PATH ${NATIVERENDER_ROOT_PATH}/3rdparty/stb)
 
 set(LUME_ENGINE_CONFIG_INCLUDE_DIRS
-    ${LUME_CORE_PATH}/3rdparty/
+    # ${LUME_CORE_PATH}/3rdparty/
     ${LUME_CORE_PATH}/src/
-    ${LUME_CORE_PATH}/asserts/
-    ${STB_IMAGE_PATH}
+    # ${LUME_CORE_PATH}/asserts/
+    # ${STB_IMAGE_PATH}
 )
 
-set(LUME_ENGINE_CONFIG_DEFINITIONS
-    CORE_TESTS_ENABLED=0
-    CORE_HIDE_SYMBOLS=1
-    CORE_WARNINGS_AS_ERRORS=0
-    CORE_DEV_ENABLED=${CORE_DEV_ENABLED}
-    CORE_LOG_TO_CONSOLE=1
-    CORE_LOG_TO_DEBUG_OUTPUT=1
-    CORE_LOG_TO_FILE=0
-    CORE_VALIDATION_ENABLED=0
-    CORE_DYNAMIC=0
-    CORE_BUILDTYPE=${BUILDTYPE}
-    CORE_PUBLIC=__attribute__((visibility(\"default\")))
-    USE_STB_IMAGE=${USE_STB_IMAGE}
-    USE_LIB_PNG_JPEG=${USE_LIB_PNG_JPEG}
-    CORE_EMBEDDED_ASSETS_ENABLED=1
-)
 
 # ============================================================================
 # Source files for lume_engine_src
@@ -243,6 +149,9 @@ set(LUME_ENGINE_SOURCES
     src/util/linear_allocator.h
     src/util/string_util.h
     src/version.cpp
+
+    # ecshelper
+    ecshelper/ComponentTools/component_query.cpp
 )
 
 # OHOS platform sources
@@ -277,6 +186,7 @@ target_include_directories(lume_engine_src PUBLIC
     ${LUME_ENGINE_CONFIG_INCLUDE_DIRS}
     ${LUME_ENGINE_API_INCLUDE_DIRS}
     ${LUME_BASE_API_INCLUDE_DIRS}
+    ${LUME_COMPONENT_HELP_INCLUDE_DIRS}
 )
 
 target_compile_definitions(lume_engine_src PUBLIC
@@ -284,11 +194,8 @@ target_compile_definitions(lume_engine_src PUBLIC
     ${LUME_ENGINE_API_DEFINITIONS}
     ${LUME_BASE_API_DEFINITIONS}
     ${LUME_DEFAULT_DEFINITIONS}
-)
-
-target_compile_options(lume_engine_src PRIVATE
-    ${LUME_DEFAULT_C_FLAGS}
-    $<$<COMPILE_LANGUAGE:CXX>:${LUME_DEFAULT_CXX_FLAGS}>
+    __OHOS_PLATFORM__
+    CORE_PLUGIN=1
 )
 
 # Link LumeBase for header dependencies
@@ -314,6 +221,7 @@ target_include_directories(libAGPEngine PUBLIC
     ${LUME_ENGINE_CONFIG_INCLUDE_DIRS}
     ${LUME_ENGINE_API_INCLUDE_DIRS}
     ${LUME_BASE_API_INCLUDE_DIRS}
+    ${LUME_COMPONENT_HELP_INCLUDE_DIRS}
 )
 
 target_compile_definitions(libAGPEngine PUBLIC
@@ -326,72 +234,6 @@ target_compile_definitions(libAGPEngine PUBLIC
 # Link LumeBase for header dependencies
 target_link_libraries(libAGPEngine PUBLIC LumeBase)
 
-# ============================================================================
-# Config: lume_component_help_config
-# ============================================================================
-set(LUME_COMPONENT_HELP_INCLUDE_DIRS
-    ${LUME_ENGINE_ROOT}/ecshelper
-)
-
-# ============================================================================
-# Source files for lume_component_help_src
-# ============================================================================
-set(LUME_COMPONENT_HELP_SOURCES
-    ecshelper/ComponentTools/base_manager.inl
-    ecshelper/ComponentTools/base_manager.h
-    ecshelper/ComponentTools/component_query.h
-    ecshelper/ComponentTools/component_query.cpp
-)
-
-# ============================================================================
-# Create static library: lume_component_help_src
-# ============================================================================
-add_library(lume_component_help_src STATIC ${LUME_COMPONENT_HELP_SOURCES})
-
-target_include_directories(lume_component_help_src PUBLIC
-    ${LUME_COMPONENT_HELP_INCLUDE_DIRS}
-    ${LUME_ENGINE_API_INCLUDE_DIRS}
-    ${LUME_BASE_API_INCLUDE_DIRS}
-)
-
-target_compile_definitions(lume_component_help_src PUBLIC
-    ${LUME_BASE_API_DEFINITIONS}
-    ${LUME_ENGINE_API_DEFINITIONS}
-)
-
-target_compile_options(lume_component_help_src PRIVATE
-    -Wno-unused-function
-)
-
-# Link LumeBase for header dependencies
-target_link_libraries(lume_component_help_src PUBLIC LumeBase)
-
-# ============================================================================
-# Create static library: libComponentHelper
-# ============================================================================
-add_library(libComponentHelper STATIC
-    $<TARGET_OBJECTS:lume_component_help_src>
-)
-
-target_include_directories(libComponentHelper PUBLIC
-    ${LUME_COMPONENT_HELP_INCLUDE_DIRS}
-    ${LUME_ENGINE_API_INCLUDE_DIRS}
-    ${LUME_BASE_API_INCLUDE_DIRS}
-)
-
-target_compile_definitions(libComponentHelper PUBLIC
-    ${LUME_BASE_API_DEFINITIONS}
-    ${LUME_ENGINE_API_DEFINITIONS}
-    ${LUME_DEFAULT_DEFINITIONS}
-)
-
-target_compile_options(libComponentHelper PRIVATE
-    ${LUME_DEFAULT_C_FLAGS}
-    $<$<COMPILE_LANGUAGE:CXX>:${LUME_DEFAULT_CXX_FLAGS}>
-)
-
-# Link LumeBase for header dependencies
-target_link_libraries(libComponentHelper PUBLIC LumeBase)
 
 # ============================================================================
 # Create interface library: AGPBaseApi (header-only)

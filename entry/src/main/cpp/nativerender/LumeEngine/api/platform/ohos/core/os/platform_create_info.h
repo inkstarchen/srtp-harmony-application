@@ -17,16 +17,12 @@
 #define API_CORE_OS_OHOS_PLATFORM_CREATE_INFO_H
 
 #ifdef __OHOS_PLATFORM__
-#include <memory>
 #include <platform/common/core/os/extensions_create_info.h>
 
 #include <base/containers/string.h>
 #include <core/namespace.h>
 
-// 注意点：ResourceManager
-namespace OHOS::Global::Resource {
-class ResourceManager;
-}
+#include "rawfile/raw_file_manager.h"
 
 CORE_BEGIN_NAMESPACE()
 
@@ -44,7 +40,7 @@ struct PlatformCreateInfo {
     BASE_NS::string hapPath = "./";
     BASE_NS::string bundleName = "./";
     BASE_NS::string moduleName = "./";
-    std::shared_ptr<OHOS::Global::Resource::ResourceManager> resourceManager = nullptr;
+    NativeResourceManager* resourceManager = nullptr;
     /** Extra extensions */
     const PlatformCreateExtensionInfo* extensions = nullptr;
 };

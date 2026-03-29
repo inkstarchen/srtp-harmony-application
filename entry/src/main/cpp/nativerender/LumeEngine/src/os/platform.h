@@ -18,7 +18,7 @@
 
 #include <base/containers/unique_ptr.h>
 #include <core/namespace.h>
-#include <core/os/intf_platform.h>
+#include <platform/ohos/core/os/intf_platform.h>
 
 CORE_BEGIN_NAMESPACE()
 struct PlatformCreateExtensionInfo;

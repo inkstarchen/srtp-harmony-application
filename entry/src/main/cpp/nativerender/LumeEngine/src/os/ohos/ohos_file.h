@@ -17,46 +17,45 @@
 #define CORE_OS_OHOS_OHOS_FILE_H
 
 #include <atomic>
-#include <fstream>
-#include <iostream>
 #include <memory>
-#include <regex>
+#include <vector>
 
 #include <base/containers/refcnt_ptr.h>
 #include <base/containers/string_view.h>
 #include <base/containers/type_traits.h>
-#include <base/containers/unordered_map.h>
 #include <base/containers/vector.h>
 #include <core/io/intf_directory.h>
 #include <core/io/intf_file.h>
 #include <core/namespace.h>
 
-#include "resource_manager.h"
+#include "rawfile/raw_file_manager.h"
+#include "rawfile/raw_file.h"
+#include "rawfile/raw_dir.h"
 
 CORE_BEGIN_NAMESPACE()
 struct OhosDirImpl {
-    OhosDirImpl(const BASE_NS::string_view path, std::vector<std::string> fileList) : path_(path), fileList_(fileList)
+    OhosDirImpl(const BASE_NS::string_view path, BASE_NS::vector<BASE_NS::string> fileList) : path_(path), fileList_(fileList)
     {}
 
     BASE_NS::string path_;
-    std::vector<std::string> fileList_;
+    BASE_NS::vector<BASE_NS::string> fileList_;
 };
 
 struct PlatformHapInfo {
     PlatformHapInfo(const BASE_NS::string_view hapPath, const BASE_NS::string_view bundleName,
-        const BASE_NS::string_view moduleName, std::shared_ptr<OHOS::Global::Resource::ResourceManager> resManager)
+        const BASE_NS::string_view moduleName, NativeResourceManager* resManager)
         : hapPath(hapPath), bundleName(bundleName), moduleName(moduleName), resourceManager(resManager)
     {}
     BASE_NS::string hapPath = " ";
     BASE_NS::string bundleName = " ";
     BASE_NS::string moduleName = " ";
-    std::shared_ptr<OHOS::Global::Resource::ResourceManager> resourceManager = nullptr;
+    NativeResourceManager* resourceManager = nullptr;
 };
 
 class OhosResMgr {
 public:
     explicit OhosResMgr(const PlatformHapInfo& hapInfo) : hapInfo_(hapInfo) {}
-    std::shared_ptr<OHOS::Global::Resource::ResourceManager> GetResMgr() const;
+    NativeResourceManager* GetResMgr() const;
     void UpdateResManager(const PlatformHapInfo& hapInfo);
     void Ref()
     {
@@ -73,8 +72,7 @@ public:
 private:
     std::atomic_int32_t refcnt_ { 0 };
     PlatformHapInfo hapInfo_;
-    std::shared_ptr<OHOS::Global::Resource::ResourceManager> resourceManager_ { nullptr };
-    BASE_NS::unordered_map<BASE_NS::string, std::shared_ptr<OHOS::Global::Resource::ResourceManager>> resourceManagers_;
+    NativeResourceManager* resourceManager_ { nullptr };
 };
 
 class OhosFileDirectory final : public IDirectory {
@@ -85,10 +83,9 @@ public:
     bool Open(BASE_NS::string_view path);
     void Close() override;
     BASE_NS::vector<Entry> GetEntries() const override;
-    // new add
     IDirectory::Entry GetEntry(BASE_NS::string_view uriIn) const;
     bool IsFile(BASE_NS::string_view path) const;
-    bool IsDir(BASE_NS::string_view path, std::vector<std::string>& fileList) const;
+    bool IsDir(BASE_NS::string_view path, BASE_NS::vector<BASE_NS::string>& fileList) const;
 
 protected:
     void Destroy() override
@@ -103,10 +100,10 @@ private:
 
 class OhosFileStorage {
 public:
-    explicit OhosFileStorage(std::unique_ptr<uint8_t[]> buffer) : buffer_(std::move(buffer)) {}
+    explicit OhosFileStorage(BASE_NS::unique_ptr<uint8_t[]> buffer) : buffer_(BASE_NS::move(buffer)) {}
     ~OhosFileStorage() = default;
 
-    const std::unique_ptr<uint8_t[]>& GetStorage() const
+    const BASE_NS::unique_ptr<uint8_t[]>& GetStorage() const
     {
         return buffer_;
     }
@@ -116,14 +113,14 @@ public:
         return size_;
     }
 
-    void SetBuffer(std::unique_ptr<uint8_t[]> buffer, size_t size)
+    void SetBuffer(BASE_NS::unique_ptr<uint8_t[]> buffer, size_t size)
     {
         buffer_ = BASE_NS::move(buffer);
         size_ = size;
     }
 
 private:
-    std::unique_ptr<uint8_t[]> buffer_;
+    BASE_NS::unique_ptr<uint8_t[]> buffer_;
     size_t size_ { 0 };
 };
 
@@ -133,9 +130,7 @@ public:
     ~OhosFile() override = default;
 
     Mode GetMode() const override;
-    // Open an existing file, fails if the file does not exist.
     std::shared_ptr<OhosFileStorage> Open(BASE_NS::string_view path);
-    // Close file.
     void Close() override;
     uint64_t Read(void* buffer, uint64_t count) override;
     uint64_t Write(const void* buffer, uint64_t count) override;
@@ -143,7 +138,7 @@ public:
     uint64_t GetLength() const override;
     bool Seek(uint64_t offset) override;
     uint64_t GetPosition() const override;
-    bool OpenRawFile(BASE_NS::string_view src, size_t& len, std::unique_ptr<uint8_t[]>& dest);
+    bool OpenRawFile(BASE_NS::string_view src, size_t& len, BASE_NS::unique_ptr<uint8_t[]>& dest);
     void UpdateStorage(std::shared_ptr<OhosFileStorage> buffer);
 
 protected:
@@ -153,10 +148,6 @@ protected:
     }
 
 private:
-    bool GetResourceId(const std::string& uri, uint32_t& resId) const;
-    bool GetResourceId(const std::string& uri, std::string& path) const;
-    bool GetResourceName(const std::string& uri, std::string& resName) const;
-
     uint64_t index_ { 0 };
     std::shared_ptr<OhosFileStorage> buffer_;
     BASE_NS::refcnt_ptr<OhosResMgr> fileResMgr_;

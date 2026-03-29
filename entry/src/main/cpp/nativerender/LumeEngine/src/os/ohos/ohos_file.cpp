@@ -14,16 +14,12 @@
  */
 
 #include "ohos_file.h"
+#include "base/namespace.h"
 
 #include <cerrno>
 #include <cstdint>
-#include <dirent.h>
+#include <cstring>
 
-#ifndef _DIRENT_HAVE_D_TYPE
-#include <sys/stat.h>
-#include <sys/types.h>
-
-#endif
 #include <climits>
 #define CORE_MAX_PATH PATH_MAX
 
@@ -33,47 +29,21 @@
 #include <core/log.h>
 #include <core/namespace.h>
 
-#include "io/std_directory.h"
-
 CORE_BEGIN_NAMESPACE()
 using BASE_NS::CloneData;
 using BASE_NS::string;
 using BASE_NS::string_view;
 
-const std::regex MEDIA_RES_ID_REGEX(R"(^\w+/([0-9]+)\.\w+$)", std::regex::icase);
-const std::regex MEDIA_HAP_RES_PATH_REGEX(R"(^(.*)$)");
-const std::regex MEDIA_HAP_RES_ID_REGEX(R"(^.*/([0-9]+)\.\w+$)", std::regex::icase);
-const std::regex MEDIA_RES_NAME_REGEX(R"(^.*/(\w+)\.\w+$)", std::regex::icase);
-
-constexpr uint32_t OHOS_RESOURCE_MATCH_SIZE = 2;
-
 void OhosResMgr::UpdateResManager(const PlatformHapInfo& hapInfo)
 {
-    auto key = hapInfo.bundleName + "+" + hapInfo.moduleName;
-    auto resourceMgrIter = resourceManagers_.find(key);
-    if (resourceMgrIter != resourceManagers_.end()) {
-        resourceManager_ = resourceMgrIter->second;
-        return;
-    }
-
+    // 直接使用传入的 NativeResourceManager，不再创建新的
     if (hapInfo.resourceManager != nullptr) {
-        resourceManagers_[key] = hapInfo.resourceManager;
         resourceManager_ = hapInfo.resourceManager;
-        CORE_LOG_D("resource manager has ready by new api");
-        return;
+        CORE_LOG_D("resource manager initialized from external");
     }
-
-    std::shared_ptr<OHOS::Global::Resource::ResourceManager> newResMgr(OHOS::Global::Resource::CreateResourceManager());
-    if (!newResMgr) {
-        CORE_LOG_E("CreateResourceManager failed");
-        return;
-    }
-    auto resRet = newResMgr->AddResource(hapInfo.hapPath.c_str());
-    resourceManagers_[key] = newResMgr;
-    resourceManager_ = newResMgr;
 }
 
-std::shared_ptr<OHOS::Global::Resource::ResourceManager> OhosResMgr::GetResMgr() const
+NativeResourceManager* OhosResMgr::GetResMgr() const
 {
     return resourceManager_;
 }
@@ -92,11 +62,31 @@ void OhosFileDirectory::Close()
     }
 }
 
-bool OhosFileDirectory::IsDir(BASE_NS::string_view path, std::vector<std::string>& fileList) const
+bool OhosFileDirectory::IsDir(BASE_NS::string_view path, BASE_NS::vector<BASE_NS::string>& fileList) const
 {
-    auto state = dirResMgr_->GetResMgr()->GetRawFileList(path.data(), fileList);
-    if (state != OHOS::Global::Resource::SUCCESS || fileList.empty()) {
-        CORE_LOG_E("GetRawfilepath error, filename:%s, error:%u", path.data(), state);
+    NativeResourceManager* resMgr = dirResMgr_->GetResMgr();
+    if (!resMgr) {
+        CORE_LOG_E("ResourceManager is null");
+        return false;
+    }
+
+    RawDir* rawDir = OH_ResourceManager_OpenRawDir(resMgr, path.data());
+    if (!rawDir) {
+        CORE_LOG_E("OpenRawDir failed, path:%s", path.data());
+        return false;
+    }
+
+    int count = OH_ResourceManager_GetRawFileCount(rawDir);
+    for (int i = 0; i < count; i++) {
+        const char* name = OH_ResourceManager_GetRawFileName(rawDir, i);
+        if (name) {
+            fileList.push_back(name);
+        }
+    }
+    OH_ResourceManager_CloseRawDir(rawDir);
+
+    if (fileList.empty()) {
+        CORE_LOG_E("GetRawFileList empty, path:%s", path.data());
         return false;
     }
     return true;
@@ -104,13 +94,17 @@ bool OhosFileDirectory::IsDir(BASE_NS::string_view path, std::vector<std::string
 
 bool OhosFileDirectory::IsFile(BASE_NS::string_view path) const
 {
-    std::unique_ptr<uint8_t[]> data;
-    size_t dataLen = 0;
-    auto state = dirResMgr_->GetResMgr()->GetRawFileFromHap(path.data(), dataLen, data);
-    if (state != OHOS::Global::Resource::SUCCESS) {
+    NativeResourceManager* resMgr = dirResMgr_->GetResMgr();
+    if (!resMgr) {
         return false;
     }
-    return true;
+
+    RawFile* rawFile = OH_ResourceManager_OpenRawFile(resMgr, path.data());
+    if (rawFile) {
+        OH_ResourceManager_CloseRawFile(rawFile);
+        return true;
+    }
+    return false;
 }
 
 bool OhosFileDirectory::Open(const BASE_NS::string_view pathIn)
@@ -122,7 +116,7 @@ bool OhosFileDirectory::Open(const BASE_NS::string_view pathIn)
     if (path.front() == '/') {
         path.remove_prefix(1);
     }
-    std::vector<std::string> fileList;
+    BASE_NS::vector<BASE_NS::string> fileList;
     if (IsDir(path, fileList)) {
         dir_ = BASE_NS::make_unique<OhosDirImpl>(path, fileList);
         return true;
@@ -150,7 +144,7 @@ IDirectory::Entry OhosFileDirectory::GetEntry(BASE_NS::string_view uriIn) const
 {
     if (!uriIn.empty()) {
         IDirectory::Entry::Type type;
-        std::vector<std::string> fileList;
+        BASE_NS::vector<BASE_NS::string> fileList;
         if (IsFile(uriIn)) {
             type = IDirectory::Entry::FILE;
         } else if (IsDir(uriIn, fileList)) {
@@ -158,7 +152,6 @@ IDirectory::Entry OhosFileDirectory::GetEntry(BASE_NS::string_view uriIn) const
         } else {
             type = IDirectory::Entry::UNKNOWN;
         }
-        // timestamp set 0
         uint64_t timestamp = 0;
         BASE_NS::string entryName { uriIn };
         return IDirectory::Entry { type, entryName, timestamp };
@@ -237,82 +230,53 @@ uint64_t OhosFile::GetPosition() const
 
 std::shared_ptr<OhosFileStorage> OhosFile::Open(BASE_NS::string_view rawFile)
 {
-    std::unique_ptr<uint8_t[]> data;
+    BASE_NS::unique_ptr<uint8_t[]> data;
     size_t dataLen = 0;
     if (OpenRawFile(rawFile, dataLen, data)) {
-        buffer_->SetBuffer(std::move(data), static_cast<uint64_t>(dataLen));
+        buffer_->SetBuffer(BASE_NS::move(data), static_cast<uint64_t>(dataLen));
         return buffer_;
     }
     return nullptr;
 }
 
-// Parsing URI
-bool OhosFile::GetResourceId(const std::string& uri, uint32_t& resId) const
+bool OhosFile::OpenRawFile(BASE_NS::string_view uriIn, size_t& dataLen, BASE_NS::unique_ptr<uint8_t[]>& dest)
 {
-    std::smatch matches;
-    if (std::regex_match(uri, matches, MEDIA_RES_ID_REGEX) && matches.size() == OHOS_RESOURCE_MATCH_SIZE) {
-        resId = static_cast<uint32_t>(std::stoul(matches[1].str()));
-        return true;
+    NativeResourceManager* resMgr = fileResMgr_->GetResMgr();
+    if (!resMgr) {
+        CORE_LOG_E("ResourceManager is null");
+        return false;
     }
-    std::smatch hapMatches;
-    if (std::regex_match(uri, hapMatches, MEDIA_HAP_RES_ID_REGEX) && hapMatches.size() == OHOS_RESOURCE_MATCH_SIZE) {
-        resId = static_cast<uint32_t>(std::stoul(hapMatches[1].str()));
-        return true;
-    }
-    return false;
-}
 
-bool OhosFile::GetResourceId(const std::string& uri, std::string& path) const
-{
-    std::smatch matches;
-    if (std::regex_match(uri, matches, MEDIA_HAP_RES_PATH_REGEX) && matches.size() == OHOS_RESOURCE_MATCH_SIZE) {
-        path = matches[1].str();
-        return true;
+    // 处理路径：移除前导斜杠
+    const char* path = uriIn.data();
+    while (*path == '/') {
+        path++;
     }
-    return false;
-}
 
-bool OhosFile::GetResourceName(const std::string& uri, std::string& resName) const
-{
-    std::smatch matches;
-    if (std::regex_match(uri, matches, MEDIA_RES_NAME_REGEX) && matches.size() == OHOS_RESOURCE_MATCH_SIZE) {
-        resName = matches[1].str();
-        return true;
+    RawFile* rawFile = OH_ResourceManager_OpenRawFile(resMgr, path);
+    if (!rawFile) {
+        CORE_LOG_E("OpenRawFile failed, path:%s", path);
+        return false;
     }
-    return false;
-}
 
-bool OhosFile::OpenRawFile(BASE_NS::string_view uriIn, size_t& dataLen, std::unique_ptr<uint8_t[]>& dest)
-{
-    std::string uri(uriIn.data());
-    std::string rawFile;
-    if (GetResourceId(uri, rawFile)) {
-        auto state = fileResMgr_->GetResMgr()->GetRawFileFromHap(rawFile.c_str(), dataLen, dest);
-        if (state != OHOS::Global::Resource::SUCCESS || !dest) {
-            CORE_LOG_E("GetRawFileFromHap error, raw filename:%s, error:%u", rawFile.c_str(), state);
-            return false;
-        }
-        return true;
+    dataLen = static_cast<size_t>(OH_ResourceManager_GetRawFileSize(rawFile));
+    if (dataLen == 0) {
+        CORE_LOG_E("RawFile size is 0, path:%s", path);
+        OH_ResourceManager_CloseRawFile(rawFile);
+        return false;
     }
-    uint32_t resId = 0;
-    if (GetResourceId(uri, resId)) {
-        auto state = fileResMgr_->GetResMgr()->GetMediaDataById(resId, dataLen, dest);
-        if (state != OHOS::Global::Resource::SUCCESS || !dest) {
-            CORE_LOG_E("GetMediaDataById error, resId:%u, error:%u", resId, state);
-            return false;
-        }
-        return true;
+
+    dest = BASE_NS::make_unique<uint8_t[]>(dataLen);
+    int readLen = OH_ResourceManager_ReadRawFile(rawFile, dest.get(), dataLen);
+    OH_ResourceManager_CloseRawFile(rawFile);
+
+    if (readLen != static_cast<int>(dataLen)) {
+        CORE_LOG_E("ReadRawFile failed, expected:%zu, actual:%d, path:%s", dataLen, readLen, path);
+        dest.reset();
+        dataLen = 0;
+        return false;
     }
-    std::string resName;
-    if (GetResourceName(uri, resName)) {
-        auto state = fileResMgr_->GetResMgr()->GetMediaDataByName(resName.c_str(), dataLen, dest);
-        if (state != OHOS::Global::Resource::SUCCESS || !dest) {
-            CORE_LOG_E("GetMediaDataByName error, resName:%s, error:%u", resName.c_str(), state);
-            return false;
-        }
-        return true;
-    }
-    CORE_LOG_E("load image data failed, as uri is invalid:%s", uri.c_str());
-    return false;
+
+    return true;
 }
 CORE_END_NAMESPACE()

@@ -16,6 +16,7 @@
 #ifndef API_BASE_UTIL_ALGORITHM_H
 #define API_BASE_UTIL_ALGORITHM_H
 
+#include "base/containers/type_traits.h"
 #include <cstddef>
 
 #include <base/namespace.h>

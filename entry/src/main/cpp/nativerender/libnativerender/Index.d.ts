@@ -14,17 +14,94 @@
  */
 
 import { NodeContent } from '@ohos.arkui.node';
-type XComponentContextStatus = {
-  hasDraw: boolean,
-  hasChangeColor: boolean
-};
-export const createNativeNode: (content: NodeContent, tag: string) => void;
-export const getStatus: () => XComponentContextStatus;
-export const drawPattern: () => void;
+
+/**
+ * Render state enumeration
+ */
+export enum RenderState {
+  UNINITIALIZED = 0,
+  INITIALIZING,
+  READY,
+  RENDERING,
+  ERROR,
+  DESTROYED
+}
+
+/**
+ * Create a native XComponent node for Lume rendering
+ * @param content - NodeContent from XComponent controller
+ * @param id - Unique identifier for this renderer instance
+ */
+export const createNativeNode: (content: NodeContent, id: string) => void;
+
+/**
+ * Bind a node to the renderer
+ * @param id - Renderer instance identifier
+ * @param node - Node object to bind
+ */
 export const bindNode: (id: string, node: object) => void;
+
+/**
+ * Unbind a node from the renderer
+ * @param id - Renderer instance identifier
+ */
 export const unbindNode: (id: string) => void;
-export const setFrameRate: (id: string, min: number, max: number, expected: number) => void;
-export const setNeedSoftKeyboard: (id: string, needSoftKeyborad: boolean) => void;
+
+/**
+ * Draw a single frame
+ * @param id - Renderer instance identifier
+ */
+export const drawFrame: (id: string) => void;
+
+/**
+ * Draw a single frame (legacy alias for drawFrame)
+ * @param id - Renderer instance identifier
+ * @deprecated Use drawFrame instead
+ */
+export const drawPattern: (id: string) => void;
+
+/**
+ * Load a GLTF scene
+ * @param id - Renderer instance identifier
+ * @param gltfPath - Path to the GLTF file
+ */
+export const loadScene: (id: string, gltfPath: string) => void;
+
+/**
+ * Get the current renderer state
+ * @param id - Renderer instance identifier
+ * @returns Current render state
+ */
+export const getStatus: (id: string) => RenderState;
+
+/**
+ * Set the target frame rate
+ * @param id - Renderer instance identifier
+ * @param rate - Target frame rate in FPS
+ */
+export const setFrameRate: (id: string, rate: number) => void;
+
+/**
+ * Enable or disable soft keyboard
+ * @param id - Renderer instance identifier
+ * @param needSoftKeyboard - Whether soft keyboard is needed
+ */
+export const setNeedSoftKeyboard: (id: string, needSoftKeyboard: boolean) => void;
+
+/**
+ * Get the rendering context
+ * @param id - Renderer instance identifier
+ */
+export const getContext: (id: string) => object;
+
+/**
+ * Initialize the renderer
+ * @param id - Renderer instance identifier
+ */
 export const initialize: (id: string) => void;
+
+/**
+ * Finalize and cleanup the renderer
+ * @param id - Renderer instance identifier
+ */
 export const finalize: (id: string) => void;
-export const drawStar: (id: string) => void;

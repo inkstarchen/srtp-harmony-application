@@ -1,0 +1,21 @@
+diff --git a/src/jmorecfg.h b/src/jmorecfg.h
+index fb3a9cf..1a63a14 100644
+--- a/src/jmorecfg.h
++++ b/src/jmorecfg.h
+@@ -133,6 +133,7 @@ typedef short INT16;
+  * same regardless of any external headers that may be included.
+  */
+
++ #ifndef _LOS_COMPILER_H         /* LiteOS-M defines INT32 in los_compiler.h */
+ #ifndef XMD_H                   /* X11/xmd.h correctly defines INT32 */
+ #ifndef _BASETSD_H_             /* Microsoft defines it in basetsd.h */
+ #ifndef _BASETSD_H              /* MinGW is slightly different */
+@@ -141,6 +142,7 @@ typedef long INT32;
+ #endif
+ #endif
+ #endif
++#endif
+ #endif
+
+ /* Datatype used for image dimensions.  The JPEG standard only supports
+

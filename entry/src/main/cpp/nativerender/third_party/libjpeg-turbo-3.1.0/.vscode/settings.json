@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "jpegapicomp.h": "c",
+        "jpeglib.h": "c",
+        "jinclude.h": "c",
+        "jdmaster.h": "c",
+        "jdmainct.h": "c",
+        "jsamplecomp.h": "c",
+        "jsimd.h": "c"
+    }
+}

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include <surface/native_buffer.h>
+#include <native_buffer/native_buffer.h>
 
 #include <base/util/formats.h>
 
@@ -112,8 +112,8 @@ GpuImageDesc GetImageDescFromHwBufferDesc(uintptr_t platformHwBuffer)
         MemoryPropertyFlagBits::CORE_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         createFlags,
         CORE_ENGINE_IMAGE_CREATION_DYNAMIC_BARRIERS | CORE_ENGINE_IMAGE_CREATION_RESET_STATE_ON_FRAME_BORDERS,
-        config.width,
-        config.height,
+        static_cast<uint32_t>(config.width),
+        static_cast<uint32_t>(config.height),
         1,
         1,
         1,

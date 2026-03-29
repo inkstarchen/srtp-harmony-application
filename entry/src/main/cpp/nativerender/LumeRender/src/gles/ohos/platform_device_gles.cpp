@@ -14,7 +14,7 @@
  */
 
  // 注意点：与窗口的交互
-#include <external_window.h>
+#include <native_window/external_window.h>
 
 #include "gles/device_gles.h"
 #include "gles/egl_functions.h"

@@ -34,8 +34,7 @@ class FileManager;
 class OhosFilesystem final : public IFilesystem {
 public:
     OhosFilesystem(const BASE_NS::string_view hapPath, const BASE_NS::string_view bundleName,
-        const BASE_NS::string_view moduleName,
-        std::shared_ptr<OHOS::Global::Resource::ResourceManager> resourceManager);
+        const BASE_NS::string_view moduleName, NativeResourceManager* resourceManager);
     OhosFilesystem() = delete;
     OhosFilesystem(OhosFilesystem const&) = delete;
     OhosFilesystem& operator=(OhosFilesystem const&) = delete;

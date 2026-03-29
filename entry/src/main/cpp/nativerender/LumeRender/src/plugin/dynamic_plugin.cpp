@@ -15,4 +15,5 @@
 
 #include <core/plugin/intf_plugin_decl.h>
 
-#include "registry_data.cpp"
+// Note: registry_data.cpp is already included in static_plugin.cpp (lume_render_src)
+// and will be linked together. Including it here would cause duplicate symbol gPluginData.

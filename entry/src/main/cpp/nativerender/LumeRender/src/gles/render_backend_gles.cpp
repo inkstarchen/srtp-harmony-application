@@ -2108,7 +2108,7 @@ void RenderBackendGLES::RenderCommandBindDescriptorSets(const RenderCommandWithT
                 (bind.descriptorType == CORE_DESCRIPTOR_TYPE_SAMPLED_IMAGE) ||
                 (bind.descriptorType == CORE_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)) {
                 if (bind.resources[0].image.mode & Gles::EXTERNAL_BIT) {
-                    oesBinds_.push_back(OES_Bind { set, binding });
+                    oesBinds_.push_back(OES_Bind { static_cast<uint8_t>(set), static_cast<uint8_t>(binding) });
                 }
             }
         }

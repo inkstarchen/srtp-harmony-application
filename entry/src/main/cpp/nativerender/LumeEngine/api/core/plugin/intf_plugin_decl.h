@@ -23,12 +23,13 @@
 #if defined(CORE_PLUGIN) && (CORE_PLUGIN == 1)
 // Dynamic plugin
 #if _MSC_VER
-#define PLUGIN_DATA(NAME) __declspec(dllexport) CORE_NS::IPlugin gPluginData
+#define PLUGIN_DATA(NAME) extern __declspec(dllexport) CORE_NS::IPlugin gPluginData
 #define DEFINE_STATIC_PLUGIN(NAME)
 #else
-#define PLUGIN_DATA(NAME) __attribute__((visibility("default"))) CORE_NS::IPlugin gPluginData
+#define PLUGIN_DATA(NAME) extern __attribute__((visibility("default"))) CORE_NS::IPlugin gPluginData
 #define DEFINE_STATIC_PLUGIN(NAME)
 #endif
 #endif
+
 // clang-format on
 #endif // API_CORE_PLUGIN_INTF_PLUGIN_DECL_H

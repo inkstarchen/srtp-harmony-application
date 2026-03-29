@@ -12,13 +12,12 @@
 # limitations under the License.
 
 cmake_minimum_required(VERSION 3.18)
-project(LumeRender)
 
 set(LUME_RENDER_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+set(CORE_STATIC_PLUGIN_HEADER "\"${NATIVERENDER_ROOT_PATH}/LumeEngine/src/static_plugin_decl.h\"")
 
 # Build options
 option(RENDER_LOG_ENABLED "Enable render logging" ON)
-option(RENDER_VALIDATION_ENABLED "Enable render validation" OFF)
 option(RENDER_BUILD_GLES "Build GLES backend" ON)
 
 # Include directories
@@ -30,56 +29,13 @@ include_directories(
     ${NATIVERENDER_ROOT_PATH}/LumeEngine/api
 )
 
-# Common definitions
-set(RENDER_DEFINITIONS
-    RENDER_PUBLIC=
-    RENDER_OPTIMIZE_FOR_INTEGRATED_GPU=1
-    RENDER_DEV_ENABLED=0
-    RENDER_PERF_ENABLED=0
-    RENDER_TESTS_ENABLED=0
-    RENDER_LOG_TO_CONSOLE=1
-    RENDER_LOG_TO_FILE
-    RENDER_LOG_TO_DEBUG_OUTPUT=0
-    RENDER_DEBUG_GPU_RESOURCE_IDS=0
-    RENDER_DEBUG_MARKERS_ENABLED=0
-    RENDER_DEBUG_COMMAND_MARKERS_ENABLED=0
-    RENDER_GL_FLIP_Y_SWAPCHAIN=0
-    RENDER_GPU_TIMESTAMP_QUERIES_ENABLED=0
-    RENDER_VULKAN_RT_ENABLED=0
-    RENDER_EMBEDDED_ASSETS_ENABLED=1
-    CORE_USE_COMPILER_GENERATED_STATIC_LIST=1
-    __OHOS_PLATFORM__
-)
-
 if(RENDER_BUILD_GLES)
     list(APPEND RENDER_DEFINITIONS RENDER_HAS_GLES_BACKEND=1)
 endif()
 
-if(RENDER_LOG_ENABLED)
-    list(APPEND RENDER_DEFINITIONS
-        PLUGIN_LOG_DISABLED=0
-        PLUGIN_LOG_DEBUG=1
-    )
-else()
-    list(APPEND RENDER_DEFINITIONS
-        PLUGIN_LOG_DISABLED=1
-        PLUGIN_LOG_DEBUG=0
-    )
-endif()
-
-if(RENDER_VALIDATION_ENABLED)
-    list(APPEND RENDER_DEFINITIONS
-        RENDER_VALIDATION_ENABLED=1
-        RENDER_VULKAN_VALIDATION_ENABLED=0
-        RENDER_GL_DEBUG=1
-    )
-endif()
-
 # Common source files
 set(RENDER_SOURCES
-    src/plugin/static_plugin.cpp
-    src/plugin/static_registry.cpp
-    src/plugin/registry_data.cpp
+    version.cpp
     src/renderer.cpp
     src/render_context.cpp
     src/render_graph.cpp
@@ -119,6 +75,7 @@ set(RENDER_SOURCES
     src/loader/vertex_input_declaration_loader.cpp
 
     # node
+    src/node/core_render_node_factory.cpp
     src/node/render_node_back_buffer.cpp
     src/node/render_node_bloom.cpp
     src/node/render_node_combined_post_process.cpp
@@ -144,6 +101,7 @@ set(RENDER_SOURCES
     src/nodecontext/render_node_context_manager.cpp
     src/nodecontext/render_node_copy_util.cpp
     src/nodecontext/render_node_graph_manager.cpp
+    src/nodecontext/render_node_graph_share_manager.cpp
     src/nodecontext/render_node_manager.cpp
     src/nodecontext/render_node_parser_util.cpp
     src/nodecontext/render_node_post_process_util.cpp
@@ -175,8 +133,11 @@ set(RENDER_SOURCES
 
     # util
     src/util/json.cpp
+    src/util/property_util.cpp
     src/util/render_frame_util.cpp
     src/util/render_util.cpp
+    src/util/shader_saver.cpp
+    ${NATIVERENDER_ROOT_PATH}/LumeEngine/api/core/property_tools/property_data.cpp
 )
 
 # OHOS platform sources
@@ -187,6 +148,8 @@ list(APPEND RENDER_SOURCES
 # GLES backend sources
 if(RENDER_BUILD_GLES)
     list(APPEND RENDER_SOURCES
+        src/gles/device_gles.cpp
+        src/gles/egl_state.cpp
         src/gles/gpu_buffer_gles.cpp
         src/gles/gpu_image_gles.cpp
         src/gles/gpu_program_gles.cpp
@@ -202,14 +165,14 @@ if(RENDER_BUILD_GLES)
         src/gles/shader_module_gles.cpp
         src/gles/spirv_cross_helpers_gles.cpp
         src/gles/swapchain_gles.cpp
-        # GLES generic platform
-        src/gles/generic/platform_device_gles.cpp
         # GLES OHOS platform
         src/gles/ohos/platform_device_gles.cpp
     )
 endif()
 
 # Dynamic plugin sources (for shared library)
+# Note: dynamic_registry.cpp removed - InitRegistry is already defined in static_registry.cpp
+# which is compiled in lume_render_src. Both cannot be linked together.
 set(RENDER_PLUGIN_SOURCES
     src/plugin/dynamic_plugin.cpp
     src/plugin/dynamic_registry.cpp
@@ -217,11 +180,10 @@ set(RENDER_PLUGIN_SOURCES
 
 # Create static library for render sources
 add_library(lume_render_src STATIC ${RENDER_SOURCES})
-target_compile_definitions(lume_render_src PUBLIC ${RENDER_DEFINITIONS})
-target_compile_options(lume_render_src PRIVATE
-    -Wno-nullability-completeness
-    -Wno-ignored-qualifiers
-    -Wno-switch
+target_compile_definitions(lume_render_src PUBLIC
+    ${RENDER_DEFINITIONS}
+    CORE_STATIC_PLUGIN_HEADER=${CORE_STATIC_PLUGIN_HEADER}
+    CORE_USE_COMPILER_GENERATED_STATIC_LIST=1
 )
 
 # Add include directories for base and engine headers
@@ -231,9 +193,9 @@ target_include_directories(lume_render_src PUBLIC
 )
 
 # Link LumeBase for header dependencies
-target_link_libraries(lume_render_src PUBLIC LumeBase)
+target_link_libraries(lume_render_src PUBLIC LumeBase lume_engine_src)
 
-# Create static library for plugin sources
+# # Create static library for plugin sources
 add_library(lume_render_src_plugin STATIC ${RENDER_PLUGIN_SOURCES})
 target_compile_definitions(lume_render_src_plugin PRIVATE CORE_PLUGIN=1)
 target_include_directories(lume_render_src_plugin PRIVATE
@@ -245,7 +207,7 @@ target_include_directories(lume_render_src_plugin PRIVATE
 )
 
 # Link LumeBase for header dependencies
-target_link_libraries(lume_render_src_plugin PRIVATE LumeBase)
+target_link_libraries(lume_render_src_plugin PRIVATE LumeBase lume_engine_src)
 
 # Find EGL and GLES libraries
 find_library(EGL-lib EGL)
@@ -260,15 +222,10 @@ add_library(lume_render SHARED
 target_link_libraries(lume_render PUBLIC
     ${EGL-lib}
     ${GLES-lib}
+    libnative_buffer.so
+    libnative_window.so
     LumeBase
 )
-
-# Linker flags for static plugin
-if(NOT WIN32)
-    target_link_options(lume_render PRIVATE
-        "-Wl,--undefined=AGPRender_StaticPlugin"
-    )
-endif()
 
 # Export include directories
 target_include_directories(lume_render PUBLIC

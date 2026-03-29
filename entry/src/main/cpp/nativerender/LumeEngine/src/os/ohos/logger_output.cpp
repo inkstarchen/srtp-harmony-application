@@ -65,7 +65,7 @@ public:
         ::LogLevel logPriority;
         switch (logLevel) {
             case ILogger::LogLevel::LOG_VERBOSE:
-                logPriority = ::LogLevel::LOG_LEVEL_MIN;
+                logPriority = ::LogLevel::LOG_INFO;
                 break;
 
             case ILogger::LogLevel::LOG_DEBUG:
@@ -89,7 +89,7 @@ public:
                 break;
 
             default:
-                logPriority = ::LogLevel::LOG_LEVEL_MIN;
+                logPriority = ::LogLevel::LOG_INFO;
                 break;
         }
 
@@ -99,9 +99,9 @@ public:
             outputStream << '(' << std::string_view(filenameView.data(), filenameView.size()) << ':' << linenumber
                          << "): ";
             outputStream << std::string_view(message.data(), message.size());
-            HiLogPrint(LOG_CORE, logPriority, LOG_DOMAIN, LOG_TAG, "%{public}s", outputStream.str().c_str());
+//            HiLogPrint(LOG_CORE, logPriority, LOG_DOMAIN, LOG_TAG, "%{public}s", outputStream.str().c_str());
         } else {
-            HiLogPrint(LOG_CORE, logPriority, LOG_DOMAIN, LOG_TAG, "%{public}s", message.data());
+//            HiLogPrint(LOG_CORE, logPriority, LOG_DOMAIN, LOG_TAG, "%{public}s", message.data());
         }
     }
 

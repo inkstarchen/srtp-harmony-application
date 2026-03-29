@@ -92,7 +92,7 @@ private:
     }
     void ReleaseScene(){
         count = 0;
-        OH_LOG_INFO(LOG_APP,"Release Scene %{public}d", count);
+        OH_LOG_INFO(LOG_APP,"Release Scene %{public}zu", count);
         free_list.clear(); // 清空原有元素
         for (int32_t i = capacity-1; i >= 0; i--) {
             free_list.push_back(static_cast<uint32_t>(i));
