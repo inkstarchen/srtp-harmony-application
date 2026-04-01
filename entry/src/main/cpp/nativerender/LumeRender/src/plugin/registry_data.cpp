@@ -16,17 +16,12 @@
 #include <core/plugin/intf_plugin.h>
 #include <render/implementation_uids.h>
 #include <render/namespace.h>
-#if defined(CORE_PLUGIN) && (CORE_PLUGIN == 1)
-#include <core/plugin/intf_plugin_decl.h>
-#else
-// Include the declarations directly from engine.
-// NOTE: macro defined by cmake as CORE_STATIC_PLUGIN_HEADER="${CORE_ROOT_DIRECTORY}/src/static_plugin_decl.h"
-// this is so that the core include directories are not leaked here, but we want this one header in this case.
-#include CORE_STATIC_PLUGIN_HEADER
 
-#endif
-
+// Forward declaration of RegisterStaticPlugin function
 CORE_BEGIN_NAMESPACE()
+namespace StaticPluginRegistry {
+void RegisterStaticPlugin(const CORE_NS::IPlugin& plugin);
+}
 class IPluginRegister;
 CORE_END_NAMESPACE()
 
@@ -36,9 +31,8 @@ CORE_NS::PluginToken RegisterInterfaces(CORE_NS::IPluginRegister&);
 void UnregisterInterfaces(CORE_NS::PluginToken);
 RENDER_END_NAMESPACE()
 
-namespace {
-extern "C" {
-PLUGIN_DATA(AGPRender) {
+// Define plugin data with external linkage (no anonymous namespace, no static)
+extern "C" const CORE_NS::IPlugin AGPRender_pluginData = {
     { CORE_NS::IPlugin::UID },
     // name of plugin.
     "AGP Render",
@@ -48,6 +42,9 @@ PLUGIN_DATA(AGPRender) {
     RENDER_NS::UnregisterInterfaces,
     {},
 };
-DEFINE_STATIC_PLUGIN(AGPRender);
+
+// Registration function with external linkage
+extern "C" void AGPRender_RegisterStaticPlugin()
+{
+    CORE_NS::StaticPluginRegistry::RegisterStaticPlugin(AGPRender_pluginData);
 }
-} // namespace

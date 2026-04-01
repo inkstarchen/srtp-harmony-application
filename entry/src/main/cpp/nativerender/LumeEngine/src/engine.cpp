@@ -69,6 +69,17 @@ using BASE_NS::string;
 using BASE_NS::string_view;
 using BASE_NS::Uid;
 
+
+#include <hilog/log.h>
+
+#undef LOG_TAG
+#undef LOG_DOMAIN
+#define LOG_TAG "path_tools"
+#define LOG_DOMAIN 0
+#define LOGI(...) OH_LOG_Print(LOG_APP, LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) OH_LOG_Print(LOG_APP, LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) OH_LOG_Print(LOG_APP, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+
 // This is defined in the CMake generated version.cpp
 void LogEngineBuildInfo()
 {
@@ -76,14 +87,13 @@ void LogEngineBuildInfo()
 #define CORE_TO_STRING(x) CORE_TO_STRING_INTERNAL(x)
 
 #ifdef NDEBUG
-    CORE_LOG_I("Core engine version: %s", GetVersion().data());
+    LOGI("Core engine version: %s", GetVersion().data());
 #else
-    CORE_LOG_I("Version: %s (DEBUG)", GetVersion().data());
+    LOGI("Version: %{public}s (DEBUG)", GetVersion().data());
 #endif
-
-    CORE_LOG_I("CORE_VALIDATION_ENABLED=" CORE_TO_STRING(CORE_VALIDATION_ENABLED));
-    CORE_LOG_I("CORE_DEV_ENABLED=" CORE_TO_STRING(CORE_DEV_ENABLED));
-    CORE_LOG_I("CORE_PERF_ENABLED=" CORE_TO_STRING(CORE_PERF_ENABLED));
+    LOGI("CORE_VALIDATION_ENABLED=" CORE_TO_STRING(CORE_VALIDATION_ENABLED));
+    LOGI("CORE_DEV_ENABLED=" CORE_TO_STRING(CORE_DEV_ENABLED));
+    LOGI("CORE_PERF_ENABLED=" CORE_TO_STRING(CORE_PERF_ENABLED));
 }
 
 inline constexpr uint32_t GetThreadPoolThreadCount(const uint32_t numberOfHwCores)
@@ -117,7 +127,7 @@ Engine::~Engine()
 #if (CORE_PERF_ENABLED == 1)
     if (auto perfFactory = CORE_NS::GetInstance<IPerformanceDataManagerFactory>(UID_PERFORMANCE_FACTORY); perfFactory) {
         for (const auto& perfMan : perfFactory->GetAllCategories()) {
-            CORE_LOG_I("%s PerformanceData for this run:", perfMan->GetCategory().data());
+            LOGI("%s PerformanceData for this run:", perfMan->GetCategory().data());
             static_cast<const PerformanceDataManager&>(*perfMan).DumpToLog();
         }
     }
@@ -165,10 +175,10 @@ void Engine::RegisterDefaultPaths()
 {
 #if (CORE_EMBEDDED_ASSETS_ENABLED == 1)
     // Create engine:// protocol that points to embedded engine asset files.
-    CORE_LOG_D("Registered core asset path: 'corerofs://core/'");
+    LOGD("Registered core asset path: 'corerofs://core/'");
     fileManager_->RegisterPath("engine", "corerofs://core/", false);
 #endif
-
+    LOGD("Registered engine:// protocol.");
     // Create shaders:// protocol that points to shader files.
     fileManager_->RegisterPath("shaders", "engine://shaders/", false);
     // Create shaderstates:// protocol that points to (graphics) shader state files.

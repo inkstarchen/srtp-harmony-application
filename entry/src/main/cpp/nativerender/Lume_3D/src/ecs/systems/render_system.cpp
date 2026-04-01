@@ -16,6 +16,16 @@
 #include "render_system.h"
 
 #include <algorithm>
+#include <hilog/log.h>
+
+#undef LOG_TAG
+#undef LOG_DOMAIN
+#define LOG_TAG "Lume_Common"
+#define LOG_DOMAIN 0
+#define LOGI(...) OH_LOG_Print(LOG_APP, LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) OH_LOG_Print(LOG_APP, LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) OH_LOG_Print(LOG_APP, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+
 
 #if (CORE3D_VALIDATION_ENABLED == 1)
 #include <cinttypes>
@@ -385,13 +395,20 @@ void FillRenderCameraBaseFromCameraComponent(const IRenderHandleComponentManager
         RenderHandleReference customColorTarget;
         if (cc.customColorTargets.size() > 0) {
             customColorTarget = renderHandleMgr.GetRenderHandleReference(cc.customColorTargets[0]);
+            LOGI("RenderCamera customColorTarget: handleType=%{public}d, isValid=%{public}d, handle=%{public}llx",
+                static_cast<int>(customColorTarget.GetHandleType()),RenderHandleUtil::IsValid(customColorTarget.GetHandle()),
+                customColorTarget.GetHandle().id);
         }
         RenderHandleReference customDepthTarget = renderHandleMgr.GetRenderHandleReference(cc.customDepthTarget);
         if (customColorTarget.GetHandleType() != RenderHandleType::GPU_IMAGE) {
-            CORE_LOG_E("invalid custom render target(s) for camera (%s)", renderCamera.name.c_str());
+            LOGE("invalid custom render target(s) for camera (%{public}s), handleType=%{public}d",
+                renderCamera.name.c_str(), static_cast<int>(customColorTarget.GetHandleType()));
         }
         renderCamera.depthTarget = move(customDepthTarget);
         renderCamera.colorTargets[0u] = move(customColorTarget);
+    } else {
+        LOGI("RenderCamera no custom targets: checkCustomTargets=%{public}d, customColorTargets.empty=%{public}d, customDepthTarget=%{public}d",
+            checkCustomTargets, cc.customColorTargets.empty(), !!cc.customDepthTarget);
     }
 
     const uint32_t maxMvCount = Math::min(
@@ -1006,11 +1023,16 @@ void RenderSystem::SetProperties(const IPropertyHandle& data)
 void RenderSystem::SetDataStorePointers(IRenderDataStoreManager& manager)
 {
     // get data stores
+    LOGI("RenderSystem::SetDataStorePointers() - dataStoreScene=%{public}s, dataStoreCamera=%{public}s, dataStoreLight=%{public}s, dataStoreMaterial=%{public}s",
+        properties_.dataStoreScene.c_str(), properties_.dataStoreCamera.c_str(),
+        properties_.dataStoreLight.c_str(), properties_.dataStoreMaterial.c_str());
     dsScene_ = refcnt_ptr<IRenderDataStoreDefaultScene>(manager.GetRenderDataStore(properties_.dataStoreScene));
     dsCamera_ = refcnt_ptr<IRenderDataStoreDefaultCamera>(manager.GetRenderDataStore(properties_.dataStoreCamera));
     dsLight_ = refcnt_ptr<IRenderDataStoreDefaultLight>(manager.GetRenderDataStore(properties_.dataStoreLight));
     dsMaterial_ =
         refcnt_ptr<IRenderDataStoreDefaultMaterial>(manager.GetRenderDataStore(properties_.dataStoreMaterial));
+    LOGI("RenderSystem::SetDataStorePointers() result: dsScene=%{public}d, dsCamera=%{public}d, dsLight=%{public}d, dsMaterial=%{public}d",
+        !!dsScene_, !!dsCamera_, !!dsLight_, !!dsMaterial_);
 }
 
 const IEcs& RenderSystem::GetECS() const
@@ -1020,8 +1042,11 @@ const IEcs& RenderSystem::GetECS() const
 
 void RenderSystem::Initialize()
 {
+    LOGI("RenderSystem::Initialize() - graphicsContext=%{public}d, renderContext=%{public}d",
+        !!graphicsContext_, !!renderContext_);
     if (graphicsContext_ && renderContext_) {
         renderPreprocessorSystem_ = GetSystem<IRenderPreprocessorSystem>(ecs_);
+        LOGI("RenderSystem::Initialize() - renderPreprocessorSystem=%{public}d", !!renderPreprocessorSystem_);
         if (renderPreprocessorSystem_) {
             const auto in =
                 ScopedHandle<IRenderPreprocessorSystem::Properties>(renderPreprocessorSystem_->GetProperties());
@@ -1094,6 +1119,7 @@ bool RenderSystem::Update(bool frameRenderingQueued, uint64_t totalTime, uint64_
 {
     renderProcessing_.frameProcessed = false;
     if (!active_) {
+        LOGE("RenderSystem::Update() - not active");
         return false;
     }
 
@@ -1132,6 +1158,8 @@ bool RenderSystem::Update(bool frameRenderingQueued, uint64_t totalTime, uint64_
         dsScene_->Clear();
         FetchFullScene();
     } else {
+        LOGE("RenderSystem::Update() - data stores not initialized: dsMaterial=%{public}d, dsCamera=%{public}d, dsLight=%{public}d, dsScene=%{public}d",
+            !!dsMaterial_, !!dsCamera_, !!dsLight_, !!dsScene_);
 #if (CORE3D_VALIDATION_ENABLED == 1)
         CORE_LOG_ONCE_W("rs_data_stores_not_found", "CORE3D_VALIDATION: render system render data stores not found");
 #endif
@@ -1613,6 +1641,7 @@ void RenderSystem::ProcessCameras(
     // This is temporary when moving towards camera based rendering in 3D context.
     const uint32_t mainCameraId = cameraMgr_->GetComponentId(mainCameraEntity);
     const auto cameraCount = cameraMgr_->GetComponentCount();
+    LOGI("RenderSystem::ProcessCameras: cameraCount = %{public}u", cameraCount);
     vector<RenderCamera> tmpCameras;
     tmpCameras.reserve(cameraCount);
     unordered_map<uint64_t, uint64_t> mvChildToParent; // multi-view child to parent

@@ -14,19 +14,15 @@
  */
 
 #include <core/plugin/intf_plugin.h>
-#if defined(CORE_PLUGIN) && (CORE_PLUGIN == 1)
-#include <core/plugin/intf_plugin_decl.h>
-#else
-// Include the declarations directly from engine.
-// NOTE: macro defined by cmake as CORE_STATIC_PLUGIN_HEADER="${CORE_ROOT_DIRECTORY}/src/static_plugin_decl.h"
-// this is so that the core include directories are not leaked here, but we want this one header in this case.
-#include CORE_STATIC_PLUGIN_HEADER
-#endif
 #include <3d/implementation_uids.h>
 #include <3d/namespace.h>
 #include <render/implementation_uids.h>
 
+// Forward declaration of RegisterStaticPlugin function
 CORE_BEGIN_NAMESPACE()
+namespace StaticPluginRegistry {
+void RegisterStaticPlugin(const CORE_NS::IPlugin& plugin);
+}
 class IPluginRegister;
 CORE_END_NAMESPACE()
 
@@ -36,10 +32,11 @@ void UnregisterInterfaces3D(CORE_NS::PluginToken);
 const char* GetVersionInfo();
 CORE3D_END_NAMESPACE()
 
-namespace {
+// Plugin dependencies
 constexpr BASE_NS::Uid PLUGIN_DEPENDENCIES[] = { RENDER_NS::UID_RENDER_PLUGIN };
-extern "C" {
-PLUGIN_DATA(AGP3D) {
+
+// Define plugin data with external linkage (no anonymous namespace, no static)
+extern "C" const CORE_NS::IPlugin AGP3D_pluginData = {
     { CORE_NS::IPlugin::UID },
     // name of plugin.
     "AGP 3D (core)",
@@ -49,6 +46,9 @@ PLUGIN_DATA(AGP3D) {
     CORE3D_NS::UnregisterInterfaces3D,
     { PLUGIN_DEPENDENCIES },
 };
-DEFINE_STATIC_PLUGIN(AGP3D);
+
+// Registration function with external linkage
+extern "C" void AGP3D_RegisterStaticPlugin()
+{
+    CORE_NS::StaticPluginRegistry::RegisterStaticPlugin(AGP3D_pluginData);
 }
-} // namespace

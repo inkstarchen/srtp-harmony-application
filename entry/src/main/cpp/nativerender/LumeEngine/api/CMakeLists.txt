@@ -158,12 +158,9 @@ target_include_directories(AGPEngineAPI SYSTEM INTERFACE
 )
 target_link_libraries(AGPEngineAPI INTERFACE AGPBase::AGPBaseAPI)
 
-# Temporarily set this always. Should vary depending on static/ shared.
-if(APPLE)
-    target_compile_definitions(AGPEngineAPI INTERFACE CORE_USE_COMPILER_GENERATED_STATIC_LIST=0)
-else()
-    target_compile_definitions(AGPEngineAPI INTERFACE CORE_USE_COMPILER_GENERATED_STATIC_LIST=1)
-endif()
+# Use runtime registration approach consistently across all platforms
+# This ensures static plugins are properly registered via RegisterStaticPlugin
+target_compile_definitions(AGPEngineAPI INTERFACE CORE_USE_COMPILER_GENERATED_STATIC_LIST=0)
 
 #
 # Performance timers

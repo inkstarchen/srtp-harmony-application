@@ -55,6 +55,15 @@
 #endif
 
 #include <algorithm>
+#include <hilog/log.h>
+
+#undef LOG_TAG
+#undef LOG_DOMAIN
+#define LOG_TAG "path_tools"
+#define LOG_DOMAIN 0
+#define LOGI(...) OH_LOG_Print(LOG_APP, LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) OH_LOG_Print(LOG_APP, LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) OH_LOG_Print(LOG_APP, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
 
 using namespace BASE_NS;
 using namespace CORE_NS;
@@ -85,9 +94,9 @@ void LogRenderBuildInfo()
 #define RENDER_TO_STRING_INTERNAL(x) #x
 #define RENDER_TO_STRING(x) RENDER_TO_STRING_INTERNAL(x)
 
-    PLUGIN_LOG_I("RENDER_VALIDATION_ENABLED=" RENDER_TO_STRING(RENDER_VALIDATION_ENABLED));
-    PLUGIN_LOG_I("RENDER_DEV_ENABLED=" RENDER_TO_STRING(RENDER_DEV_ENABLED));
-    PLUGIN_LOG_I("RENDER_PERF_ENABLED=" RENDER_TO_STRING(RENDER_PERF_ENABLED));
+    LOGI("RENDER_VALIDATION_ENABLED=" RENDER_TO_STRING(RENDER_VALIDATION_ENABLED));
+    LOGI("RENDER_DEV_ENABLED=" RENDER_TO_STRING(RENDER_DEV_ENABLED));
+    LOGI("RENDER_PERF_ENABLED=" RENDER_TO_STRING(RENDER_PERF_ENABLED));
 }
 
 template<class RenderDataStoreType>
@@ -119,7 +128,7 @@ refcnt_ptr<IRenderDataStore> CreateDataStore(IRenderDataStoreManager& renderData
 {
     refcnt_ptr<IRenderDataStore> renderDataStore = renderDataStoreManager.Create(DataStoreType::UID, name.data());
     if (!renderDataStore) {
-        PLUGIN_LOG_E("Render data store creation failed (%s)", name.data());
+        LOGE("Render data store creation failed (%s)", name.data());
     }
     return renderDataStore;
 }
@@ -392,18 +401,19 @@ RenderContext::~RenderContext()
 
 RenderResultCode RenderContext::Init(const RenderCreateInfo& createInfo)
 {
-    PLUGIN_LOG_D("Render init.");
+    LOGD("Render init.");
     RENDER_CPU_PERF_SCOPE("RenderContext::Init", "");
 
     createInfo_ = createInfo;
     device_ = CreateDevice(createInfo_);
     if ((!device_) || (!device_->GetDeviceStatus())) {
-        PLUGIN_LOG_E("Device not created successfully, invalid render interface.");
+        LOGE("Device not created successfully, invalid render interface.");
         device_ = {};
         return RenderResultCode::RENDER_ERROR;
     } else {
         device_->Activate();
 
+        LOGI("Device created successfully.");
         // Initialize the pipeline/ program cache.
         if (device_->GetDeviceConfiguration().configurationFlags & CORE_DEVICE_CONFIGURATION_PIPELINE_CACHE_BIT) {
             vector<uint8_t> pipelineCache;
@@ -413,10 +423,11 @@ RenderResultCode RenderContext::Init(const RenderCreateInfo& createInfo)
             }
             device_->InitializePipelineCache(pipelineCache);
         }
-
+        LOGI("Device pipeline cache initialized.");
         // set engine file manager with registered paths
         auto& shaderMgr = (ShaderManager&)device_->GetShaderManager();
         shaderMgr.SetFileManager(engine_.GetFileManager());
+        LOGI("Device shader manager initialized.");
 
         {
             IShaderManager::ShaderFilePathDesc desc;
@@ -477,7 +488,7 @@ RenderResultCode RenderContext::Init(const RenderCreateInfo& createInfo)
 IDevice& RenderContext::GetDevice() const
 {
     if (!device_) {
-        PLUGIN_LOG_E("Render Init not called or result was not success");
+        LOGE("Render Init not called or result was not success");
     }
     return *device_;
 }
@@ -485,7 +496,7 @@ IDevice& RenderContext::GetDevice() const
 IRenderer& RenderContext::GetRenderer() const
 {
     if (!renderer_) {
-        PLUGIN_LOG_E("Render Init not called or result was not success");
+        LOGE("Render Init not called or result was not success");
     }
     return *renderer_;
 }
@@ -493,7 +504,7 @@ IRenderer& RenderContext::GetRenderer() const
 IRenderDataStoreManager& RenderContext::GetRenderDataStoreManager() const
 {
     if (!renderDataStoreMgr_) {
-        PLUGIN_LOG_E("Render Init not called or result was not success");
+        LOGE("Render Init not called or result was not success");
     }
     return *renderDataStoreMgr_;
 }
@@ -501,7 +512,7 @@ IRenderDataStoreManager& RenderContext::GetRenderDataStoreManager() const
 IRenderNodeGraphManager& RenderContext::GetRenderNodeGraphManager() const
 {
     if (!renderNodeGraphMgr_) {
-        PLUGIN_LOG_E("Render Init not called or result was not success");
+        LOGE("Render Init not called or result was not success");
     }
     return *renderNodeGraphMgr_;
 }
@@ -509,7 +520,7 @@ IRenderNodeGraphManager& RenderContext::GetRenderNodeGraphManager() const
 IRenderUtil& RenderContext::GetRenderUtil() const
 {
     if (!renderUtil_) {
-        PLUGIN_LOG_E("Render Init not called or result was not success");
+        LOGE("Render Init not called or result was not success");
     }
     return *renderUtil_;
 }
@@ -524,7 +535,7 @@ void RenderContext::RegisterDefaultPaths()
     // Already handeled during plugin registration. If own filemanager instance is used then these are needed.
 #if (RENDER_EMBEDDED_ASSETS_ENABLED == 1)
     // Create render:// protocol that points to embedded asset files.
-    PLUGIN_LOG_D("Registered core asset path: 'rofsRndr://render/'");
+    LOGD("Registered core asset path: 'rofsRndr://render/'");
     fileManager_->RegisterPath("render", "rofsRndr://render/", false);
 #endif
     for (const auto& idx : RENDER_DATA_PATHS) {

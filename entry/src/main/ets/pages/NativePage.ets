@@ -24,6 +24,7 @@ class MyNodeController extends NodeController {
   public column: typeNode.Column | undefined = undefined;
   public attachButton: typeNode.Button | undefined = undefined;
   public detachButton: typeNode.Button | undefined = undefined;
+
   private isBound: boolean = false;
 
   makeNode(uiContext: UIContext): FrameNode | null {
@@ -43,14 +44,7 @@ class MyNodeController extends NodeController {
       .id(this.xComponentId)
       .focusable(true)
       .focusOnTouch(true)
-      .onAttach(() => {
-        // Wait for node to attach to window before binding
-        if (!this.isBound && this.xComponent) {
-          console.info('XComponent attached to window, binding node...');
-          native.bindNode(this.xComponentId, this.xComponent);
-          this.isBound = true;
-        }
-      })
+    native.bindNode(this.xComponentId, this.xComponent,  uiContext.getHostContext()?.resourceManager);
 
     try {
       this.column.appendChild(this.xComponent);
@@ -62,10 +56,7 @@ class MyNodeController extends NodeController {
   }
 
   aboutToDisappear(): void {
-    if (this.isBound) {
-      native.unbindNode(this.xComponentId)
-      this.isBound = false;
-    }
+    native.unbindNode(this.xComponentId)
     try {
       this.node?.removeChild(this.xComponent);
     } catch (error) {
@@ -121,7 +112,7 @@ export struct PageThree {
         }.height(200)
 
         Button('加载场景').onClick(() => {
-          native.loadScene(this.myNodeController.xComponentId, 'dir/card.gltf');
+          native.loadScene(this.myNodeController.xComponentId, 'OhosRawFile://dir/card.glb');
         })
 
         Column() {
@@ -140,7 +131,7 @@ export struct PageThree {
             step: 1
           }).onChange((value: number, mode: SliderChangeMode) => {
             this.minRate = value;
-            native.setFrameRate(this.myNodeController.xComponentId, this.expected)
+            native.setFrameRate(this.myNodeController.xComponentId, this.minRate,this.maxRate,this.expected)
           }).width('100%')
             .id('minSlider')
           Text('max: ' + this.maxRate)
@@ -151,7 +142,7 @@ export struct PageThree {
             step: 1
           }).onChange((value: number, mode: SliderChangeMode) => {
             this.maxRate = value;
-            native.setFrameRate(this.myNodeController.xComponentId, this.expected)
+            native.setFrameRate(this.myNodeController.xComponentId, this.minRate,this.maxRate,this.expected)
           }).width('100%')
             .id('maxSlider')
           Text('expected: ' + this.expected)
@@ -162,7 +153,7 @@ export struct PageThree {
             step: 1
           }).onChange((value: number, mode: SliderChangeMode) => {
             this.expected = value;
-            native.setFrameRate(this.myNodeController.xComponentId,this.expected)
+            native.setFrameRate(this.myNodeController.xComponentId,this.minRate,this.maxRate,this.expected)
           }).width('100%')
             .id('expectedSlider')
         }.backgroundColor('#F0FAFF')

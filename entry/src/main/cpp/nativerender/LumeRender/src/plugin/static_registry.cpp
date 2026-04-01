@@ -14,12 +14,37 @@
  */
 
 #include <core/namespace.h>
+#include <core/plugin/intf_plugin.h>
 
+// Forward declaration of RegisterStaticPlugin function
 CORE_BEGIN_NAMESPACE()
+namespace StaticPluginRegistry {
+void RegisterStaticPlugin(const CORE_NS::IPlugin& plugin);
+}
 class IPluginRegister;
 CORE_END_NAMESPACE()
 
-extern "C" void InitRegistry(CORE_NS::IPluginRegister&)
+// Plugin data defined in registry_data.cpp (compiled separately)
+extern "C" const CORE_NS::IPlugin AGPRender_pluginData;
+
+// Store plugin registry pointer for GetPluginRegister() access
+namespace {
+static CORE_NS::IPluginRegister* gPluginRegistry { nullptr };
+} // namespace
+
+// Provide GetPluginRegister() for this module
+CORE_BEGIN_NAMESPACE()
+IPluginRegister& GetPluginRegister()
 {
-    // Initializing static plugin. (registry is available directly, nothing to do here.)
+    return *gPluginRegistry;
+}
+CORE_END_NAMESPACE()
+
+extern "C" void InitRegistry(CORE_NS::IPluginRegister& pluginRegistry)
+{
+    // Save plugin registry pointer for GetPluginRegister() access
+    gPluginRegistry = &pluginRegistry;
+
+    // Register the plugin using data from registry_data.cpp
+    CORE_NS::StaticPluginRegistry::RegisterStaticPlugin(AGPRender_pluginData);
 }

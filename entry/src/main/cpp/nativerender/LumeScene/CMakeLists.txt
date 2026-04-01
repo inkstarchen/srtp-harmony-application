@@ -108,7 +108,7 @@ add_library(lume_scene_src STATIC ${LUME_SCENE_SOURCES})
 
 target_compile_definitions(lume_scene_src PUBLIC
     __OHOS_PLATFORM__
-    CORE_USE_COMPILER_GENERATED_STATIC_LIST=1
+    CORE_USE_COMPILER_GENERATED_STATIC_LIST=0
     CORE_STATIC_PLUGIN_HEADER=${CORE_STATIC_PLUGIN_HEADER}
 )
 
@@ -146,10 +146,12 @@ add_library(libPluginSceneWidget SHARED
     $<TARGET_OBJECTS:lume_scene_src>
 )
 
+# Allow multiple definitions for json functions (also defined in libAGPEngine and other libs)
+target_link_options(libPluginSceneWidget PRIVATE "-Wl,--allow-multiple-definition")
+
 target_link_libraries(libPluginSceneWidget PUBLIC
     LumeBase
-    libAGPEngine
-    lume_render
+    lume_render  # lume_render already contains libAGPEngine with whole-archive
     lume_3d
     # libFont               # Temporarily disabled
     # libPluginAGP3DText    # Temporarily disabled

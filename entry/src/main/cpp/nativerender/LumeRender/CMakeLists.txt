@@ -19,6 +19,7 @@ set(CORE_STATIC_PLUGIN_HEADER "\"${NATIVERENDER_ROOT_PATH}/LumeEngine/src/static
 # Build options
 option(RENDER_LOG_ENABLED "Enable render logging" ON)
 option(RENDER_BUILD_GLES "Build GLES backend" ON)
+option(RENDER_EMBEDDED_ASSETS_ENABLED "Enable embedded assets for render" ON)
 
 # Include directories
 include_directories(
@@ -31,6 +32,36 @@ include_directories(
 
 if(RENDER_BUILD_GLES)
     list(APPEND RENDER_DEFINITIONS RENDER_HAS_GLES_BACKEND=1)
+endif()
+
+# ============================================================================
+# 【嵌入式资产配置】
+# ============================================================================
+#
+# 预编译资产文件配置
+#
+# 符号名称:
+#   - BINARYDATAFORRENDER: 指向资产数据的指针
+#   - SIZEOFDATAFORRENDER: 资产数据的大小
+#
+# 协议名称:
+#   - rofsRndr:// 用于访问嵌入的渲染资产
+#
+# 使用方式:
+#   1. 使用 LumeAssetCompiler 编译 assets/render 目录:
+#      LumeAssetCompiler -arch aarch64 assets/render output_dir BINARYDATAFORRENDER SIZEOFDATAFORRENDER
+#   2. 将生成的 .o 文件放到 assets/ 目录下，命名为 rofs_render_64.o (64位) 或 rofs_render_32.o (32位)
+#
+set(RENDER_ROFS "rofsRndr")
+set(RENDER_ASSET_OBJECT "${LUME_RENDER_ROOT}/assets/rofsrender_64.o")
+
+# 打印配置信息
+if(RENDER_EMBEDDED_ASSETS_ENABLED)
+    if(EXISTS "${RENDER_ASSET_OBJECT}")
+        message(STATUS "LumeRender: Using embedded assets from ${RENDER_ASSET_OBJECT}")
+    else()
+        message(WARNING "LumeRender: Embedded assets enabled but file not found: ${RENDER_ASSET_OBJECT}")
+    endif()
 endif()
 
 # Common source files
@@ -138,6 +169,11 @@ set(RENDER_SOURCES
     src/util/render_util.cpp
     src/util/shader_saver.cpp
     ${NATIVERENDER_ROOT_PATH}/LumeEngine/api/core/property_tools/property_data.cpp
+
+    # plugin - static registration (now compiled as separate files)
+    src/plugin/static_plugin.cpp
+    src/plugin/static_registry.cpp
+    src/plugin/registry_data.cpp
 )
 
 # OHOS platform sources
@@ -175,15 +211,25 @@ endif()
 # which is compiled in lume_render_src. Both cannot be linked together.
 set(RENDER_PLUGIN_SOURCES
     src/plugin/dynamic_plugin.cpp
-    src/plugin/dynamic_registry.cpp
+    # src/plugin/dynamic_registry.cpp  # Removed - conflicts with static_registry.cpp
 )
 
-# Create static library for render sources
-add_library(lume_render_src STATIC ${RENDER_SOURCES})
+# ============================================================================
+# 库构建
+# ============================================================================
+# 【重要】使用 OBJECT 库而不是 STATIC 库
+# OBJECT 库只编译源文件为 .o 文件，不打包成 .a 存档
+# 这样 $<TARGET_OBJECTS:...> 生成器表达式才能正确工作
+
+# Create OBJECT library for render sources (not STATIC!)
+add_library(lume_render_src OBJECT ${RENDER_SOURCES})
 target_compile_definitions(lume_render_src PUBLIC
     ${RENDER_DEFINITIONS}
     CORE_STATIC_PLUGIN_HEADER=${CORE_STATIC_PLUGIN_HEADER}
-    CORE_USE_COMPILER_GENERATED_STATIC_LIST=1
+    CORE_USE_COMPILER_GENERATED_STATIC_LIST=0
+    # 【重要】启用嵌入式资产宏
+    # 这会使 static_plugin.cpp 中的 #if (RENDER_EMBEDDED_ASSETS_ENABLED == 1) 生效
+    RENDER_EMBEDDED_ASSETS_ENABLED=1
 )
 
 # Add include directories for base and engine headers
@@ -192,11 +238,28 @@ target_include_directories(lume_render_src PUBLIC
     ${NATIVERENDER_ROOT_PATH}/LumeEngine/api
 )
 
-# Link LumeBase for header dependencies
-target_link_libraries(lume_render_src PUBLIC LumeBase lume_engine_src)
+# OBJECT 库不能直接链接其他库，只能继承 include 目录和编译定义
+# 依赖的链接在最终的 SHARED 库层面完成
 
-# # Create static library for plugin sources
-add_library(lume_render_src_plugin STATIC ${RENDER_PLUGIN_SOURCES})
+# ============================================================================
+# 【关键】创建 IMPORTED OBJECT 库包含预编译的 rofs_render_64.o
+# ============================================================================
+# CMake 的 target_sources 无法正确处理预编译的 .o 文件
+# 正确方式：创建 IMPORTED OBJECT 库，通过 IMPORTED_OBJECTS 属性指定 .o 文件
+#
+if(RENDER_EMBEDDED_ASSETS_ENABLED AND EXISTS "${RENDER_ASSET_OBJECT}")
+    # 创建 IMPORTED OBJECT 库来包含预编译的资产文件
+    add_library(lume_render_rofs OBJECT IMPORTED GLOBAL)
+    set_target_properties(lume_render_rofs PROPERTIES
+        IMPORTED_OBJECTS "${RENDER_ASSET_OBJECT}"
+    )
+    message(STATUS "LumeRender: Creating IMPORTED OBJECT library for embedded assets: ${RENDER_ASSET_OBJECT}")
+else()
+    message(WARNING "LumeRender: Embedded assets enabled but object file not found: ${RENDER_ASSET_OBJECT}")
+endif()
+
+# Create OBJECT library for plugin sources
+add_library(lume_render_src_plugin OBJECT ${RENDER_PLUGIN_SOURCES})
 target_compile_definitions(lume_render_src_plugin PRIVATE CORE_PLUGIN=1)
 target_include_directories(lume_render_src_plugin PRIVATE
     ${LUME_RENDER_ROOT}
@@ -206,25 +269,48 @@ target_include_directories(lume_render_src_plugin PRIVATE
     ${NATIVERENDER_ROOT_PATH}/LumeEngine/api
 )
 
-# Link LumeBase for header dependencies
-target_link_libraries(lume_render_src_plugin PRIVATE LumeBase lume_engine_src)
-
 # Find EGL and GLES libraries
 find_library(EGL-lib EGL)
 find_library(GLES-lib GLESv3)
+find_library(hilog-lib hilog_ndk.z)
+find_library(rawfile-lib rawfile.z)
 
-# Create shared library
-add_library(lume_render SHARED
-    $<TARGET_OBJECTS:lume_render_src>
-    $<TARGET_OBJECTS:lume_render_src_plugin>
-)
+# ============================================================================
+# 创建共享库
+# ============================================================================
+# 使用 $<TARGET_OBJECTS:...> 将 OBJECT 库的所有 .o 文件链接到共享库
+# 【关键】rofs_render_64.o 必须在其他对象之后链接
+# 这样链接器能从前面的对象找到符号定义
+if(RENDER_EMBEDDED_ASSETS_ENABLED AND EXISTS "${RENDER_ASSET_OBJECT}")
+    add_library(lume_render SHARED
+        $<TARGET_OBJECTS:lume_render_src>
+        $<TARGET_OBJECTS:lume_render_src_plugin>
+        $<TARGET_OBJECTS:lume_render_rofs>  # 添加预编译的资产文件
+    )
+else()
+    add_library(lume_render SHARED
+        $<TARGET_OBJECTS:lume_render_src>
+        $<TARGET_OBJECTS:lume_render_src_plugin>
+    )
+endif()
+
+# Allow multiple definitions for json functions (also defined in libAGPEngine)
+target_link_options(lume_render PRIVATE "-Wl,--allow-multiple-definition")
 
 target_link_libraries(lume_render PUBLIC
     ${EGL-lib}
     ${GLES-lib}
+    ${hilog-lib}
+    ${rawfile-lib}
     libnative_buffer.so
     libnative_window.so
     LumeBase
+    lume_engine_src
+    # Link libAGPEngine with whole-archive so that RegisterStaticPlugin and
+    # static plugin constructors are linked together
+    "-Wl,--whole-archive"
+    libAGPEngine
+    "-Wl,--no-whole-archive"
 )
 
 # Export include directories

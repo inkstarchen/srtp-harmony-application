@@ -21,6 +21,15 @@
 
 #include "os/ohos/ohos_filesystem.h"
 #include "os/platform.h"
+#include <hilog/log.h>
+
+#undef LOG_TAG
+#undef LOG_DOMAIN
+#define LOG_TAG "PluginRegistry"
+#define LOG_DOMAIN 0
+#define LOGI(...) OH_LOG_Print(LOG_APP, LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) OH_LOG_Print(LOG_APP, LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) OH_LOG_Print(LOG_APP, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
 
 CORE_BEGIN_NAMESPACE()
 PlatformOHOS::PlatformOHOS(PlatformCreateInfo const& createInfo)
@@ -45,10 +54,11 @@ BASE_NS::string PlatformOHOS::RegisterDefaultPaths(IFileManager& fileManager) co
     const BASE_NS::string hapPath = plat_.hapPath;
     const BASE_NS::string bundleName = plat_.bundleName;
     const BASE_NS::string moduleName = plat_.moduleName;
+    LOGI("Registering hapFilesystem");
     auto resManager = plat_.resourceManager;
     fileManager.RegisterFilesystem(
         "OhosRawFile", IFilesystem::Ptr { new Core::OhosFilesystem(hapPath, bundleName, moduleName, resManager) });
-    CORE_LOG_I("Registered hapFilesystem by Platform: 'hapPath:%s bundleName:%s moduleName:%s'", hapPath.c_str(),
+    LOGI("Registered hapFilesystem by Platform: 'hapPath:%{public}s bundleName:%{public}s moduleName:%{public}s'", hapPath.c_str(),
         bundleName.c_str(), moduleName.c_str());
     const BASE_NS::string coreDirectory = "file://" + plat_.coreRootPath;
     return coreDirectory;
@@ -60,10 +70,12 @@ void PlatformOHOS::RegisterPluginLocations(IPluginRegister& registry)
 {
     constexpr BASE_NS::string_view fileproto("file://");
     if (!plat_.corePluginPath.empty()) {
+        LOGI("Registering core plugin path: %s", plat_.corePluginPath.c_str());
         registry.RegisterPluginPath(fileproto + plat_.corePluginPath);
     }
     if (!plat_.appPluginPath.empty()) {
         if (plat_.appPluginPath != plat_.corePluginPath) {
+            LOGI("Registering app plugin path: %s", plat_.appPluginPath.c_str());
             registry.RegisterPluginPath(fileproto + plat_.appPluginPath);
         }
     }

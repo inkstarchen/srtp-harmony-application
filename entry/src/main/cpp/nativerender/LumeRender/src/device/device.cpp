@@ -636,15 +636,18 @@ RenderHandleReference Device::CreateSwapchainImpl(
     auto& swapchainData = swapchains_[swapchainIdx];
     swapchainData = {};
     swapchainData.swapchain = CreateDeviceSwapchain(swapchainCreateInfo);
+    LOGI("Device::CreateSwapchainImpl - swapchain=%p, isValid=%d",
+        swapchainData.swapchain.get(), swapchainData.swapchain ? swapchainData.swapchain->IsValid() : false);
     if ((!swapchainData.swapchain) || (!swapchainData.swapchain->IsValid())) {
+        LOGE("Invalid swapchain created and cannot be used");
         Deactivate();
         ConfigureDefaultSwapchainPod(renderContext_, false);
-        PLUGIN_LOG_E("Invalid swapchain created and cannot be used");
         return {};
     }
 
     {
         vector<unique_ptr<GpuImage>> swapchainGpuImages = CreateGpuImageViews(*swapchainData.swapchain);
+        LOGI("Device::CreateSwapchainImpl - swapchainGpuImages size=%zu", swapchainGpuImages.size());
         Deactivate();
 
         // create shallow handle with handle in the name
@@ -658,6 +661,9 @@ RenderHandleReference Device::CreateSwapchainImpl(
                              to_hex(swapchainData.swapchain->GetSurfaceHandle()) + '_';
         swapchainData.remappableSwapchainImage =
             gpuResourceMgr_->CreateSwapchainImage(finalReplaceHandle, name, shallowDesc);
+        LOGI("Device::CreateSwapchainImpl - remappableSwapchainImage valid=%d, handle=%llx",
+            static_cast<bool>(swapchainData.remappableSwapchainImage),
+            swapchainData.remappableSwapchainImage.GetHandle().id);
         PLUGIN_ASSERT(SwapchainData::MAX_IMAGE_VIEW_COUNT >= static_cast<uint32_t>(swapchainGpuImages.size()));
         swapchainData.imageViewCount = static_cast<uint32_t>(swapchainGpuImages.size());
         for (uint32_t idx = 0; idx < swapchainGpuImages.size(); ++idx) {
@@ -730,7 +736,7 @@ void Device::DestroySwapchainImpl(const RenderHandleReference& handle)
     // NOTE: the destruction should be deferred, but we expect this to be called from rendering thread
     if (isRenderbackendRunning_) {
         // NOTE: we are currently only sending error message and not trying to prevent
-        PLUGIN_LOG_E("DestroySwapchain called while RenderFrame is running");
+        LOGE("DestroySwapchain called while RenderFrame is running");
     }
 
     if (handle) {
@@ -845,6 +851,11 @@ uint32_t Device::GetCommandBufferingCount() const
 
 bool Device::HasSwapchain() const
 {
+    if(swapchains_.empty()){
+        LOGI("No swapchain found");
+    }else{
+        LOGI("Swapchain found");
+    }
     return (!swapchains_.empty());
 }
 

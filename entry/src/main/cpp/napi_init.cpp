@@ -1,4 +1,8 @@
 #include "napi/native_api.h"
+#include <vector>
+
+// Forward declaration for FileSystemTest methods
+// void RegisterFileSystemTestMethods(std::vector<napi_property_descriptor>& props);
 
 static napi_value Add(napi_env env, napi_callback_info info)
 {
@@ -29,10 +33,15 @@ static napi_value Add(napi_env env, napi_callback_info info)
 EXTERN_C_START
 static napi_value Init(napi_env env, napi_value exports)
 {
-    napi_property_descriptor desc[] = {
-        { "add", nullptr, Add, nullptr, nullptr, nullptr, napi_default, nullptr }
-    };
-    napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
+    std::vector<napi_property_descriptor> desc;
+
+    // Existing add function
+    desc.push_back({ "add", nullptr, Add, nullptr, nullptr, nullptr, napi_default, nullptr });
+
+    // Register FileSystem test methods
+    // RegisterFileSystemTestMethods(desc);
+
+    napi_define_properties(env, exports, desc.size(), desc.data());
     return exports;
 }
 EXTERN_C_END

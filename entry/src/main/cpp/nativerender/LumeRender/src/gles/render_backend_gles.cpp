@@ -753,6 +753,7 @@ RenderBackendGLES::~RenderBackendGLES()
 
 void RenderBackendGLES::Present(const RenderBackendBackBufferConfiguration& backBufferConfig)
 {
+    LOGI("RenderBackendGLES::Present");
     if (!backBufferConfig.swapchainData.empty()) {
         if (device_.HasSwapchain()) {
 #if (RENDER_PERF_ENABLED == 1)
@@ -781,6 +782,7 @@ void RenderBackendGLES::Present(const RenderBackendBackBufferConfiguration& back
                         (GLint)sdesc.width, 0, GL_COLOR_BUFFER_BIT, GL_NEAREST);
                     device_.BindReadFrameBuffer(0);
 #endif
+                    LOGI("RenderBackendGLES::Present Swapchain ");
                     device_.SwapBuffers(*swp);
                 }
             }
@@ -788,6 +790,8 @@ void RenderBackendGLES::Present(const RenderBackendBackBufferConfiguration& back
             commonCpuTimers_.present.End();
 #endif
         }
+    }else{
+        LOGI("RenderBackendGLES::Present No Swapchain");
     }
 }
 

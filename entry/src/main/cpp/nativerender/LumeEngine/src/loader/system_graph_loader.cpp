@@ -43,6 +43,12 @@
 #include <core/property/intf_property_handle.h>
 #include <core/property/property.h>
 #include <core/property/property_types.h>
+#include <hilog/log.h>
+
+#define LOG_TAG "LumeRenderer"
+#define LOGI(...) OH_LOG_Print(LOG_APP, LOG_INFO, 0, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) OH_LOG_Print(LOG_APP, LOG_ERROR, 0, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) OH_LOG_Print(LOG_APP, LOG_DEBUG, 0, LOG_TAG, __VA_ARGS__)
 
 #define JSON_IMPL
 #include <core/json/json.h>
@@ -396,6 +402,7 @@ ISystemGraphLoader::LoadResult LoadFromNullTerminated(const string_view jsonStri
 
 SystemGraphLoader::LoadResult SystemGraphLoader::Load(const string_view uri, IEcs& ecs)
 {
+    LOGI("Loading system graph from '%s'", string(uri).c_str());
     IFile::Ptr file = fileManager_.OpenFile(uri);
     if (!file) {
         CORE_LOG_D("Error loading '%s'", string(uri).c_str());

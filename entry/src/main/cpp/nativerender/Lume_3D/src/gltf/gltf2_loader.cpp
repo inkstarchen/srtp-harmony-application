@@ -35,6 +35,16 @@
 #include "gltf/gltf2_util.h"
 #include "util/json_util.h"
 #include "util/log.h"
+#include <hilog/log.h>
+
+#undef LOG_TAG
+#undef LOG_DOMAIN
+#define LOG_TAG "gltf2"
+#define LOG_DOMAIN 0
+#define LOGI(...) OH_LOG_Print(LOG_APP, LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) OH_LOG_Print(LOG_APP, LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) OH_LOG_Print(LOG_APP, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+
 
 namespace {
 #include <3d/shaders/common/3d_dm_structures_common.h>
@@ -2449,7 +2459,7 @@ void FinalizeGltfContent(LoadResult& loadResult)
         }
 
         if (hasDuplicate) {
-            CORE_LOG_D("Optimizing out duplicate image from glTF: %s/images/%zu",
+            LOGD("Optimizing out duplicate image from glTF: %{public}s/images/%zu",
                 loadResult.data->defaultResources.c_str(), imageIndex);
         }
     }
@@ -2524,7 +2534,7 @@ bool AnimationChannels(LoadResult& loadResult, const json::value& jsonData, Anim
                 }
 
                 if (!GetAnimationPath(path, animationTrack.channel.path)) {
-                    CORE_LOG_W("Skipping unsupported animation path: %s", path.c_str());
+                    CORE_LOG_W("Skipping unsupported animation path: %{public}s", path.c_str());
                     return false;
                 }
             }
@@ -2644,7 +2654,7 @@ bool GltfUsedExtension(LoadResult& loadResult, const json::value& jsonData)
             const auto& val = extension.string_;
             if (std::find(std::begin(SUPPORTED_EXTENSIONS), std::end(SUPPORTED_EXTENSIONS), val) ==
                 std::end(SUPPORTED_EXTENSIONS)) {
-                CORE_LOG_W("glTF uses unsupported extension: %s", string(val).c_str());
+                CORE_LOG_W("glTF uses unsupported extension: %{public}s", string(val).c_str());
             }
         }
 
@@ -2788,14 +2798,18 @@ bool LoadGLB(LoadResult& loadResult, IFile& file)
 {
     GLBHeader header;
     uint64_t bytes = file.Read(&header, sizeof(GLBHeader));
+    LOGI("LoadGLB: Read header, bytes=%{public}lu, magic=0x%{public}x, version=%{public}u, length=%{public}u",
+         (unsigned long)bytes, header.magic, header.version, header.length);
 
     if (bytes < sizeof(GLBHeader)) {
         // cannot read header
+        LOGE("LoadGLB: Failed to read header, bytes=%{public}lu < %{public}zu", (unsigned long)bytes, sizeof(GLBHeader));
         RETURN_WITH_ERROR(loadResult, "Parsing GLTF failed: expected GLB object");
     }
 
     if (header.magic != GLTF_MAGIC) {
         // 0x46546C67 >> "glTF"
+        LOGE("LoadGLB: Invalid magic 0x%{public}x != 0x%{public}x (glTF)", header.magic, GLTF_MAGIC);
         RETURN_WITH_ERROR(loadResult, "Parsing GLTF failed: expected GLB header");
     }
 
@@ -2803,27 +2817,35 @@ bool LoadGLB(LoadResult& loadResult, IFile& file)
         RETURN_WITH_ERROR(loadResult, "Parsing GLTF failed: GLB header definition for size is larger than file size");
     } else {
         loadResult.data->size = header.length;
+        LOGI("LoadGLB: Set data size=%{public}u", loadResult.data->size);
     }
 
     if (header.version != 2) {
+        LOGE("LoadGLB: Invalid version %{public}u != 2", header.version);
         RETURN_WITH_ERROR(loadResult, "Parsing GLTF failed: expected GLB version 2");
     }
 
     GLBChunk chunkJson;
     bytes = file.Read(&chunkJson, sizeof(GLBChunk));
+    LOGI("LoadGLB: Read chunk, bytes=%{public}lu, chunkType=0x%{public}x, chunkLength=%{public}u",
+         (unsigned long)bytes, chunkJson.chunkType, chunkJson.chunkLength);
 
     if (bytes < sizeof(GLBChunk)) {
         // cannot read chunk data
+        LOGE("LoadGLB: Failed to read chunk, bytes=%{public}lu < %{public}zu", (unsigned long)bytes, sizeof(GLBChunk));
         RETURN_WITH_ERROR(loadResult, "Parsing GLTF failed: expected GLB chunk");
     }
 
     if (chunkJson.chunkType != static_cast<uint32_t>(ChunkType::JSON) || chunkJson.chunkLength == 0 ||
         (chunkJson.chunkLength % 4) || chunkJson.chunkLength > (header.length - sizeof(header) - sizeof(chunkJson))) {
         // first chunk have to be JSON
+        LOGE("LoadGLB: Invalid JSON chunk, type=0x%{public}x (expected 0x%{public}x), length=%{public}u",
+             chunkJson.chunkType, static_cast<uint32_t>(ChunkType::JSON), chunkJson.chunkLength);
         RETURN_WITH_ERROR(loadResult, "Parsing GLTF failed: expected JSON chunk");
     }
 
     const size_t dataOffset = chunkJson.chunkLength + sizeof(GLBHeader) + 2 * sizeof(GLBChunk);
+    LOGI("LoadGLB: Data offset=%{public}zu", dataOffset);
 
     if (dataOffset > loadResult.data->size) {
         RETURN_WITH_ERROR(loadResult, "Parsing GLTF failed: data part offset is out of file");
@@ -2839,19 +2861,27 @@ bool LoadGLB(LoadResult& loadResult, IFile& file)
     }
 
     bytes = file.Read(reinterpret_cast<void*>(jsonString.data()), chunkJson.chunkLength);
+    LOGI("LoadGLB: Read JSON data, bytes=%{public}lu, length=%{public}zu", (unsigned long)bytes, chunkJson.chunkLength);
+
+    // Print JSON content (truncate if too long for log)
+    LOGI("LoadGLB: JSON content (%{public}zu bytes): %{public}s", jsonString.length(), jsonString.data());
 
     if (bytes < chunkJson.chunkLength) {
         // cannot read chunk data
+        LOGE("LoadGLB: JSON chunk size mismatch, bytes=%{public}lu < %{public}u", (unsigned long)bytes, chunkJson.chunkLength);
         RETURN_WITH_ERROR(loadResult, "Parsing GLTF failed: JSON chunk size not match");
     }
 
     json::value o = json::parse(jsonString.data());
     if (!o) {
+        LOGE("LoadGLB: Failed to parse JSON");
         RETURN_WITH_ERROR(loadResult, "Parsing GLTF failed: invalid JSON");
     }
 
+    LOGI("LoadGLB: JSON parsed successfully, calling ParseGLTF");
     return ParseGLTF(loadResult, o);
 }
+
 } // namespace
 
 // Internal loading function.
@@ -2863,13 +2893,14 @@ LoadResult LoadGLTF(IFileManager& fileManager, const string_view uri)
 
     IFile::Ptr file = fileManager.OpenFile(uri);
     if (!file) {
-        CORE_LOG_D("Error loading '%s'", string(uri).data());
+        LOGD("Error loading '%{public}s'", string(uri).data());
         return LoadResult("Failed to open file.");
     }
 
     const uint64_t fileLength = file->GetLength();
+    LOGI("LoadGLTF: File size=%{public}lu", (unsigned long)fileLength);
     if (fileLength > SIZE_MAX) {
-        CORE_LOG_D("Error loading '%s'", string(uri).data());
+        LOGD("Error loading '%{public}s'", string(uri).data());
         return LoadResult("Failed to open file, file size larger than SIZE_MAX");
     }
 

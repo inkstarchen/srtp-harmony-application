@@ -31,6 +31,15 @@ CORE_BEGIN_NAMESPACE()
 using BASE_NS::string;
 using BASE_NS::string_view;
 using BASE_NS::vector;
+#include <hilog/log.h>
+
+#undef LOG_TAG
+#undef LOG_DOMAIN
+#define LOG_TAG "Lume_Common"
+#define LOG_DOMAIN 0
+#define LOGI(...) OH_LOG_Print(LOG_APP, LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) OH_LOG_Print(LOG_APP, LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) OH_LOG_Print(LOG_APP, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
 
 IDirectory::Entry MemoryFilesystem::GetEntry(const string_view path)
 {
@@ -42,6 +51,8 @@ IDirectory::Entry MemoryFilesystem::GetEntry(const string_view path)
 
 IFile::Ptr MemoryFilesystem::OpenFile(const string_view path, const IFile::Mode mode)
 {
+
+    LOGI("OpenFile: Memory %{public}s", path.data());
     if (auto const pos = memoryFiles_.find(path); pos != memoryFiles_.end()) {
         auto storage = pos->second.lock();
         if (storage) {

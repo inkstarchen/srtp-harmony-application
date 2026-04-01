@@ -21,12 +21,49 @@ option(CORE_LOG_ENABLED "Enable core logging" ON)
 option(USE_STB_IMAGE "Use stb image" ON)
 # option(USE_LIB_PNG_JPEG "Use lib png jpeg" OFF)
 option(LUME_OHOS_BUILD "Build for OHOS platform" ON)
+option(CORE_EMBEDDED_ASSETS_ENABLED "Enable embedded assets for core engine" ON)
 
 # Set library names
 set(LIB_ENGINE_CORE "AGPEngine")
 set(LIB_RENDER "AGPRender")
 set(LIB_CORE3D "AGPCore3D")
 set(CORE_ROFS "rofs")
+
+# ============================================================================
+# 【嵌入式资产配置】
+# ============================================================================
+#
+# 预编译资产文件配置
+#
+# 符号名称:
+#   - BINARYDATAFORCORE: 指向核心资产数据的指针
+#   - SIZEOFDATAFORCORE: 核心资产数据的大小
+#
+# 协议名称:
+#   - corerofs:// 用于访问嵌入的核心资产
+#   - engine:// 映射到 corerofs://core/
+#
+# 依赖关系:
+#   shaders:// → engine://shaders/
+#   engine:// → corerofs://core/
+#
+# 使用方式:
+#   1. 使用 LumeAssetCompiler 编译资产目录:
+#      LumeAssetCompiler -arch aarch64 assets/core output_dir BINARYDATAFORCORE SIZEOFDATAFORCORE
+#   2. 将生成的 .o 文件放到 assets/ 目录下，命名为 rofs_core_64.o (64位)
+#
+set(CORE_ASSET_OBJECT "${LUME_ENGINE_ROOT}/assets/rofscore_64.o")
+
+# 打印配置信息
+if(CORE_EMBEDDED_ASSETS_ENABLED)
+    if(EXISTS "${CORE_ASSET_OBJECT}")
+        message(STATUS "LumeEngine: Using embedded assets from ${CORE_ASSET_OBJECT}")
+    else()
+        message(WARNING "LumeEngine: Embedded assets enabled but file not found: ${CORE_ASSET_OBJECT}")
+    endif()
+else()
+    message(STATUS "LumeEngine: Embedded assets disabled")
+endif()
 
 # ============================================================================
 # Config: lume_base_api
@@ -178,9 +215,14 @@ if(USE_STB_IMAGE)
 endif()
 
 # ============================================================================
-# Create static library: lume_engine_src
+# 库构建
 # ============================================================================
-add_library(lume_engine_src STATIC ${LUME_ENGINE_SOURCES})
+# 【重要】使用 OBJECT 库而不是 STATIC 库
+# OBJECT 库只编译源文件为 .o 文件，不打包成 .a 存档
+# 这样 $<TARGET_OBJECTS:...> 生成器表达式才能正确工作
+
+# Create OBJECT library for engine sources (not STATIC!)
+add_library(lume_engine_src OBJECT ${LUME_ENGINE_SOURCES})
 
 target_include_directories(lume_engine_src PUBLIC
     ${LUME_ENGINE_CONFIG_INCLUDE_DIRS}
@@ -196,26 +238,54 @@ target_compile_definitions(lume_engine_src PUBLIC
     ${LUME_DEFAULT_DEFINITIONS}
     __OHOS_PLATFORM__
     CORE_PLUGIN=1
+    # Use runtime registration approach (not compiler-generated sections)
+    # This must match the approach used by lume_render_src and lume_3d_src
+    CORE_USE_COMPILER_GENERATED_STATIC_LIST=0
+    # 【重要】启用嵌入式资产宏
+    # 这会使 engine.cpp 中的 #if (CORE_EMBEDDED_ASSETS_ENABLED == 1) 生效
+    CORE_EMBEDDED_ASSETS_ENABLED=1
 )
 
-# Link LumeBase for header dependencies
-target_link_libraries(lume_engine_src PUBLIC LumeBase)
+# OBJECT 库不能直接链接其他库，只能继承 include 目录和编译定义
+# 依赖的链接在最终的库层面完成
+
+# ============================================================================
+# 【关键】创建 IMPORTED OBJECT 库包含预编译的 rofs_core_64.o
+# ============================================================================
+# CMake 的 target_sources 无法正确处理预编译的 .o 文件
+# 正确方式：创建 IMPORTED OBJECT 库，通过 IMPORTED_OBJECTS 属性指定 .o 文件
+#
+if(CORE_EMBEDDED_ASSETS_ENABLED AND EXISTS "${CORE_ASSET_OBJECT}")
+    # 创建 IMPORTED OBJECT 库来包含预编译的资产文件
+    add_library(lume_engine_rofs OBJECT IMPORTED GLOBAL)
+    set_target_properties(lume_engine_rofs PROPERTIES
+        IMPORTED_OBJECTS "${CORE_ASSET_OBJECT}"
+    )
+    message(STATUS "LumeEngine: Creating IMPORTED OBJECT library for embedded assets: ${CORE_ASSET_OBJECT}")
+else()
+    message(WARNING "LumeEngine: Embedded assets enabled but object file not found: ${CORE_ASSET_OBJECT}")
+endif()
 
 # Find OHOS libraries
 if(LUME_OHOS_BUILD)
     find_library(hilog-lib hilog_ndk.z)
-
-    target_link_libraries(lume_engine_src PUBLIC
-        ${hilog-lib}
-    )
 endif()
 
 # ============================================================================
 # Create static library: libAGPEngine
 # ============================================================================
-add_library(libAGPEngine STATIC
-    $<TARGET_OBJECTS:lume_engine_src>
-)
+# 使用 $<TARGET_OBJECTS:...> 将 OBJECT 库的所有 .o 文件链接
+# 【关键】rofs_core_64.o 必须在其他对象之后链接
+if(CORE_EMBEDDED_ASSETS_ENABLED AND EXISTS "${CORE_ASSET_OBJECT}")
+    add_library(libAGPEngine STATIC
+        $<TARGET_OBJECTS:lume_engine_src>
+        $<TARGET_OBJECTS:lume_engine_rofs>  # 添加预编译的资产文件
+    )
+else()
+    add_library(libAGPEngine STATIC
+        $<TARGET_OBJECTS:lume_engine_src>
+    )
+endif()
 
 target_include_directories(libAGPEngine PUBLIC
     ${LUME_ENGINE_CONFIG_INCLUDE_DIRS}
@@ -233,6 +303,11 @@ target_compile_definitions(libAGPEngine PUBLIC
 
 # Link LumeBase for header dependencies
 target_link_libraries(libAGPEngine PUBLIC LumeBase)
+
+# Link OHOS libraries
+if(LUME_OHOS_BUILD)
+    target_link_libraries(libAGPEngine PUBLIC ${hilog-lib})
+endif()
 
 
 # ============================================================================

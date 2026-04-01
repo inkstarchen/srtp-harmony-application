@@ -63,19 +63,32 @@ typedef intptr_t EGLAttrib;
 
 #include "gles/gl_functions.h"
 #include "util/log.h"
+#include <hilog/log.h>
 
+#undef LOG_TAG
+#undef LOG_DOMAIN
+#define LOG_TAG "PluginRegistry"
+#define LOG_DOMAIN 0
+#define LOGI(...) OH_LOG_Print(LOG_APP, LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) OH_LOG_Print(LOG_APP, LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) OH_LOG_Print(LOG_APP, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+
+
+// Define GL function pointers as uninitialized global variables
+// Uninitialized globals go to .bss section which is writable
+// Initialized globals (even with nullptr) might go to read-only section
 #define declare(a, b) \
     extern "C" {      \
-    a b = nullptr;    \
+        a b = nullptr;    \
     }
 // NOTE: intentional re-include of gl_functions.h
 #undef GLES_FUNCTIONS_H
 #include "gles/gl_functions.h"
+// Define EGL function pointers
 #define declare(a, b) \
     extern "C" {      \
     a b = nullptr;    \
     }
-// NOTE: intentional re-include of gl_functions.h
 #undef EGL_FUNCTIONS_H
 #include "gles/egl_functions.h"
 #include "gles/surface_information.h"
@@ -159,7 +172,7 @@ const char* EglErrorStr(EGLint aError)
 
     static char error[64];
     if (sprintf_s(error, sizeof(error), "Unknown error %x", aError) < 0) {
-        PLUGIN_LOG_E("EglErrorStr: sprintf_s failed");
+        LOGE("EglErrorStr: sprintf_s failed");
     }
     return error;
 }
@@ -168,7 +181,7 @@ void CheckEGLError(const char* const file, int line)
 {
     EGLint error = eglGetError();
     if (error != EGL_SUCCESS) {
-        PLUGIN_LOG_E("eglGetError failed : %s (%s %d)", EglErrorStr(error), file, line);
+        LOGE("eglGetError failed : %s (%s %d)", EglErrorStr(error), file, line);
         PLUGIN_ASSERT(false);
     }
 }
@@ -177,7 +190,7 @@ void CheckEGLError2(const char* const file, int line)
 {
     EGLint error = eglGetError();
     if (error != EGL_SUCCESS) {
-        PLUGIN_LOG_E("eglGetError failed : %s (%s %d)", EglErrorStr(error), file, line);
+        LOGE("eglGetError failed : %s (%s %d)", EglErrorStr(error), file, line);
     }
 }
 
@@ -577,7 +590,7 @@ void EGLState::FillSurfaceInfo(const EGLDisplay display, const EGLSurface surfac
     if (colorspace == 0) {
         // surface is linear (no conversion made during read/write)
         // data should be srgb though.
-        PLUGIN_LOG_E("EGL_GL_COLORSPACE query failed (or not available). Defaulting to linear buffer with srgb data");
+        LOGE("EGL_GL_COLORSPACE query failed (or not available). Defaulting to linear buffer with srgb data");
         res.srgb = false;
     }
 }
@@ -687,7 +700,7 @@ void EGLState::CreateContext(const BackendExtraGLES* backendConfig)
     CHECK_EGL_ERROR();
 
     if (plat_.context == EGL_NO_CONTEXT) {
-        PLUGIN_LOG_E("eglCreateContext failed : %s", EglErrorStr(eglGetError()));
+        LOGE("eglCreateContext failed : %s", EglErrorStr(eglGetError()));
         PLUGIN_ASSERT(false);
         return;
     }
@@ -739,7 +752,7 @@ bool EGLState::VerifyVersion()
 
     if (fail) {
         // restore contexts and cleanup.
-        PLUGIN_LOG_E(
+        LOGE(
             "Could not to Initialize required OpenGL ES version [%d.%d] [%s]", glMajor, glMinor, string.data());
         RestoreContext();
         // destroy the dummy surface also.
@@ -764,7 +777,7 @@ bool EGLState::CreateContext(DeviceCreateInfo const& createInfo)
         EGLint numConfig = 0;
         if (!eglGetConfigs(plat_.display, nullptr, 0, &numConfig) && eglGetError() == EGL_NOT_INITIALIZED) {
             if (!eglInitialize(plat_.display, &major, &minor)) {
-                PLUGIN_LOG_E("EGL initialization failed");
+                LOGE("EGL initialization failed");
                 CHECK_EGL_ERROR();
                 PLUGIN_ASSERT(false);
                 return false;
@@ -866,20 +879,18 @@ bool EGLState::CreateContext(DeviceCreateInfo const& createInfo)
 
 void EGLState::GlInitialize()
 {
-#define getter(a, b)                                \
-    b = reinterpret_cast<a>(eglGetProcAddress(#b)); \
-    if (!b) {                                       \
-        PLUGIN_LOG_E("Missing %s\n", #b);           \
-    }
+// #define getter(a, b)                                                    \
+//     a b = reinterpret_cast<a>(eglGetProcAddress(#b));                                                         \
+//     LOGI("GL func ptr after null: %{public}s,addr=%{public}p, value=%{public}p", #b, (void*)&b,(void*)b);
 
-#define declare(a, b) getter(a, b)
+// #define declare(a, b) getter(a, b)
 // NOTE: intentional re-include of gl_functions.h
-#undef GLES_FUNCTIONS_H
-#include "gles/gl_functions.h"
+// #undef GLES_FUNCTIONS_H
+// #include "gles/gl_functions.h"
 // NOTE: intentional re-include of egl_functions.h
-#define declare(a, b) getter(a, b)
-#undef EGL_FUNCTIONS_H
-#include "gles/egl_functions.h"
+// #define declare(a, b) getter(a, b)
+// #undef EGL_FUNCTIONS_H
+// #include "gles/egl_functions.h"
     if (!HasExtension("EGL_ANDROID_get_native_client_buffer")) {
         eglGetNativeClientBufferANDROID = nullptr;
     }
@@ -1036,6 +1047,9 @@ void* EGLState::ErrorFilter() const
 
 uintptr_t EGLState::CreateSurface(uintptr_t window, uintptr_t /* instance */, bool isSrgb) const noexcept
 {
+    LOGI("EGLState::CreateSurface - window=%p, display=%p, config=%p, isSrgb=%d",
+        (void*)window, (void*)plat_.display, (void*)plat_.config, isSrgb);
+
     // Check if sRGB colorspace is supported by EGL.
     const bool isSurfaceColorspaceSupported = IsSurfaceColorspaceSupported(plat_);
 
@@ -1054,9 +1068,21 @@ uintptr_t EGLState::CreateSurface(uintptr_t window, uintptr_t /* instance */, bo
 
     EGLSurface eglSurface = eglCreateWindowSurface(
         plat_.display, plat_.config, eglWindow, isSurfaceColorspaceSupported ? attribsSrgb : nullptr);
+    if(window == 0){
+        LOGE("WINDOW IS 0");
+    }
+    if(plat_.display == EGL_NO_DISPLAY){
+        LOGE("DISPLAY IS NO DISPLAY");
+    }
+    if(plat_.config == nullptr){
+        LOGE("CONFIG IS NULL");
+    }
     if (eglSurface == EGL_NO_SURFACE) {
         EGLint error = eglGetError();
-        PLUGIN_LOG_E("eglCreateWindowSurface failed (with null attributes): %d", error);
+        LOGE("eglCreateWindowSurface failed (error=0x%x), window=%p, display=%p, config=%p",
+            error, (void*)window, (void*)plat_.display, (void*)plat_.config);
+    } else {
+        LOGI("eglCreateWindowSurface SUCCESS, surface=%p", (void*)eglSurface);
     }
     return reinterpret_cast<uintptr_t>(eglSurface);
 }
@@ -1080,7 +1106,7 @@ bool EGLState::GetSurfaceInformation(
     EGLint configId;
     // Get configId from surface
     if (eglQuerySurface(display, surface, EGL_CONFIG_ID, &configId) == false) {
-        PLUGIN_LOG_E("EGLState::GetSurfaceInformation: Could not fetch surface config_id.");
+        LOGE("EGLState::GetSurfaceInformation: Could not fetch surface config_id.");
         return false;
     }
 
@@ -1088,7 +1114,7 @@ bool EGLState::GetSurfaceInformation(
     EGLint numconfigs = 0;
     EGLint attrs[] = { EGL_CONFIG_ID, configId, EGL_NONE };
     if (eglChooseConfig(display, attrs, &config, 1, &numconfigs) == false) {
-        PLUGIN_LOG_E("EGLState::GetSurfaceInformation: Could not fetch surface config.");
+        LOGE("EGLState::GetSurfaceInformation: Could not fetch surface config.");
         return false;
     }
 
@@ -1112,8 +1138,10 @@ bool EGLState::GetSurfaceInformation(
 
 void EGLState::SwapBuffers(const SwapchainGLES& swapchain)
 {
+    LOGI("EGLState::SwapBuffers: Swapping buffers");
     SetContext(&swapchain);
     const auto& platSwapchain = static_cast<const SwapchainPlatformDataGL&>(swapchain.GetPlatformData());
+    LOGI("EGLState::SwapBuffers: Swapping buffers for surface %{public}p", platSwapchain.surface);
     eglSwapBuffers(plat_.display, (EGLSurface)platSwapchain.surface);
 }
 } // namespace EGLHelpers

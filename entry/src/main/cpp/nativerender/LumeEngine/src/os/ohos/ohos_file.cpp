@@ -28,6 +28,15 @@
 #include <core/io/intf_file.h>
 #include <core/log.h>
 #include <core/namespace.h>
+#include <hilog/log.h>
+
+#undef LOG_TAG
+#undef LOG_DOMAIN
+#define LOG_TAG "Lume_Common"
+#define LOG_DOMAIN 0
+#define LOGI(...) OH_LOG_Print(LOG_APP, LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) OH_LOG_Print(LOG_APP, LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) OH_LOG_Print(LOG_APP, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
 
 CORE_BEGIN_NAMESPACE()
 using BASE_NS::CloneData;
@@ -66,13 +75,13 @@ bool OhosFileDirectory::IsDir(BASE_NS::string_view path, BASE_NS::vector<BASE_NS
 {
     NativeResourceManager* resMgr = dirResMgr_->GetResMgr();
     if (!resMgr) {
-        CORE_LOG_E("ResourceManager is null");
+        LOGE("ResourceManager is null");
         return false;
     }
 
     RawDir* rawDir = OH_ResourceManager_OpenRawDir(resMgr, path.data());
     if (!rawDir) {
-        CORE_LOG_E("OpenRawDir failed, path:%s", path.data());
+        LOGE("OpenRawDir failed, path:%s", path.data());
         return false;
     }
 
@@ -86,7 +95,7 @@ bool OhosFileDirectory::IsDir(BASE_NS::string_view path, BASE_NS::vector<BASE_NS
     OH_ResourceManager_CloseRawDir(rawDir);
 
     if (fileList.empty()) {
-        CORE_LOG_E("GetRawFileList empty, path:%s", path.data());
+        LOGE("GetRawFileList empty, path:%s", path.data());
         return false;
     }
     return true;
@@ -166,6 +175,7 @@ OhosFile::OhosFile(BASE_NS::refcnt_ptr<OhosResMgr> resMgr) : fileResMgr_(resMgr)
 
 void OhosFile::UpdateStorage(std::shared_ptr<OhosFileStorage> buffer)
 {
+
     buffer_ = BASE_NS::move(buffer);
 }
 
@@ -232,8 +242,10 @@ std::shared_ptr<OhosFileStorage> OhosFile::Open(BASE_NS::string_view rawFile)
 {
     BASE_NS::unique_ptr<uint8_t[]> data;
     size_t dataLen = 0;
+    LOGI("OpenRawFile start, filename:%{public}s", rawFile.data());
     if (OpenRawFile(rawFile, dataLen, data)) {
         buffer_->SetBuffer(BASE_NS::move(data), static_cast<uint64_t>(dataLen));
+        LOGI("OpenRawFile success, filename:%{public}s, datalenth:%{public}zu", rawFile.data(), dataLen);
         return buffer_;
     }
     return nullptr;
@@ -243,7 +255,7 @@ bool OhosFile::OpenRawFile(BASE_NS::string_view uriIn, size_t& dataLen, BASE_NS:
 {
     NativeResourceManager* resMgr = fileResMgr_->GetResMgr();
     if (!resMgr) {
-        CORE_LOG_E("ResourceManager is null");
+        LOGE("ResourceManager is null");
         return false;
     }
 
@@ -255,13 +267,13 @@ bool OhosFile::OpenRawFile(BASE_NS::string_view uriIn, size_t& dataLen, BASE_NS:
 
     RawFile* rawFile = OH_ResourceManager_OpenRawFile(resMgr, path);
     if (!rawFile) {
-        CORE_LOG_E("OpenRawFile failed, path:%s", path);
+        LOGE("OpenRawFile failed, path:%s", path);
         return false;
     }
 
     dataLen = static_cast<size_t>(OH_ResourceManager_GetRawFileSize(rawFile));
     if (dataLen == 0) {
-        CORE_LOG_E("RawFile size is 0, path:%s", path);
+        LOGE("RawFile size is 0, path:%s", path);
         OH_ResourceManager_CloseRawFile(rawFile);
         return false;
     }
@@ -271,7 +283,7 @@ bool OhosFile::OpenRawFile(BASE_NS::string_view uriIn, size_t& dataLen, BASE_NS:
     OH_ResourceManager_CloseRawFile(rawFile);
 
     if (readLen != static_cast<int>(dataLen)) {
-        CORE_LOG_E("ReadRawFile failed, expected:%zu, actual:%d, path:%s", dataLen, readLen, path);
+        LOGE("ReadRawFile failed, expected:%zu, actual:%d, path:%s", dataLen, readLen, path);
         dest.reset();
         dataLen = 0;
         return false;

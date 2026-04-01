@@ -32,6 +32,15 @@
 #include "file_manager.h"
 #include "path_tools.h"
 #include "proxy_directory.h"
+#include <hilog/log.h>
+
+#undef LOG_TAG
+#undef LOG_DOMAIN
+#define LOG_TAG "Lume_Common"
+#define LOG_DOMAIN 0
+#define LOGI(...) OH_LOG_Print(LOG_APP, LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) OH_LOG_Print(LOG_APP, LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) OH_LOG_Print(LOG_APP, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
 
 CORE_BEGIN_NAMESPACE()
 using BASE_NS::move;
@@ -97,6 +106,7 @@ IDirectory::Entry ProxyFilesystem::GetEntry(const string_view path)
 
 IFile::Ptr ProxyFilesystem::OpenFile(const string_view path, const IFile::Mode mode)
 {
+    LOGI("OpenFile: ProxyFilesytem %{public}s", path.data());
     auto normalizedPath = NormalizePath(path);
     if (!normalizedPath.empty()) {
         for (auto&& destination : destinations_) {

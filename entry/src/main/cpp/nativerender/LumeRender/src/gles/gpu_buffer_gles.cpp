@@ -121,10 +121,14 @@ GpuBufferGLES::GpuBufferGLES(Device& device, const GpuBufferDesc& desc)
     const auto oldBind = device_.BoundBuffer(INIT_TARGET);
     device_.BindBuffer(INIT_TARGET, plat_.buffer);
 
-    // check for the extension
-    if (const bool hasBufferStorageEXT = device_.HasExtension("GL_EXT_buffer_storage"); hasBufferStorageEXT) {
+    // check for the extension and function pointer
+    const bool hasBufferStorageEXT = device_.HasExtension("GL_EXT_buffer_storage") && (glBufferStorageEXT != nullptr);
+    LOGI("GpuBufferGLES: HasExtension=%{public}d, glBufferStorageEXT=%{public}p",
+         hasBufferStorageEXT, (void*)glBufferStorageEXT);
+    if (hasBufferStorageEXT) {
         uint32_t flags = MakeFlags(desc.memoryPropertyFlags);
-        glBufferStorageEXT(INIT_TARGET, static_cast<GLsizeiptr>(plat_.alignedByteSize), nullptr, flags);
+        PFNGLBUFFERSTORAGEEXTPROC glBufferStorageEXT_temp = reinterpret_cast<PFNGLBUFFERSTORAGEEXTPROC>((void *)&glBufferStorageEXT);
+        glBufferStorageEXT_temp(INIT_TARGET, static_cast<GLsizeiptr>(plat_.alignedByteSize), nullptr, flags);
         if (isPersistantlyMapped_) {
             // make the persistant mapping..
             flags = flags & (~GL_CLIENT_STORAGE_BIT_EXT); // not valid for map buffer..

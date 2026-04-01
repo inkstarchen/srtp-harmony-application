@@ -143,6 +143,7 @@ static constexpr BASE_NS::Uid APP_THREAD { "b2e8cef3-453a-4651-b564-5190f8b5190d
 static constexpr BASE_NS::Uid IO_QUEUE { "be88e9a0-9cd8-45ab-be48-937953dc258f" };
 static constexpr BASE_NS::Uid JS_RELEASE_THREAD { "3784fa96-b25b-4e9c-bbf1-e897d36f73af" };
 
+#if defined(CORE_DYNAMIC) && (CORE_DYNAMIC == 1)
 template<typename T>
 bool LoadFunc(T &fn, const char *fName, void* handle)
 {
@@ -160,6 +161,7 @@ bool LoadFunc(T &fn, const char *fName, void* handle)
     }
     return true;
 }
+#endif
 
 SceneAdapter::~SceneAdapter()
 {
@@ -172,6 +174,7 @@ SceneAdapter::SceneAdapter()
 
 bool SceneAdapter::LoadEngineLib()
 {
+#if defined(CORE_DYNAMIC) && (CORE_DYNAMIC == 1)
     if (engineInstance_.libHandle_ != nullptr) {
         WIDGET_LOGD("%s, already loaded", __func__);
         return true;
@@ -197,16 +200,29 @@ bool SceneAdapter::LoadEngineLib()
         return false;
     }
     #undef LOAD_FUNC
-
+#else
+    // Static linking mode: functions are linked at compile time, no need to load
+    WIDGET_LOGD("Using static linking mode, skipping dynamic library load");
+#endif
     return true;
 }
 
 bool SceneAdapter::LoadPlugins(const CORE_NS::PlatformCreateInfo& platformCreateInfo)
 {
+#if defined(CORE_DYNAMIC) && (CORE_DYNAMIC == 1)
     if (engineInstance_.libHandle_) {
         WIDGET_LOGI("%s, already loaded", __func__);
         return true;
     }
+#else
+    // Static linking mode: check if already initialized differently
+    static bool pluginsLoaded = false;
+    if (pluginsLoaded) {
+        WIDGET_LOGI("%s, already loaded", __func__);
+        return true;
+    }
+    pluginsLoaded = true;
+#endif
     if (!LoadEngineLib()) {
         return false;
     }
@@ -459,6 +475,7 @@ void SceneAdapter::DeinitRenderThread()
 
 void SceneAdapter::ShutdownPluginRegistry()
 {
+#if defined(CORE_DYNAMIC) && (CORE_DYNAMIC == 1)
     if (engineInstance_.libHandle_ == nullptr) {
         return;
     }
@@ -469,6 +486,10 @@ void SceneAdapter::ShutdownPluginRegistry()
     CORE_NS::CreatePluginRegistry = nullptr;
     CORE_NS::IsDebugBuild = nullptr;
     CORE_NS::GetVersion = nullptr;
+#else
+    // Static linking mode: nothing to unload
+    WIDGET_LOGD("Using static linking mode, no library to unload");
+#endif
 }
 
 void SceneAdapter::PropSync()

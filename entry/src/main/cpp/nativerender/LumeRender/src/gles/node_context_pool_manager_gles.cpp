@@ -385,7 +385,8 @@ void BindToFboMultisampled(GLenum attachType, const BindImage& image, const Bind
         const auto samples = (desc.sampleCountFlags & CORE_SAMPLE_COUNT_8_BIT)
                                  ? 8
                                  : ((desc.sampleCountFlags & CORE_SAMPLE_COUNT_4_BIT) ? 4 : 2);
-        glFramebufferTexture2DMultisampleEXT(
+        PFNGLFRAMEBUFFERTEXTURE2DMULTISAMPLEEXTPROC glFramebufferTexture2DMultisampleEXT_temp = reinterpret_cast<PFNGLFRAMEBUFFERTEXTURE2DMULTISAMPLEEXTPROC>((void *) &glFramebufferTexture2DMultisampleEXT);
+        glFramebufferTexture2DMultisampleEXT_temp(
             GL_FRAMEBUFFER, attachType, plat.type, plat.image, (GLint)image.mipLevel, samples);
 #endif
     } else {

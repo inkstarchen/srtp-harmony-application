@@ -34,6 +34,16 @@
 #endif
 #include "static_plugin_decl.h"
 
+#include <hilog/log.h>
+
+#undef LOG_TAG
+#undef LOG_DOMAIN
+#define LOG_TAG "PluginRegistry"
+#define LOG_DOMAIN 0
+#define LOGI(...) OH_LOG_Print(LOG_APP, LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) OH_LOG_Print(LOG_APP, LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) OH_LOG_Print(LOG_APP, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+
 CORE_BEGIN_NAMESPACE()
 using BASE_NS::array_view;
 using BASE_NS::move;
@@ -95,10 +105,12 @@ __attribute__((visibility("hidden"))) static size_t g_staticPluginListCount = 0;
 
 void RegisterStaticPlugin(const CORE_NS::IPlugin& plugin)
 {
+    LOGI("RegisterStaticPlugin: CALLED! Registering plugin: %{public}s", plugin.name);
     static BASE_NS::vector<const CORE_NS::IPlugin*> gGlobalPlugins;
     gGlobalPlugins.push_back(&plugin);
     g_staticPluginList = gGlobalPlugins.data();
     g_staticPluginListCount = gGlobalPlugins.size();
+    LOGI("RegisterStaticPlugin: g_staticPluginListCount is now: %{public}zu", g_staticPluginListCount);
 }
 #endif
 } // namespace StaticPluginRegistry
@@ -139,21 +151,29 @@ inline bool AllOf(const Container& container, Predicate&& predicate)
 
 void GatherStaticPlugins(vector<LibPlugin>& plugins)
 {
-    CORE_LOG_V("Static plugins:");
+    LOGI("GatherStaticPlugins: Starting...");
 #if defined(CORE_USE_COMPILER_GENERATED_STATIC_LIST) && (CORE_USE_COMPILER_GENERATED_STATIC_LIST == 1)
+    LOGI("GatherStaticPlugins: Using compiler-generated static list approach");
     const array_view<const IPlugin* const> staticPluginRegistry(
         &StaticPluginRegistry::g_staticPluginList, &StaticPluginRegistry::g_staticPluginListEnd);
 #else
+    LOGI("GatherStaticPlugins: Using runtime registration approach (RegisterStaticPlugin)");
     const array_view<const IPlugin* const> staticPluginRegistry(
         StaticPluginRegistry::g_staticPluginList, StaticPluginRegistry::g_staticPluginListCount);
+    LOGI("GatherStaticPlugins: g_staticPluginListCount = %zu", StaticPluginRegistry::g_staticPluginListCount);
+    LOGI("GatherStaticPlugins: g_staticPluginList pointer = %p", StaticPluginRegistry::g_staticPluginList);
 #endif
 
+    LOGI("GatherStaticPlugins: staticPluginRegistry size = %zu", staticPluginRegistry.size());
     for (const auto plugin : staticPluginRegistry) {
         if (plugin && (plugin->typeUid == IPlugin::UID)) {
-            CORE_LOG_V("\t%s", plugin->name);
+            LOGI("GatherStaticPlugins: Found plugin: %s", plugin->name);
             plugins.push_back({ nullptr, plugin });
+        } else if (plugin) {
+            LOGI("GatherStaticPlugins: Plugin has wrong typeUid: %p", plugin);
         }
     }
+    LOGI("GatherStaticPlugins: Total static plugins gathered: %zu", plugins.size());
 }
 
 void GatherDynamicPlugins(vector<LibPlugin>& plugins, IFileManager& fileManager)
@@ -340,14 +360,37 @@ array_view<const IPlugin* const> PluginRegistry::GetPlugins() const
 
 bool PluginRegistry::LoadPlugins(const array_view<const Uid> pluginUids)
 {
+    LOGI("LoadPlugins: Starting plugin loading process");
+    LOGI("LoadPlugins: Requested plugin UIDs count: %{public}zu", pluginUids.size());
+
     // Gather all the available static and dynamic libraries.
     vector<LibPlugin> availablePlugins;
     GatherStaticPlugins(availablePlugins);
+    LOGI("LoadPlugins: After GatherStaticPlugins, available count: %{public}zu", availablePlugins.size());
+
     GatherDynamicPlugins(availablePlugins, fileManager_);
+    LOGI("LoadPlugins: After GatherDynamicPlugins, total available count: %{public}zu", availablePlugins.size());
+
+    // Log all available plugins
+    for (const auto& pluginInfo : availablePlugins) {
+        if (pluginInfo.plugin) {
+            LOGI("LoadPlugins: Available plugin: %{public}s, UID: %{public}s",
+                       pluginInfo.plugin->name,
+                       to_string(pluginInfo.plugin->version.uid).data());
+        }
+    }
 
     vector<Uid> toLoad = GatherRequiredPlugins(pluginUids, availablePlugins);
+    LOGI("LoadPlugins: GatherRequiredPlugins returned %{public}zu plugins to load", toLoad.size());
+
     if (toLoad.empty()) {
+        CORE_LOG_E("LoadPlugins: toLoad is empty! No plugins to load");
         return false;
+    }
+
+    // Log plugins to load
+    for (const auto& uid : toLoad) {
+        LOGI("LoadPlugins: Plugin to load: %{public}s", to_string(uid).data());
     }
 
     // Remove duplicates while counting how many times plugins were requested due to dependencies.
@@ -368,36 +411,49 @@ bool PluginRegistry::LoadPlugins(const array_view<const Uid> pluginUids)
     }
     counts.push_back(1);
 
+    LOGI("LoadPlugins: After deduplication, unique plugins to load: %{public}zu", toLoad.size());
+
     loading_ = true;
     auto itCounts = counts.cbegin();
     for (const Uid& uid : toLoad) {
         const auto currentCount = *itCounts++;
+        LOGI("LoadPlugins: Processing plugin UID: %{public}s, count: %{public}d", to_string(uid).data(), currentCount);
+
         // If the plugin was already loaded just increase the reference count.
         if (auto pos = std::find(plugins_.begin(), plugins_.end(), uid); pos != plugins_.end()) {
             const auto index = static_cast<size_t>(std::distance(plugins_.begin(), pos));
             pluginDatas_[index].refcnt += currentCount;
+            LOGI("LoadPlugins: Plugin already loaded, increased refcount to %{public}d", pluginDatas_[index].refcnt);
             continue;
         }
 
         auto pos = std::find(availablePlugins.begin(), availablePlugins.end(), uid);
         if (pos == availablePlugins.end()) {
             // This shouldn't be possible as toLoad should contain UIDs which are found in plugins.
+            CORE_LOG_E("LoadPlugins: Plugin UID %{public}s not found in availablePlugins!", to_string(uid).data());
             continue;
         }
         if (!pos->plugin) {
             // This shouldn't be possible as GatherStatic/DynamicPlugins should add only valid plugin pointers, lib can
             // be null.
+            CORE_LOG_E("LoadPlugins: Plugin UID %{public}s has null plugin pointer!", to_string(uid).data());
             continue;
         }
+        LOGI("LoadPlugins: Registering plugin: %{public}s", pos->plugin->name);
         RegisterPlugin(BASE_NS::move(pos->lib), *(pos->plugin), currentCount);
+        LOGI("LoadPlugins: Plugin %{public}s registered successfully", pos->plugin->name);
     }
     loading_ = false;
 
+    LOGI("LoadPlugins: Total plugins now loaded: %zu", plugins_.size());
+
     if (!newTypeInfos_.empty()) {
+        LOGI("LoadPlugins: Notifying listeners of %zu new type infos", newTypeInfos_.size());
         Notify(typeInfoListeners_, ITypeInfoListener::EventType::ADDED, newTypeInfos_);
         newTypeInfos_.clear();
     }
 
+    LOGI("LoadPlugins: Completed successfully");
     return true;
 }
 
@@ -729,6 +785,7 @@ CORE_PUBLIC void CreatePluginRegistry(const PlatformCreateInfo& platformCreateIn
         auto& registry = static_cast<PluginRegistry&>(GetPluginRegister());
 
         auto platform = Platform::Create(platformCreateInfo);
+        LOGI("Create Platform Plugin Locations");
         platform->RegisterPluginLocations(registry);
 
         registry.HandlePerfTracePlugin(platformCreateInfo);

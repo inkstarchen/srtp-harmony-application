@@ -213,7 +213,8 @@ GpuImageGLES::GpuImageGLES(Device& device, const GpuImageDesc& desc)
             // to the same FBO with FramebufferTexture2DMultisampleEXT attachments, so in order to use that on Mali
             // render buffer must also use the EXT function.
             if (device_.HasExtension("GL_EXT_multisampled_render_to_texture2")) {
-                glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER, (GLsizei)sampleCount, plat_.internalFormat,
+                PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC glRenderbufferStorageMultisampleEXT_temp = reinterpret_cast<PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC>((void *) &glRenderbufferStorageMultisampleEXT);
+                glRenderbufferStorageMultisampleEXT_temp(GL_RENDERBUFFER, (GLsizei)sampleCount, plat_.internalFormat,
                     (GLsizei)desc_.width, (GLsizei)desc_.height);
             } else {
                 glRenderbufferStorageMultisample(GL_RENDERBUFFER, (GLsizei)sampleCount, plat_.internalFormat,

@@ -30,6 +30,15 @@
 #include <core/io/intf_file.h>
 #include <core/log.h>
 #include <core/namespace.h>
+#include <hilog/log.h>
+
+#undef LOG_TAG
+#undef LOG_DOMAIN
+#define LOG_TAG "path_tools"
+#define LOG_DOMAIN 0
+#define LOGI(...) OH_LOG_Print(LOG_APP, LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) OH_LOG_Print(LOG_APP, LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) OH_LOG_Print(LOG_APP, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
 
 CORE_BEGIN_NAMESPACE()
 namespace {
@@ -243,7 +252,9 @@ IDirectory::Entry RoFileSystem::GetEntry(const string_view uri)
 
 IFile::Ptr RoFileSystem::OpenFile(const string_view path, const IFile::Mode mode)
 {
+    LOGI("OpenFile: RoFile %{public}s", path.data());
     if (mode == IFile::Mode::READ_ONLY) {
+        LOGI("Opening file: %{public}s", path.data());
         auto it = files_.find(Trim(path));
         if (it != files_.end()) {
             return IFile::Ptr { new ROFSMemoryFile(it->second.data(), it->second.size()) };

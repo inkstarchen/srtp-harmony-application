@@ -23,6 +23,15 @@
 #include <core/os/intf_platform.h>
 #include <core/property/intf_property_handle.h>
 #include <core/plugin/intf_plugin_register.h>
+#include <hilog/log.h>
+
+#undef LOG_TAG
+#undef LOG_DOMAIN
+#define LOG_TAG "Lume_Common"
+#define LOG_DOMAIN 0
+#define LOGI(...) OH_LOG_Print(LOG_APP, LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) OH_LOG_Print(LOG_APP, LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) OH_LOG_Print(LOG_APP, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
 
 namespace OHOS::Render3D {
 Lume::~Lume()
@@ -38,13 +47,15 @@ CORE_NS::PlatformCreateInfo Lume::ToEnginePlatformData(const PlatformData& data)
         data.appPluginPath_.c_str(),
         data.hapInfo_.hapPath_.c_str(),
         data.hapInfo_.bundleName_.c_str(),
-        data.hapInfo_.moduleName_.c_str()
+        data.hapInfo_.moduleName_.c_str(),
+        data.hapInfo_.resourceManager_
     };
 }
 void Lume::RegisterAssertPath()
 {
     auto& fileManager = engine_->GetFileManager();
     const auto& platform = engine_->GetPlatform();
+    LOGI("RegisterAssertPath");
     platform.RegisterDefaultPaths(fileManager);
 }
 } // namespace OHOS::Render3D

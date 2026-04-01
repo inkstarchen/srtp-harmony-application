@@ -44,6 +44,7 @@
 #include <render/datastore/render_data_store_render_pods.h>
 #include <render/device/gpu_resource_desc.h>
 #include <render/device/intf_gpu_resource_manager.h>
+#include <render/../src/device/gpu_resource_handle_util.h>
 #include <render/device/intf_shader_manager.h>
 #include <render/intf_render_context.h>
 #include <render/nodecontext/intf_node_context_descriptor_set_manager.h>
@@ -973,7 +974,15 @@ void RenderNodeDefaultCameraController::CreateResourceBaseTargets()
     IRenderNodeGpuResourceManager& gpuResourceMgr = renderNodeContextMgr_->GetGpuResourceManager();
     const auto& camera = currentScene_.camera;
 
+    LOGI("RenderNodeDefaultCameraController::CreateResourceBaseTargets - colorTargets size=%{public}zu, MAIN_BIT=%{public}d",
+        sizeof(camera.colorTargets) / sizeof(camera.colorTargets[0]),
+        !!(camera.flags & RenderCamera::CAMERA_FLAG_MAIN_BIT));
+
     camRes_.colorTarget = camera.colorTargets[0].GetHandle();
+    LOGI("RenderNodeDefaultCameraController::CreateResourceBaseTargets - colorTarget valid=%{public}d, isSwapchain=%{public}d, handle=%{public}llx",
+        RenderHandleUtil::IsValid(camRes_.colorTarget),
+        RenderHandleUtil::IsSwapchain(camRes_.colorTarget),
+        camRes_.colorTarget.id);
     camRes_.depthTarget = camera.depthTarget.GetHandle();
     // update formats if given
     auto UpdateTargetFormats = [](const auto& input, auto& output) {

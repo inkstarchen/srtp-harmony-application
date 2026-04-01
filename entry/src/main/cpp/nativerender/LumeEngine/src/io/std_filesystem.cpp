@@ -53,6 +53,15 @@ using BASE_NS::make_unique;
 using BASE_NS::string;
 using BASE_NS::string_view;
 using BASE_NS::vector;
+#include <hilog/log.h>
+
+#undef LOG_TAG
+#undef LOG_DOMAIN
+#define LOG_TAG "Lume_Common"
+#define LOG_DOMAIN 0
+#define LOGI(...) OH_LOG_Print(LOG_APP, LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) OH_LOG_Print(LOG_APP, LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) OH_LOG_Print(LOG_APP, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
 
 namespace {
 #if defined(HAS_FILESYSTEM)
@@ -92,6 +101,7 @@ string StdFilesystem::ValidatePath(const string_view pathIn) const
 
 IFile::Ptr StdFilesystem::OpenFile(const string_view pathIn, const IFile::Mode mode)
 {
+    LOGI("OpenFile: StdFile %{public}s", pathIn.data());
     auto path = ValidatePath(pathIn);
     if (!path.empty()) {
         return StdFile::Open(path, mode);

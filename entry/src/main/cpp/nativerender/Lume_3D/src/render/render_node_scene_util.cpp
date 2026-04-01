@@ -16,7 +16,6 @@
 #include "render_node_scene_util.h"
 
 #include <algorithm>
-
 #include <3d/render/intf_render_data_store_default_camera.h>
 #include <3d/render/intf_render_data_store_default_material.h>
 #include <3d/render/intf_render_data_store_default_scene.h>
@@ -106,14 +105,27 @@ void UpdateCustomCameraTargets(const RenderCamera& camera, RenderPass& renderPas
 {
     auto& subpassDesc = renderPass.subpassDesc;
     RenderPassDesc& renderPassDesc = renderPass.renderPassDesc;
+    LOGI("UpdateCustomCameraTargets: flags=0x%{public}x, msaa=%{public}d, colorAttachmentCount=%{public}u, depthAttachmentCount=%{public}u",
+        camera.flags,
+        !!(camera.flags & RenderCamera::CAMERA_FLAG_MSAA_BIT),
+        subpassDesc.colorAttachmentCount,
+        subpassDesc.depthAttachmentCount);
     if ((camera.flags & RenderCamera::CAMERA_FLAG_MSAA_BIT) == 0) {
         if ((subpassDesc.depthAttachmentCount == 1) && camera.depthTarget) {
             renderPassDesc.attachmentHandles[subpassDesc.depthAttachmentIndex] = camera.depthTarget.GetHandle();
+            LOGI("UpdateCustomCameraTargets: depthTarget set, handle=0x%{public}llx", camera.depthTarget.GetHandle().id);
         }
         if ((subpassDesc.colorAttachmentCount >= 1) && camera.colorTargets[0u]) {
             renderPassDesc.attachmentHandles[subpassDesc.colorAttachmentIndices[0]] =
                 camera.colorTargets[0u].GetHandle();
+            LOGI("UpdateCustomCameraTargets: colorTarget set, handle=0x%{public}llx",
+                camera.colorTargets[0u].GetHandle().id);
+        } else {
+            LOGI("UpdateCustomCameraTargets: colorTarget NOT set - colorAttachmentCount=%{public}u, colorTargets[0] valid=%{public}d",
+                subpassDesc.colorAttachmentCount, static_cast<bool>(camera.colorTargets[0u]));
         }
+    } else {
+        LOGI("UpdateCustomCameraTargets: MSAA enabled, skipping custom targets");
     }
 }
 

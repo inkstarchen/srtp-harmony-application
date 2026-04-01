@@ -26,7 +26,7 @@
 // this is so that the core include directories are not leaked here, but we want this one header in this case.
 #ifndef __APPLE__
 #include CORE_STATIC_PLUGIN_HEADER
-#include "registry_data.cpp"
+// registry_data.cpp is now compiled separately - no need to include it here
 #endif
 
 // Rofs Data.

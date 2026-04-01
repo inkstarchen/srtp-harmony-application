@@ -32,7 +32,16 @@
 #include "loader/shader_state_loader.h"
 #include "loader/vertex_input_declaration_loader.h"
 #include "util/log.h"
+#include <hilog/log.h>
 
+#undef LOG_TAG
+#undef LOG_DOMAIN
+#define LOG_TAG "path_tools"
+#define LOG_DOMAIN 0
+#define LOGI(...) OH_LOG_Print(LOG_APP, LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) OH_LOG_Print(LOG_APP, LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) OH_LOG_Print(LOG_APP, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGW(...) OH_LOG_Print(LOG_APP, LOG_WARN, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
 using namespace BASE_NS;
 using namespace CORE_NS;
 
@@ -92,19 +101,21 @@ ShaderLoader::ShaderLoader(IFileManager& fileManager, ShaderManager& shaderManag
 void ShaderLoader::Load(const ShaderManager::ShaderFilePathDesc& desc)
 {
     if (!desc.shaderStatePath.empty()) {
+        LOGI("graphics state path (%{public}s) found.", desc.shaderStatePath.data());
         auto const shaderStatesPath = fileManager_.OpenDirectory(desc.shaderStatePath);
         if (shaderStatesPath) {
             LoadShaderStates(desc.shaderStatePath, *shaderStatesPath);
         } else {
-            PLUGIN_LOG_W("graphics state path (%s) not found.", desc.shaderStatePath.data());
+            LOGW("graphics state path (%{public}s) not found.", desc.shaderStatePath.data());
         }
     }
     if (!desc.vertexInputDeclarationPath.empty()) {
+        LOGI("vertex input declaration path (%{public}s) found.", desc.vertexInputDeclarationPath.data());
         auto const vidsPath = fileManager_.OpenDirectory(desc.vertexInputDeclarationPath);
         if (vidsPath) {
             LoadVids(desc.vertexInputDeclarationPath, *vidsPath);
         } else {
-            PLUGIN_LOG_W("vertex input declaration path (%s) not found.", desc.vertexInputDeclarationPath.data());
+            LOGW("vertex input declaration path (%{public}s) not found.", desc.vertexInputDeclarationPath.data());
         }
     }
     if (!desc.pipelineLayoutPath.empty()) {
@@ -112,7 +123,7 @@ void ShaderLoader::Load(const ShaderManager::ShaderFilePathDesc& desc)
         if (pipelineLayoutsPath) {
             LoadPipelineLayouts(desc.pipelineLayoutPath, *pipelineLayoutsPath);
         } else {
-            PLUGIN_LOG_W("pipeline layout path (%s) not found.", desc.pipelineLayoutPath.data());
+            LOGW("pipeline layout path (%{public}s) not found.", desc.pipelineLayoutPath.data());
         }
     }
     if (!desc.shaderPath.empty()) {
@@ -120,7 +131,7 @@ void ShaderLoader::Load(const ShaderManager::ShaderFilePathDesc& desc)
         if (shadersPath) {
             RecurseDirectory(desc.shaderPath, *shadersPath);
         } else {
-            PLUGIN_LOG_W("shader path (%s) not found.", desc.shaderPath.data());
+            LOGW("shader path (%{public}s) not found.", desc.shaderPath.data());
         }
     }
 }

@@ -71,7 +71,9 @@ void RegisterStaticPlugin(const CORE_NS::IPlugin& plugin);
 } // namespace StaticPluginRegistry
 } // namespace CORE_NS
 
-#define PLUGIN_DATA(NAME) static constexpr const CORE_NS::IPlugin NAME##_pluginData
+// Plugin data must have external linkage for manual registration approach
+// Note: constexpr variables have internal linkage by default, need 'extern' keyword
+#define PLUGIN_DATA(NAME) extern __attribute__((visibility("default"))) constexpr const CORE_NS::IPlugin NAME##_pluginData
 
 #if _MSC_VER
     // Use static class "constructor" to call a function during initialization.
@@ -84,12 +86,14 @@ void RegisterStaticPlugin(const CORE_NS::IPlugin& plugin);
         }                                                                            \
     } magic
 #else
-    // Use "constructor" attribute to call a function during initialization.
-    // ("safer", but with dynamic runtime init/memory cost)
-#define DEFINE_STATIC_PLUGIN(NAME)                                                                  \
-    __attribute__((visibility("hidden"))) __attribute__((constructor)) static void registerStatic() \
-    {                                                                                               \
-        CORE_NS::StaticPluginRegistry::RegisterStaticPlugin(NAME##_pluginData);                    \
+    // Use manual registration function (not constructor).
+    // Constructor attribute doesn't work when static libs are linked via $<TARGET_OBJECTS:...>
+    // into a shared library in NDK environment.
+    // This generates a function NAME##_RegisterStaticPlugin() that must be called manually.
+#define DEFINE_STATIC_PLUGIN(NAME)                                          \
+    extern "C" __attribute__((visibility("default"))) void NAME##_RegisterStaticPlugin() \
+    {                                                                        \
+        CORE_NS::StaticPluginRegistry::RegisterStaticPlugin(NAME##_pluginData); \
     }
 #endif
 #endif

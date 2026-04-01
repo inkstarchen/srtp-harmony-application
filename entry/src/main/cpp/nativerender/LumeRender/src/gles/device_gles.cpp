@@ -40,6 +40,15 @@
 #include "gles/swapchain_gles.h"
 #include "render_context.h"
 #include "util/log.h"
+#include <hilog/log.h>
+
+#undef LOG_TAG
+#undef LOG_DOMAIN
+#define LOG_TAG "path_tools"
+#define LOG_DOMAIN 0
+#define LOGI(...) OH_LOG_Print(LOG_APP, LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) OH_LOG_Print(LOG_APP, LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) OH_LOG_Print(LOG_APP, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
 
 using namespace BASE_NS;
 
@@ -1158,34 +1167,36 @@ DeviceGLES::DeviceGLES(RenderContext& renderContext) : Device(renderContext)
     FillExtensions(extensions_);
 
 #if RENDER_HAS_GLES_BACKEND
-    if (!HasExtension("GL_EXT_buffer_storage")) {
-        glBufferStorageEXT = nullptr;
-    }
+    // GL_EXT_buffer_storage may not be available on all devices
+    // Force to nullptr if extension string or function pointer is missing
+    // if (!HasExtension("GL_EXT_buffer_storage") || (glBufferStorageEXT == nullptr)) {
+    //     glBufferStorageEXT = nullptr;
+    // }
 
-    if (!HasExtension("GL_OES_EGL_image")) {
-        glEGLImageTargetTexture2DOES = nullptr;
-    }
+    // if (!HasExtension("GL_OES_EGL_image")) {
+    //     glEGLImageTargetTexture2DOES = nullptr;
+    // }
 
-    if (!HasExtension("GL_EXT_multisampled_render_to_texture")) {
-        glRenderbufferStorageMultisampleEXT = nullptr;
-        glFramebufferTexture2DMultisampleEXT = nullptr;
-    }
+    // if (!HasExtension("GL_EXT_multisampled_render_to_texture")) {
+    //     glRenderbufferStorageMultisampleEXT = nullptr;
+    //     glFramebufferTexture2DMultisampleEXT = nullptr;
+    // }
 
-    if (!HasExtension("GL_OVR_multiview")) {
-        glFramebufferTextureMultiviewOVR = nullptr;
-    }
+    // if (!HasExtension("GL_OVR_multiview")) {
+    //     glFramebufferTextureMultiviewOVR = nullptr;
+    // }
 
-    if (!HasExtension("GL_OVR_multiview_multisampled_render_to_texture")) {
-        glFramebufferTextureMultisampleMultiviewOVR = nullptr;
-    }
+    // if (!HasExtension("GL_OVR_multiview_multisampled_render_to_texture")) {
+    //     glFramebufferTextureMultisampleMultiviewOVR = nullptr;
+    // }
 
-    if (!HasExtension("GL_EXT_disjoint_timer_query")) {
-        glGetQueryObjectui64vEXT = nullptr;
-    }
+    // if (!HasExtension("GL_EXT_disjoint_timer_query")) {
+    //     glGetQueryObjectui64vEXT = nullptr;
+    // }
 
-    if (!HasExtension("GL_EXT_external_buffer")) {
-        glBufferStorageExternalEXT = nullptr;
-    }
+    // if (!HasExtension("GL_EXT_external_buffer")) {
+    //     glBufferStorageExternalEXT = nullptr;
+    // }
 #endif
 
 #if RENDER_HAS_GL_BACKEND
@@ -1225,6 +1236,7 @@ DeviceGLES::DeviceGLES(RenderContext& renderContext) : Device(renderContext)
     globalDescriptorSetMgr_ = make_unique<DescriptorSetManagerGles>(*this);
 
     lowLevelDevice_ = make_unique<LowLevelDeviceGLES>(*this);
+    LOGI("Created GLES device");
 }
 
 
@@ -1258,6 +1270,20 @@ bool DeviceGLES::HasExtension(const string_view extension) const
 // passed
 DeviceBackendType DeviceGLES::GetBackendType() const
 {
+
+    // switch(backendType_){
+    //     case DeviceBackendType::OPENGL:
+    //         LOGI("DeviceGLES::GetBackendType is OPENGL");
+    //         break;
+    //     case DeviceBackendType::OPENGLES:
+    //         LOGI("DeviceGLES::GetBackendType is OPENGLES");
+    //         break;
+    //     case DeviceBackendType::VULKAN:
+    //         LOGI("DeviceGLES::GetBackendType is VULKAN");
+    //         break;
+    //     default:
+    //         LOGI("DeviceGLES::GetBackendType is UNKNOWN");
+    // }
     return backendType_;
 }
 // passed
@@ -1320,6 +1346,7 @@ PlatformGpuMemoryAllocator* DeviceGLES::GetPlatformGpuMemoryAllocator()
 unique_ptr<Swapchain> DeviceGLES::CreateDeviceSwapchain(const SwapchainCreateInfo& swapchainCreateInfo)
 {
     PLUGIN_ASSERT(IsActive());
+    LOGI("DeviceGLES::CreateDeviceSwapchain");
     auto swapchain = make_unique<SwapchainGLES>(*this, swapchainCreateInfo);
     // Switch to the new swapchain.
     eglState_.SetContext(swapchain.get());

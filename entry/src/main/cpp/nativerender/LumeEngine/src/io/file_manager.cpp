@@ -37,6 +37,17 @@
 #include "io/rofs_filesystem.h"
 #include "io/std_directory.h"
 
+
+#include <hilog/log.h>
+
+#undef LOG_TAG
+#undef LOG_DOMAIN
+#define LOG_TAG "path_tools"
+#define LOG_DOMAIN 0
+#define LOGI(...) OH_LOG_Print(LOG_APP, LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) OH_LOG_Print(LOG_APP, LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) OH_LOG_Print(LOG_APP, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+
 CORE_BEGIN_NAMESPACE()
 using BASE_NS::make_unique;
 using BASE_NS::string;
@@ -107,9 +118,9 @@ IFile::Ptr FileManager::OpenFile(const string_view uriIn, IFile::Mode mode)
         if (filesystem) {
             return filesystem->OpenFile(path, mode);
         }
-        CORE_LOG_E("Failed to open file, no file system for uri: '%s'", string(uri).c_str());
+        LOGE("Failed to open file, no file system for uri: '%{public}s'", string(uri).c_str());
     } else {
-        CORE_LOG_E("Failed to open file, invalid uri: '%s'", string(uri).c_str());
+        LOGE("Failed to open file, invalid uri: '%{public}s'", string(uri).c_str());
     }
 
     return {};
@@ -125,9 +136,9 @@ IFile::Ptr FileManager::CreateFile(const string_view uriIn)
         if (filesystem) {
             return filesystem->CreateFile(path);
         }
-        CORE_LOG_E("Failed to create file, no file system for uri: '%s'", string(uri).c_str());
+        LOGE("Failed to create file, no file system for uri: '%{public}s'", string(uri).c_str());
     } else {
-        CORE_LOG_E("Failed to create file, invalid uri: '%s'", string(uri).c_str());
+        LOGE("Failed to create file, invalid uri: '%{public}s'", string(uri).c_str());
     }
 
     return {};
@@ -182,7 +193,7 @@ bool FileManager::Rename(const string_view fromUri, const string_view toUri)
             return filesystem->Rename(fromPath, toPath);
         }
     } else {
-        CORE_LOG_E("Rename requires both uris have same protocol");
+        LOGE("Rename requires both uris have same protocol");
     }
     return false;
 }
@@ -197,9 +208,9 @@ IDirectory::Entry FileManager::GetEntry(const string_view uriIn)
         if (filesystem) {
             return filesystem->GetEntry(path);
         }
-        CORE_LOG_E("Failed to get entry for uri, no file system for uri: '%s'", string(uri).c_str());
+        LOGE("Failed to get entry for uri, no file system for uri: '%{public}s'", string(uri).c_str());
     } else {
-        CORE_LOG_E("Failed to get entry for uri, invalid uri: '%s'", string(uri).c_str());
+        LOGE("Failed to get entry for uri, invalid uri: '%{public}s'", string(uri).c_str());
     }
 
     return {};
@@ -214,9 +225,9 @@ IDirectory::Ptr FileManager::OpenDirectory(const string_view uriIn)
         if (filesystem) {
             return filesystem->OpenDirectory(path);
         }
-        CORE_LOG_E("Failed to open directory, no file system for uri: '%s'", string(uri).c_str());
+        LOGE("Failed to open directory, no file system for uri: '%{public}s'", string(uri).c_str());
     } else {
-        CORE_LOG_E("Failed to open directory, invalid uri: '%s'", string(uri).c_str());
+        LOGE("Failed to open directory, invalid uri: '%{public}s'", string(uri).c_str());
     }
 
     return {};
@@ -232,9 +243,9 @@ IDirectory::Ptr FileManager::CreateDirectory(const string_view uriIn)
         if (filesystem) {
             return filesystem->CreateDirectory(path);
         }
-        CORE_LOG_E("Failed to create directory, no file system for uri: '%s'", string(uri).c_str());
+        LOGE("Failed to create directory, no file system for uri: '%{public}s'", string(uri).c_str());
     } else {
-        CORE_LOG_E("Failed to create directory, invalid uri: '%s'", string(uri).c_str());
+        LOGE("Failed to create directory, invalid uri: '%{public}s'", string(uri).c_str());
     }
 
     return {};
@@ -273,11 +284,11 @@ bool FileManager::DirectoryExists(const string_view uriIn) const
 bool FileManager::RegisterFilesystem(const string_view protocol, IFilesystem::Ptr filesystem)
 {
     if (!filesystem) {
-        CORE_LOG_E("Can't register empty filesystem (%*.s)", static_cast<int>(protocol.size()), protocol.data());
+        LOGE("Can't register empty filesystem (%*.s)", static_cast<int>(protocol.size()), protocol.data());
         return false;
     }
     if (filesystems_.contains(protocol)) {
-        CORE_LOG_E("Filesystem already registered (%*.s)", static_cast<int>(protocol.size()), protocol.data());
+        LOGE("Filesystem already registered (%*.s)", static_cast<int>(protocol.size()), protocol.data());
         return false;
     }
     filesystems_[protocol] = move(filesystem);
@@ -352,8 +363,8 @@ bool FileManager::RegisterPath(const string_view protocol, const string_view uri
     if (it != proxyFilesystems_.end()) {
         // Yes, add the new search path to it.
         if (prepend) {
-            it->second->PrependSearchPath(uri);
         } else {
+            it->second->PrependSearchPath(uri);
             it->second->AppendSearchPath(uri);
         }
         return true;
@@ -363,13 +374,14 @@ bool FileManager::RegisterPath(const string_view protocol, const string_view uri
     const auto itp = filesystems_.find(protocol);
     if (itp != filesystems_.end()) {
         // Okay there is a protocol handler already, we can't add paths to non-proxy protocols.
-        CORE_LOG_W("Tried to register a path to non-proxy filesystem. protocol [%s] uriIn [%s]",
+        LOGI("Tried to register a path to non-proxy filesystem. protocol [%{public}s] uriIn [%{public}s]",
             string(protocol).c_str(), string(uriIn).c_str());
         return false;
     }
 
     // Create new proxy protocol handler.
     auto pfs = make_unique<ProxyFilesystem>(*this, uri);
+    LOGI("Registering proxy filesystem for protocol [%{public}s] uri [%{public}s]", string(protocol).c_str(), string(uri).c_str());
     proxyFilesystems_[protocol] = pfs.get();
     RegisterFilesystem(protocol, IFilesystem::Ptr { pfs.release() });
     return true;

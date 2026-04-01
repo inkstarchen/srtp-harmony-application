@@ -31,9 +31,11 @@ add_library(scene_adapter_src STATIC ${SCENE_ADAPTER_SOURCES})
 target_compile_definitions(scene_adapter_src PUBLIC
     __OHOS_PLATFORM__
     __SCENE_ADAPTER__
-    CORE_DYNAMIC=1
+    # CORE_DYNAMIC=1 removed - use static linking mode
     CORE_HAS_GLES_BACKEND=1
     CORE_HAS_VULKAN_BACKEND=1
+    # Use runtime registration approach for static plugins
+    CORE_USE_COMPILER_GENERATED_STATIC_LIST=0
 )
 
 target_include_directories(scene_adapter_src PUBLIC
@@ -121,10 +123,12 @@ add_library(lib3dSceneAdapter SHARED
     $<TARGET_OBJECTS:scene_adapter_src>
 )
 
+# Allow multiple definitions for json functions (also defined in libAGPEngine and other libs)
+target_link_options(lib3dSceneAdapter PRIVATE "-Wl,--allow-multiple-definition")
+
 target_link_libraries(lib3dSceneAdapter PUBLIC
     LumeBase
-    libAGPEngine
-    lume_render
+    lume_render  # lume_render already contains libAGPEngine with whole-archive
     lume_3d
     libMetaObject
     EcsSerializer

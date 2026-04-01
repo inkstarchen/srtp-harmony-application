@@ -36,7 +36,7 @@
 #include <render/device/intf_gpu_resource_manager.h>
 #include <render/intf_render_context.h>
 
-#include "3d_widget_adapter_log.h"
+#include <3d_widget_adapter_log.h>
 #include "custom/shader_input_buffer.h"
 
 namespace OHOS::Render3D {

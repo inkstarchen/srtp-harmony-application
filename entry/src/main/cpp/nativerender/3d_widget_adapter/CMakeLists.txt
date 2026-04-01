@@ -58,7 +58,7 @@ add_library(widget_adapter_src STATIC ${WIDGET_ADAPTER_SOURCES})
 
 target_compile_definitions(widget_adapter_src PUBLIC
     __OHOS_PLATFORM__
-    CORE_DYNAMIC=1
+    # CORE_DYNAMIC=1 removed - use static linking mode
     CORE_HAS_GLES_BACKEND=1
     CORE_HAS_VULKAN_BACKEND=1
     MULTI_ECS_UPDATE_AT_ONCE=${MULTI_ECS_UPDATE_AT_ONCE}
@@ -66,7 +66,14 @@ target_compile_definitions(widget_adapter_src PUBLIC
     DBG_DRAW_PIXEL=${DBG_DRAW_PIXEL}
     WIDGET_TRACE_ENABLE=${WIDGET_TRACE_ENABLE}
     EGL_EGLEXT_PROTOTYPES
-    GL_GLEXT_PROTOTYPES
+    # GL_GLEXT_PROTOTYPES removed - we use function pointers via eglGetProcAddress instead
+    # This prevents function declaration conflicts with our function pointer declarations
+    # Use runtime registration approach for static plugins
+    CORE_USE_COMPILER_GENERATED_STATIC_LIST=0
+    # Engine library names (required by LoadEngineLib)
+    LIB_ENGINE_CORE=AGPEngine
+    LIB_RENDER=AGPRender
+    LIB_CORE3D=AGPCore3D
 )
 
 target_include_directories(widget_adapter_src PUBLIC
@@ -124,6 +131,11 @@ find_library(
     native_window
 )
 
+find_library(
+    rawfile-lib
+    rawfile.z
+)
+
 target_link_libraries(widget_adapter_src PUBLIC
     LumeBase
     lume_engine_src
@@ -132,6 +144,7 @@ target_link_libraries(widget_adapter_src PUBLIC
     lume_jpg_src
     lume_png_src
     securec
+    libPluginSceneWidget  # Provides GetPluginRegister() in static linking mode
     ${hilog-lib}
     ${libace-lib}
     ${libnapi-lib}
@@ -139,6 +152,7 @@ target_link_libraries(widget_adapter_src PUBLIC
     ${EGL-lib}
     ${GLES-lib}
     ${libnative_window-lib}
+    ${rawfile-lib}  # OHOS RawFile API (OH_ResourceManager_*)
 )
 
 # ============================================================================
@@ -148,16 +162,26 @@ add_library(lib3dWidgetAdapter SHARED
     $<TARGET_OBJECTS:widget_adapter_src>
 )
 
+# Allow multiple definitions for json functions (also defined in libAGPEngine and other libs)
+target_link_options(lib3dWidgetAdapter PRIVATE "-Wl,--allow-multiple-definition")
+
 target_link_libraries(lib3dWidgetAdapter PUBLIC
     LumeBase
-    libAGPEngine
-    lume_render
+    lume_render  # lume_render already contains libAGPEngine with whole-archive
     lume_3d
+
+    # Link static libraries with whole-archive to ensure GetAGPRenderPlugin/GetAGP3DPlugin are available
+    "-Wl,--whole-archive"
+    lume_render_src
+    lume_3d_src
+    "-Wl,--no-whole-archive"
+
     lume_jpg_src
     lume_png_src
     turbojpeg_static
     png_static
     ${hilog-lib}
+    ${rawfile-lib}  # OHOS RawFile API (OH_ResourceManager_*)
 )
 
 target_include_directories(lib3dWidgetAdapter PUBLIC

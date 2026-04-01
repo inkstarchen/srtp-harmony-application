@@ -852,6 +852,8 @@ void RenderGraph::StoreFinalBufferState()
 void RenderGraph::StoreFinalImageState()
 {
     swapchainStates_ = {}; // reset
+    LOGI("RenderGraph::StoreFinalImageState - checkForBackbufferDependency=%{public}d, gpuImageTracking_.size=%{public}zu",
+        stateCache_.checkForBackbufferDependency, gpuImageTracking_.size());
 
 #if (RENDER_DEV_ENABLED == 1)
     if constexpr (CORE_RENDER_GRAPH_PRINT_RESOURCE_STATES) {
@@ -863,6 +865,11 @@ void RenderGraph::StoreFinalImageState()
         if (!RenderHandleUtil::IsDynamicResource(ref.resource.handle)) {
             ref = {};
             continue;
+        }
+        const bool isSwapchain = RenderHandleUtil::IsSwapchain(ref.resource.handle);
+        if(isSwapchain){
+            LOGI("RenderGraph::StoreFinalImageState - swapchain found in tracking, flags=%u",
+                ref.state.accessFlags | ref.state.shaderStageFlags | ref.state.pipelineStageFlags);
         }
         // handle automatic presentation layout
         if (stateCache_.checkForBackbufferDependency && RenderHandleUtil::IsSwapchain(ref.resource.handle)) {
@@ -877,7 +884,10 @@ void RenderGraph::StoreFinalImageState()
             // currently we only swapchains if they are really in use in this frame
             const uint32_t flags = ref.state.accessFlags | ref.state.shaderStageFlags | ref.state.pipelineStageFlags;
             if (flags != 0) {
+                LOGI("swapchain push");
                 swapchainStates_.swapchains.push_back({ ref.resource.handle, ref.state, ref.resource.imageLayout });
+            }else{
+                LOGI("swapchain not in use");
             }
         }
 #if (RENDER_DEV_ENABLED == 1)
@@ -1857,6 +1867,10 @@ RenderGraph::RenderGraphImageState& RenderGraph::GetImageResourceStateRef(
 {
     // NOTE: Do not call with non dynamic trackable
     const uint32_t arrayIndex = RenderHandleUtil::GetIndexPart(handle);
+    LOGI("Image handle: %{public}llx", handle);
+    if(RenderHandleUtil::IsSwapchain(handle)){
+        LOGI("Swapchain handle: found" );
+    }
     PLUGIN_ASSERT(RenderHandleUtil::GetHandleType(handle) == RenderHandleType::GPU_IMAGE);
     if (arrayIndex < gpuImageDataIndices_.size()) {
         // NOTE: render pass attachments expected to be dynamic resources always

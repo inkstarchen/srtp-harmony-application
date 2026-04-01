@@ -599,6 +599,7 @@ void Renderer::RemapBackBufferHandle(const IRenderDataStoreManager& renderData)
 
 void Renderer::RenderFrameImpl(const array_view<const RenderHandle> renderNodeGraphs)
 {
+    LOGI("RenderFrame begin");
     if (separatedRendering_.separateBackend || separatedRendering_.separatePresent) {
         separatedRendering_.frontMtx.lock();
     }
@@ -737,6 +738,9 @@ void Renderer::RenderFrameBackendImpl()
     // NOTE: deprecate this
     const RenderGraph::SwapchainStates bbState = renderGraph_->GetSwapchainResourceStates();
     RenderBackendBackBufferConfiguration config;
+    if(bbState.swapchains.size() == 0){
+        LOGI("no swapchain states found");
+    }
     for (const auto& swapState : bbState.swapchains) {
         config.swapchainData.push_back({ swapState.handle, swapState.state, swapState.layout, {} });
     }
@@ -752,6 +756,8 @@ void Renderer::RenderFrameBackendImpl()
                 config.swapchainData[0U].config = *bb;
             }
         }
+    }else{
+        LOGI("no swapchain config data found");
     }
     renderFrameTimeData_.config = config;
     // must run backend if there are descriptor sets to update even if there's nothing to render.

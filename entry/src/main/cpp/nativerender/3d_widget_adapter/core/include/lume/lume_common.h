@@ -45,6 +45,7 @@
 #include <base/math/vector_util.h>
 
 #include <core/ecs/intf_entity_manager.h>
+#include <core/os/intf_platform.h>
 #include <core/engine_info.h>
 #include <core/intf_engine.h>
 #include <core/namespace.h>

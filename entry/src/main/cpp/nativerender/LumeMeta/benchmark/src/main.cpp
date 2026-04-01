@@ -32,7 +32,7 @@ public:
     BenchmarkEnvironment()
     {
         environmentSetup::InitializeMetaObject(".\\AGPEngineDLL.dll", CORE_NS::ILogger::LogLevel::LOG_ERROR);
-
+        // LOGI("CHECK_DDL");
         CORE_NS::GetPluginRegister().LoadPlugins({}); // load all plugins, do we need this?
 
         CORE_NS::VersionInfo versInfoEngine {

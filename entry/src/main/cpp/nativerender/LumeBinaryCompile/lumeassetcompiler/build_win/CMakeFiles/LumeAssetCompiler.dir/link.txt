@@ -1,0 +1,3 @@
+"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\LumeAssetCompiler.dir/objects.a
+D:\Software\mingw64\bin\ar.exe qc CMakeFiles\LumeAssetCompiler.dir/objects.a @CMakeFiles\LumeAssetCompiler.dir\objects1.rsp
+D:\Software\mingw64\bin\c++.exe -O3 -DNDEBUG -Wl,--whole-archive CMakeFiles\LumeAssetCompiler.dir/objects.a -Wl,--no-whole-archive -o LumeAssetCompiler.exe -Wl,--out-implib,libLumeAssetCompiler.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\LumeAssetCompiler.dir\linkLibs.rsp

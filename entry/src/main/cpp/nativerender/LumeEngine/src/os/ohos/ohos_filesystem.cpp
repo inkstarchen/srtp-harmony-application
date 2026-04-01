@@ -33,6 +33,15 @@
 #include "io/file_manager.h"
 #include "io/path_tools.h"
 #include "io/proxy_directory.h"
+#include <hilog/log.h>
+
+#undef LOG_TAG
+#undef LOG_DOMAIN
+#define LOG_TAG "Lume_Common"
+#define LOG_DOMAIN 0
+#define LOGI(...) OH_LOG_Print(LOG_APP, LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) OH_LOG_Print(LOG_APP, LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) OH_LOG_Print(LOG_APP, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
 
 CORE_BEGIN_NAMESPACE()
 using BASE_NS::move;
@@ -56,12 +65,17 @@ string OhosFilesystem::ValidatePath(const string_view pathIn) const
 
 IFile::Ptr OhosFilesystem::OpenFile(const BASE_NS::string_view path, const IFile::Mode mode)
 {
+    LOGI("OpenFile: OhosFile %{public}s", path.data());
     if (mode == IFile::Mode::READ_ONLY) {
         if (auto const pos = ohosFiles_.find(path); pos != ohosFiles_.end()) {
             auto storage = pos->second.lock();
             if (storage) {
+                LOGI("OpenFile:OpenFile: %{public}s", path.data());
+                LOGI("OpenFile:storageSize: %{public}zu", storage->Size());
                 auto file = BASE_NS::make_unique<OhosFile>(resManager_);
+
                 file->UpdateStorage(storage);
+                LOGI("OpenFile:fileSize: %{public}zu", file->GetLength());
                 return IFile::Ptr { file.release() };
             }
         }

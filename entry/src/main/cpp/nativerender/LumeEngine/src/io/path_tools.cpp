@@ -7,7 +7,7 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+* distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -29,6 +29,15 @@
 
 #include "util/string_util.h"
 #endif
+#include <hilog/log.h>
+
+#undef LOG_TAG
+#undef LOG_DOMAIN
+#define LOG_TAG "path_tools"
+#define LOG_DOMAIN 0
+#define LOGI(...) OH_LOG_Print(LOG_APP, LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) OH_LOG_Print(LOG_APP, LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) OH_LOG_Print(LOG_APP, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
 
 CORE_BEGIN_NAMESPACE()
 using BASE_NS::string;
@@ -120,11 +129,12 @@ string GetCurrentDirectory()
         if (basePath.back() != '/') {
             basePath += '/';
         }
+        LOGI("Current working directory: %{public}s", basePath.c_str());
         free(tmp);
     } else {
         // fallback to root (either out-of-memory or the CWD is inaccessible for current user)
         basePath = "/";
-        CORE_LOG_F("Could not get current working directory, initializing base path as '/'");
+        LOGE("Could not get current working directory, initializing base path as '/'");
     }
 #elif defined(_WIN32)
     // Windows also implements the "null buf" extension, but uses a different name and "format".

@@ -24,10 +24,12 @@
 #include <GLES3/gl32.h>
 #include <GLES2/gl2ext.h>
 // clang-format on
+// Use simple extern declaration - function pointers are regular C++ variables
 #define declare(a, b) \
     extern "C" {      \
     extern a b;       \
     }
+
 #endif
 
 #if defined(_WIN32)
@@ -57,7 +59,7 @@ declare(PFNGLEGLIMAGETARGETTEXTURE2DOESPROC, glEGLImageTargetTexture2DOES);
 const unsigned int GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_SAMPLES_EXT = 0x8D6C;
 const unsigned int GL_RENDERBUFFER_SAMPLES_EXT = 0x8CAB;
 const unsigned int GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE_EXT = 0x8D56;
-const unsigned int GL_MAX_SAMPLES_EXT 0x8D57;
+//const unsigned int GL_MAX_SAMPLES_EXT 0x8D57;
 using PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC = void(GL_APIENTRYP)(
     GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height);
 using PFNGLFRAMEBUFFERTEXTURE2DMULTISAMPLEEXTPROC = void(GL_APIENTRYP)(

@@ -39,6 +39,15 @@
 #include <render/intf_render_context.h>
 #include <render/loader/intf_render_data_configuration_loader.h>
 #include <render/nodecontext/intf_render_node_graph_manager.h>
+#include <hilog/log.h>
+
+#undef LOG_TAG
+#undef LOG_DOMAIN
+#define LOG_TAG "path_tools"
+#define LOG_DOMAIN 0
+#define LOGI(...) OH_LOG_Print(LOG_APP, LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) OH_LOG_Print(LOG_APP, LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) OH_LOG_Print(LOG_APP, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
 
 #if (RENDER_HAS_VULKAN_BACKEND)
 #include <render/vulkan/intf_device_vk.h>
@@ -331,6 +340,7 @@ void GraphicsContext::Init(const CreateInfo& createInfo)
 
     for (auto info : CORE_NS::GetPluginRegister().GetTypeInfos(I3DPlugin::UID)) {
         if (auto plugin = static_cast<const I3DPlugin*>(info); plugin && plugin->createPlugin) {
+            LOGI("3D plugin:");
             auto token = plugin->createPlugin(*this);
             plugins_.push_back({ token, plugin });
         }
@@ -528,10 +538,12 @@ PluginToken CreatePlugin3D(IRenderContext& context)
 
     IFileManager& fileManager = context.GetEngine().GetFileManager();
 #if (CORE3D_EMBEDDED_ASSETS_ENABLED == 1)
+    LOGI("Embedded assets enabled.");
     // Create rofs3D:// protocol that points to embedded asset files.
     fileManager.RegisterFilesystem("rofs3D", fileManager.CreateROFilesystem(BINARY_DATA_FOR_3D, SIZE_OF_DATA_FOR_3D));
 #endif
     for (uint32_t idx = 0; idx < countof(RENDER_DATA_PATHS); ++idx) {
+        // LOGI("Registering path: %{public}s %{public}s", RENDER_DATA_PATHS[idx].protocol,RENDER_DATA_PATHS[idx].uri);
         fileManager.RegisterPath(RENDER_DATA_PATHS[idx].protocol, RENDER_DATA_PATHS[idx].uri, false);
     }
     context.GetDevice().GetShaderManager().LoadShaderFiles(SHADER_FILE_PATHS);
