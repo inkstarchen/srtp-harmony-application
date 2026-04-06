@@ -1,6 +1,12 @@
 // GlobalSceneProxy.ts
 import { Scene, Node, PostProcessSettings, ToneMappingType, Vec3, EnvironmentBackgroundType, NodeType, Camera, LightType,
-  Vec2 } from "@kit.ArkGraphics3D";
+  Vec2,
+  Geometry,
+  MaterialType,
+  MetallicRoughnessMaterial,
+  SceneResourceParameters,
+  Light,
+  Blend} from "@kit.ArkGraphics3D";
 import { hilog } from "@kit.PerformanceAnalysisKit";
 import { lookAt, NodeUtil } from "./Utils";
 import { Prompt } from "@kit.ArkUI";
@@ -37,6 +43,7 @@ export class SceneProxy {
   camera: Camera | undefined;
   eventQueue: EventQueueManager = new EventQueueManager();
   resMap: Map<string, Resource> = new Map();
+  lightNodes: Node[] = [];
   @Trace scene: Scene | undefined;
   @Trace options: SceneOptions | undefined;
   @Trace physicalSystem: PhysicsSystemManager = new PhysicsSystemManager();
@@ -181,6 +188,56 @@ export class SceneProxy {
     }
   }
 
+  async addImage(imageUri:string,  imageName:string){
+    let node = await this.addNode('imagetest','plane','imageTest');
+    let gemo = node as Geometry;
+    if(gemo.mesh.subMeshes.length > 0){
+      console.log("has mesh number" + gemo.mesh.subMeshes.length.toString());
+      let count = gemo.mesh.subMeshes.length;
+      for(let i = 0; i < count ; i++){
+        let mesh = gemo.mesh.subMeshes[i];
+        if(mesh.material){
+          console.log("material type is " + mesh.material.materialType.toString());
+          if(mesh.material.materialType == MaterialType.METALLIC_ROUGHNESS){
+            let material = mesh.material as MetallicRoughnessMaterial;
+            if(material.baseColor.image){
+              console.log("material has image");
+            }else{
+              let factory = this.scene?.getResourceFactory();
+              if(factory){
+                if(imageUri && imageName) {
+                  let sceneImageParameter: SceneResourceParameters = {
+                    name: imageName,
+                    uri: imageUri
+                  };
+                  let image = await factory.createImage(sceneImageParameter);
+                  material.baseColor.image = image;
+                  // if(material.blend){
+                  //   material.blend.enabled = true;
+                  // }else {
+                  //   material.blend = { enabled: true } as Blend;
+                  // }
+
+                  material.alphaCutoff = 0.5;
+                }
+              }
+              console.log("material doesn't has image");
+            }
+          }
+        }else{
+          console.log("material doesn't exists");
+        }
+      }
+    }else{
+      console.log("gemo mesh empty");
+    }
+    if(gemo.mesh.materialOverride){
+      console.log("material type is " + gemo.mesh.materialOverride.materialType.toString());
+    }else{
+      console.log("material doesn't exists");
+    }
+  }
+
   async addNode(res: string, name:string, reName:string):Promise<Node | undefined>{
     let resource = this.resMap.get(res);
     if(!resource) return;
@@ -263,6 +320,15 @@ export class SceneProxy {
 
   async traversal(node: Node) {
     console.info('Node name: ' + node.name);
+    
+    // 遍历获取灯光节点
+    if (node.nodeType === NodeType.LIGHT) {
+      const light = node as Light;
+      this.lightNodes.push(node);
+      light.shadowEnabled = true;
+      console.info(`Found Light: ${node.name}, Type: ${light.lightType}, Enabled: ${light.enabled}`);
+    }
+    
     const count = node.children.count();
     for (let i = 0; i < count; i++) {
       const temp = node.children.get(i);

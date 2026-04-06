@@ -1,6 +1,6 @@
 import image from '@ohos.multimedia.image'
 import { ImageUtils } from '../shared/utils/ImageUtils';
-import { RaycastParameters, ShaderMaterial, Vec2, Vec3, Vec4 } from '@kit.ArkGraphics3D';
+import { Image, RaycastParameters, ShaderMaterial, Vec2, Vec3, Vec4 } from '@kit.ArkGraphics3D';
 import { AnimatorOptions, AnimatorResult } from '@kit.ArkUI';
 import { Touch, TouchDown, TouchMove, TouchUp, TOUCH_DEFAULT } from '../shared/utils/TouchManager';
 import { getScreenSize } from '../shared/ui/uiUtils';
@@ -51,7 +51,7 @@ export struct TestPage {
   @Local options: RichEditorOptions = { controller: this.noteViewModel.getController() };
 
   aboutToAppear(): void {
-    this.sceneProxy.loadScene('emptyscene',this.getUIContext());
+    this.sceneProxy.loadScene('imagetest',this.getUIContext());
     this.backAnimator = this.getUIContext().createAnimator(ANIMATION_OPTION);
     this.backAnimator.onFrame = () => {
       this.step++;
@@ -67,6 +67,104 @@ export struct TestPage {
       }
     };
 
+  }
+
+  async captureAndLoadImage() {
+    let now = Date.now();
+    let timeArray = getDateByTimeStamp(now);
+    let array: Array<string> = [];
+    let interPath:string = `/photoCards/${timeArray[0]}_${timeArray[1]}_${timeArray[2]}_${timeArray[3]}_${timeArray[4]}_${timeArray[5]}`;
+    let CardName = `${timeArray[0]}_${timeArray[1]}_${timeArray[2]}_${timeArray[3]}_${timeArray[4]}_${timeArray[5]}`
+    await ImageUtils.TakePictureAndSave(this.getUIContext().getHostContext(),interPath);
+    let fileDir = this.uiContext.getHostContext()?.getApplicationContext().filesDir;
+    let pixMap = await this.getUIContext().getComponentSnapshot().get("page");
+    await this.ReadPixelsRGBA(pixMap);
+    let editablePixel = await this.makeTransparent(pixMap);
+    await this.ReadPixelsRGBA(editablePixel);
+    await ImageUtils.savePixelMapToFile(editablePixel, fileDir + interPath + '/component.png');
+    if(fileDir){
+      array.push(fileDir + interPath + '/capture.png');
+      array.push(fileDir + interPath + '/component.png');
+      let loadPixmap = ImageUtils.TwoImageStencil(array, false);
+      if(loadPixmap){
+        await ImageUtils.savePixelMapToFile(loadPixmap, fileDir + interPath + '/fix.png');
+        this.sceneProxy.addImage(fileDir + interPath + '/component.png',CardName);
+      }
+    }
+  }
+
+  async ReadPixelsRGBA(pixelMap : image.PixelMap) {
+  const area: image.PositionArea = {
+    pixels: new ArrayBuffer(8), // 8为需要创建的像素buffer大小，取值为：height * width *4。
+    offset: 0,
+    stride: 8,
+    region: { size: { height: 1, width: 2 }, x: 0, y: 0 }
+  };
+  if (pixelMap != undefined) {
+    pixelMap.readPixels(area, (error: BusinessError) => {
+      if (error) {
+        console.error("Failed to read pixelmap from the specified area. code is ", error);
+        return;
+      } else {
+        console.info('Succeeded in reading pixelmap from the specified area.');
+        console.info('RGBA data is ', new Uint8Array(area.pixels));
+      }
+    })
+  }
+}
+
+  async makeTransparent(pixelMap: image.PixelMap) : Promise<image.PixelMap> {
+    const info = await pixelMap.getImageInfo();
+    const width = info.size.width;
+    const height = info.size.height;
+
+    // 1. 准备缓冲区
+    const byteLength = width * height * 4;
+    const buffer = new ArrayBuffer(byteLength);
+
+    const area: image.PositionArea = {
+      offset: 0,
+      pixels: buffer,
+      stride: width * 4,
+      region: { size: { width: width, height: height }, x: 0, y: 0 }
+    };
+
+    const initOptions: image.InitializationOptions = {
+      editable: true, // 【关键】设置为可编辑
+      pixelFormat: image.PixelMapFormat.RGBA_8888, // 建议指定格式，通常将 BGRA 转为 RGBA 使用
+      size: {
+        width: width,
+        height: height
+      }
+    };
+    await pixelMap.readPixels(area);
+
+
+    console.log("pixelMap is editable" + pixelMap.isEditable);
+
+    // 2. 读取像素
+
+
+    // 3. 使用 Uint32Array 视图
+    // 在小端序系统中，RGBA (0,0,0,1) 对应的 32位整数是 0x01000000
+    const pixelData = new Uint32Array(buffer);
+
+    // 定义目标匹配值：Alpha=1 (0x01), R=0, G=0, B=0
+    // 注意：这里假设 PixelMap 格式是 RGBA_8888
+    const TARGET_COLOR = 0x01000000;
+
+    for (let i = 0; i < pixelData.length; i++) {
+      // 直接比较 32 位整数，比分别比较 R,G,B,A 快得多
+      if (pixelData[i] === TARGET_COLOR) {
+        // 将 Alpha 变为 0 (即整个像素变为 0x00000000)
+        pixelData[i] = 0x01010101;
+      }
+    }
+    let editablePixelMap = await image.createPixelMap(buffer, initOptions);
+    console.log("editablePixelMap is editable" + editablePixelMap.isEditable);
+    // 4. 写回
+    await editablePixelMap.writePixels(area);
+    return editablePixelMap;
   }
 
   async captureAndDisplay() {
@@ -102,6 +200,10 @@ export struct TestPage {
           .onClick(async () => {
             await this.captureAndDisplay();
           })
+        Button("ImageTest")
+          .onClick(async () => {
+            await this.captureAndLoadImage();
+          })
       }
       .width("100%")
       .height("100%")
@@ -116,6 +218,7 @@ export struct TestPage {
                 TextInput({ text: "无标题" })
                   .layoutWeight(1)
                   .fontSize(20)
+                  .fontColor("#ff414141")
                   .fontWeight(FontWeight.Bold)
                   .backgroundColor(Color.Transparent)
                   .maxLines(1)
@@ -168,10 +271,10 @@ export struct TestPage {
           .padding(10)
           .width("100%")
           .height('100%')
-          .id("page")
         }
         .clip(true)
-        .border({radius: 15,width:0})
+        .id("page")
+        .border({radius: 60,width:0})
         .shadow(ShadowStyle.OUTER_DEFAULT_XS)
         .width("60%")
         .height('60%')
