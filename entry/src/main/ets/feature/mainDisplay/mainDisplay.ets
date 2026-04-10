@@ -1,22 +1,26 @@
 import { PageId, PhysicsScroller, PosLimiter } from "../../shared/utils/PosLimiter";
 import { DateInfo, getDateByTimeStamp, getDateInfo, getDateStringWithTimeStamp } from "../../shared/utils/Time/time";
 import { entryCard } from "../note/component/entryCard/entryCard";
-import { AnimatorResult, App, LengthMetrics, Prompt } from "@kit.ArkUI";
+import { AnimatorResult} from "@kit.ArkUI";
 import { NoteService } from "../note/NoteService";
 import { NoteInfo } from "../note/NoteState";
-import { DateItem, SlidingDateModel } from "../../shared/utils/Time/SlideTimeModel";
-import { SlideList } from "../SlideList/SlideList";
+import { DateItem} from "../../shared/utils/Time/SlideTimeModel";
 import { clipNum } from "../../core/math/mathUtil";
 import { TraceVec2 } from "../../core/math/vec";
 import { ThemeManager, ThemeState } from "../../theme/core/ThemeManager";
 import { NoteViewModel } from "../note/NoteViewModel";
 
+export enum CardState {
+  SHOW = 0,
+  SELECTION = 1
+}
+
 const CARD_DISAPPEAR_DUR = 100;
 const CARD_APPEAR_DUR = 500;
-
+const SHADOW_FLOAT = {radius:15,offsetY:10,color: "#ffc8c8c8" } as ShadowOptions;
 @ComponentV2
 export struct mainDisplay{
-
+  @Local cardState: CardState = CardState.SHOW;
   @Local selectedTextColor: Color = Color.Black;
   @Local editing: boolean = false;
   @Local isColorPickerOpen: boolean = false;
@@ -49,19 +53,32 @@ export struct mainDisplay{
   })
   @Local cardOpacity:number = 0;
   @Local cardOffset: number = 0;
-  @Local TimeLineOpacity: number = 0;
-  @Local slideTime:SlidingDateModel = new SlidingDateModel();
-  selectedData: DateItem = this.slideTime.createItem(new Date(),0);
-  @Local weekStr:string = this.selectedData.weekStr;
-  @Local dayStr:string = this.selectedData.dayStr;
-  @Local data: number[] = [30,20,10];
+
+  @Require @Param selectedData: DateItem;
+
   @Require @Param limit:PhysicsScroller;
   @Require @Param timeNow:number;
   @Local dateInfo:DateInfo = getDateInfo(new Date());
   fileList: string[] = [];
   @Local notes: NoteInfo[] = [];
-  @Event setRubber: () => void;
-  @Local slideDisplay: boolean = false;
+  @Event FreshDateFinished:() => void;
+  @Param needFreshDate:boolean = false;
+  @Monitor("needFreshDate")
+  onFreshDateChange(monitor:IMonitor){
+    if((monitor.value()?.now as boolean)){
+      this.cardDisappearAnim.play();
+    }
+  }
+
+  @Event FreshFinished:() => void;
+  @Param needsFresh: boolean = false;
+  @Monitor("needsFresh")
+  onFreshChange(monitor:IMonitor){
+    if((monitor.value()?.now as boolean)){
+      this.refreshNotes();
+    }
+  }
+
 
   refreshNotes() {
     let timeArray = getDateByTimeStamp(this.selectedData.timestamp);
@@ -88,8 +105,8 @@ export struct mainDisplay{
           this.notes.push(info);
         }
       })
-
     })
+    this.FreshFinished();
   }
 
   parseDateTimeFromPath(path: string, fileName: string): string | null {
@@ -161,196 +178,73 @@ export struct mainDisplay{
       this.cardOpacity = progress;
       this.cardOffset = (1 - progress) * 100;
     }
+    this.cardAppearAnim.onFinish = () => {
+      this.FreshDateFinished();
+    }
   }
 
-
   build() {
-    Stack({alignContent:Alignment.Bottom}){
-      Row({ space: 10 }) {
-        // ==== 时间 START =====
-        Stack({alignContent:Alignment.Top}){
-          SlideList({
-            display: this.slideDisplay,
-            setItem:(item:DateItem) => {
-              this.selectedData.timestamp = item.timestamp;
-              this.weekStr = item.weekStr;
-              this.dayStr = item.dayStr;
-              this.cardDisappearAnim.play();
-            },
-            setOpacity: () => {
-              this.slideDisplay = false;
-              if(this.TimeLineOpacity){
-                this.TimeLineOpacity = 0;
-              }else{
-                this.TimeLineOpacity = 0.5;
-              }
-              this.setRubber();
-            }
-          })
-          Stack({alignContent:Alignment.Center}) {
-            Column(){
-              Text(this.weekStr)
-                .fontSize(12)
-              Text(this.dayStr)
-                .fontSize(20)
-                .fontWeight(500)
-            }
-            .animation({
-              duration:500,
-              iterations:0,
-              curve:Curve.Linear,
-              delay:0
-            })
+    Column() {
+      Row(){
+      }
+      .width("100%")
+      .height(100)
+      .zIndex(2)
+      // ==== entry卡片排列 START====
+      List({ space: 20 }) {
+        if(this.notes.length === 0){
+          ListItem(){
+            Text("本日没有任何记录.")
+              .fontSize(15)
+              .fontColor("#da333839")
           }
           .width("100%")
-          .height(40)
-          .opacity(this.TimeLineOpacity ? 0 : 1)
-          .backgroundColor("#00ffffff")
-          .animation({
-            duration:500,
-            iterations:1,
-            delay:0,
-            curve:Curve.Linear
-          })
-          .onClick(() => {
-            this.slideDisplay = true;
-            if(this.TimeLineOpacity){
-              this.TimeLineOpacity = 0;
-            }else{
-              this.TimeLineOpacity = 0.5;
-            }
-            this.setRubber();
-          })
-          .hitTestBehavior(this.slideDisplay ? HitTestMode.BLOCK_DESCENDANTS : HitTestMode.Default)
         }
-        .hitTestBehavior(HitTestMode.None)
-        .width("20%")
-        .height(800)
-        // ==== 时间 END ====
-        // ==== entry卡片排列 START====
-        List({ space: 20 }) {
-          if(this.notes.length === 0){
-            ListItem(){
-              Text("本日没有任何记录.")
-                .fontSize(15)
-                .fontColor("#da333839")
-            }
-            .translate({x:40,y:0})
-          }
-          ForEach(this.notes, (info:NoteInfo, key) => {
-            ListItem(){
-              entryCard({
-                editNote: (info:NoteInfo) => {
-                  this.getUIContext().getRouter().pushUrl({
-                    url:"pages/NotePage",
-                    params: info
-                  })
-                },
-                deleteNote:(info:NoteInfo) => {
-                  this.notes = this.notes.filter(n => n.fileName !== info.fileName);
-                  this.noteViewModel.deleteNote(info).then(() => {
-                    this.refreshNotes()
-                  })
-                },
-
-                noteInfo: info,
-                depth: (3 - clipNum(key,0,3)) * 10 + 10,
-                angle: this.timeNow
-              })
-            }
-          })
-        }
-        .width("70%")
-        .height("100%")
-        .clip(false)
-        .scrollBar(BarState.Off)
-        .opacity(this.cardOpacity)
-        .translate({y:this.cardOffset})
-        // ==== entry卡片排列 END ====
-      }
-      .justifyContent(FlexAlign.Center)
-      .alignItems(VerticalAlign.Top)
-      .height("90%")
-      .width("90%")
-      .hitTestBehavior(HitTestMode.None)
-      .backgroundColor("#00fff8eb")
-
-      Row(){
-        Button({ type: ButtonType.Circle }) {
-          SymbolGlyph($r("sys.symbol.plus"))
-            .fontSize(20)
-            .fontColor([Color.Black]) //?
-        }
-        .backgroundColor('#00000000')
-        .width(40)
-        .height(40)
-        RichEditor(this.options)
-          .onSelectionChange((range: RichEditorRange) => {
-            if (range.start === undefined || range.end === undefined) {
-              return;
-            }
-            const start = range.start;
-            const end = range.end;
-            this.noteViewModel.updateSelection(start, end);
-          })
-          .placeholder('开始记录您的想法...', {
-            fontColor: Color.Gray,
-            font: {
-              size: 16,
-              weight: FontWeight.Normal,
-              family: "HarmonyOS Sans",
-              style: FontStyle.Normal
-            }
-          })
-          .border({
-            width: 1,
-            color: '#EEEEEE',
-            radius: 8
-          })
-          .backgroundColor(Color.White)
-          .width('70%')
-          .onEditingChange(async (edit) => {
-            this.editing = edit;
-          })
-          .height("80%")
-        Button({ type: ButtonType.Circle }) {
-          SymbolGlyph($r("sys.symbol.paperplane_right_fill"))
-            .fontSize(20)
-            .fontColor([Color.Black]) //?
-        }
-        .onClick(() => {
-          let spans = this.noteViewModel.editorController.controller.getSpans({start:0,end:1});
-          if (spans.length != 0){
-            this.noteViewModel.newNote();
-            this.noteViewModel.saveNote().then(() =>{
-              this.noteViewModel.editorController.cleanAll();
-              this.refreshNotes();
+        ForEach(this.notes, (info:NoteInfo, key) => {
+          ListItem(){
+            entryCard({
+              setCardState:() => {
+                this.cardState = CardState.SELECTION;
+              },
+              cardState:this.cardState,
+              editNote: (info:NoteInfo) => {
+                this.getUIContext().getRouter().pushUrl({
+                  url:"pages/NotePage",
+                  params: info
+                })
+              },
+              deleteNote:(info:NoteInfo) => {
+                this.notes = this.notes.filter(n => n.fileName !== info.fileName);
+                this.noteViewModel.deleteNote(info).then(() => {
+                  this.refreshNotes()
+                })
+              },
+              noteInfo: info,
+              depth: (3 - clipNum(key,0,3)) * 10 + 10,
+              angle: this.timeNow
             })
           }
         })
-        .backgroundColor('#00000000')
-        .width(40)
-        .height(40)
+        ListItem(){
+        }
+        .height(200)
+        .width("100%")
       }
-      .justifyContent(FlexAlign.SpaceAround)
-      .alignItems(VerticalAlign.Center)
-      .translate({x:0,y:this.editing ? -300 : 0 })
-      .animation({
-        duration:250,
-        delay:0,
-        iterations:1,
-        curve:Curve.EaseInOut
-      })
-      .border({radius:15,width:1})
-      .width("90%")
-      .height(50)
-      .backgroundColor("#ffffffff")
+      .width("70%")
+      .height("100%")
+      .clip(false)
+      .scrollBar(BarState.Off)
+      .opacity(this.cardOpacity)
+      .translate({y:this.cardOffset})
+      .zIndex(1)
+      // ==== entry卡片排列 END ====
     }
+    .justifyContent(FlexAlign.Center)
+    .alignItems(HorizontalAlign.Center)
     .hitTestBehavior(HitTestMode.None)
-    .translate( { x: this.mainOffset.x + this.limit.pos.x, y: this.mainOffset.y + this.limit.pos.y })
     .height("100%")
     .width("100%")
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     .backgroundColor("#00ffffff")
-
   }
 }

@@ -5,24 +5,19 @@ import { ColorUtil } from "../../../../shared/utils/ColorUtil";
 import { NoteInfo } from "../../NoteState";
 import { NoteViewModel } from "../../NoteViewModel";
 import { ThemeManager, ThemeState } from "../../../../theme/core/ThemeManager";
+import { CardState } from "../../../mainDisplay/mainDisplay";
 
 enum State{
   NONE = 0,
-  SELECT = 1,
+  SELECTED = 1,
 }
-
-enum CardState{
-  NONE = 0,
-  DISPLAY = 1,
-}
-
 @Preview
 @ComponentV2
 export struct entryCard{
-
+  @Require @Param cardState:CardState;
   maxTilt: number = 15;
   perspective: number = 2000;
-
+  @Event setCardState: () => void;
   @Local transformMatrix: matrix4.Matrix4Transit = matrix4.identity();
   @Local shadowX: number = 0;
   @Local shadowY: number = 0;
@@ -106,24 +101,24 @@ export struct entryCard{
           RichEditor(this.options)
             .hitTestBehavior(HitTestMode.None)
             .barState(BarState.Off)
-            .maxLength(39)
+            .maxLines(4)
             .height(80)
-            .width('80%')
+            .width('90%')
 
-          Button({ type: ButtonType.Circle }) {
-            SymbolGlyph($r("sys.symbol.close_sidebar"))
+          if(this.cardState == CardState.SELECTION){
+            SymbolGlyph(this.state == State.NONE ? $r("sys.symbol.circle") : $r("sys.symbol.smallcircle_filled_circle"))
               .fontSize(20)
-              .fontColor([Color.Black]) //?
+              .fontColor(["#ff51c1ff"])
           }
-          .bindMenu(this.MyMenu(() => {
-              this.deleteNote(this.noteInfo);
-            },
-            () => {
-              this.editNote(this.noteInfo);
-            }))
-          .backgroundColor('#00000000')
-          .width(40)
-          .height(40)
+          // Button({ type: ButtonType.Circle }) {
+          //   SymbolGlyph($r("sys.symbol.close_sidebar"))
+          //     .fontSize(20)
+          //     .fontColor([Color.Black]) //?
+          // }
+
+          // .backgroundColor('#00000000')
+          // .width(40)
+          // .height(40)
         }
         .height(80)
         .width('100%')
@@ -139,6 +134,12 @@ export struct entryCard{
         .width("100%")
         .height(20)
       }
+      .bindContextMenu(this.MyMenu(() => {
+        this.deleteNote(this.noteInfo);
+      },
+        () => {
+          this.editNote(this.noteInfo);
+        }),ResponseType.LongPress)
       .border({ radius: 15, width: 0, color: "#fff" })
       .padding({left:15,top:15,bottom:5})
       .alignItems(HorizontalAlign.Start)
@@ -155,14 +156,27 @@ export struct entryCard{
         {radius:this.touched ? 50: 20,color:"#ffe2dbdb",offsetX:this.shadowX,offsetY:this.shadowY}
         // this.uiShadow(30 + this.angle,this.depth,20,0.25)
       )
+
       .animation({
         duration:100,
         delay:0,
         iterations:1,
         curve:Curve.EaseInOut,
       })
+      // .gesture(
+      //   // 设置长按手势识别器识别的手势的最大移动距离为200px
+      //   LongPressGesture({ repeat: true, allowableMovement: 200 })
+      //   // 由于repeat设置为true，长按动作存在时会连续触发，触发间隔为duration（默认值500ms）
+      //     .onAction((event: GestureEvent) => {
+      //       // this.setCardState();
+      //       // this.state = State.SELECTED;
+      //     })
+      //     // 长按动作一结束触发
+      //     .onActionEnd((event: GestureEvent) => {
+      //
+      //     })
+      // )
       .onTouch((event) => {
-
         if(event.type == TouchType.Down){
           this.touched = true;
         }else if(event.type == TouchType.Move){
@@ -178,12 +192,15 @@ export struct entryCard{
 
       .backgroundColor(this.themeState.tokens.primaryContainer)
       .onClick(() => {
-        this.Choose();
-        if(this.state == State.NONE){
-          this.state = State.SELECT;
-        }else{
-          this.state = State.NONE;
-        }
+        // if(this.cardState == CardState.SELECTION){
+        //   if(this.state == State.NONE){
+        //     this.state = State.SELECTED;
+        //   }else {
+        //     this.state = State.NONE;
+        //   }
+        // }else{
+        //   this.editNote(this.noteInfo);
+        // }
       })
   }
 

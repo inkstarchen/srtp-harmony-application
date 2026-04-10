@@ -312,7 +312,7 @@ export struct TestPage {
         this.sceneProxy.sendTouchUp();
       }
     })
-    .translate({x:this.photoOffset.x + this.translatePos.x,y:this.photoOffset.y + this.translatePos.y})
+    // .translate({x:this.photoOffset.x + this.translatePos.x,y:this.photoOffset.y + this.translatePos.y})
     .width("100%")
     .height("100%")
 

@@ -52,6 +52,7 @@ export class NoteViewModel {
     let data = this.noteState.getNoteData();
     if(!data) return;
     await this.editorController.rebuildEditorContentMain(data);
+    this.editorController.controller.setCaretOffset(0);
   }
 
   async init(path: string): Promise<boolean>{

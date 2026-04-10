@@ -1,5 +1,5 @@
 import { display, Size } from "@kit.ArkUI";
-
+export const SHADOW_FLOAT = {radius:15,offsetY:10,color: "#ffc8c8c8" } as ShadowOptions;
 /**
  * 获取屏幕尺寸
  */

@@ -83,22 +83,22 @@ export struct SlideList{
       this.init = true;
       this.createItem();
       this.resetAnim.onFrame = (progress) => {
-        this.distance.y = progress * this.targetPos + (1 - progress) * this.lastPos;
+        this.distance.x = progress * this.targetPos + (1 - progress) * this.lastPos;
       }
       this.resetAnim.onFinish = () => {
-        if(this.distance.y > 0){
+        if(this.distance.x > 0){
           let newData = this.slidingDateModel.createItem(this.DisplayList[(this.selectedIndex + 3) % 7].dataInfo.date,-7);
           this.DisplayList[(this.selectedIndex + 3) % 7] = {dataInfo:newData,index:(this.selectedIndex + 3) % 7};
           this.selectedIndex  = (this.selectedIndex + 6) % 7;
           this.change = true;
-        }else if(this.distance.y < 0){
+        }else if(this.distance.x < 0){
           let newData = this.slidingDateModel.createItem(this.DisplayList[(this.selectedIndex + 7 - 3) % 7].dataInfo.date,7);
           this.DisplayList[(this.selectedIndex + 7 - 3) % 7] = {dataInfo:newData,index:(this.selectedIndex + 7 - 3) % 7};
           this.selectedIndex  = (this.selectedIndex + 1) % 7;
           this.change = true;
         }
         this.playAnim = false;
-        this.distance.y = 0;
+        this.distance.x = 0;
         if(!this.change){
           this.setOpacity();
           this.fadeTarget = 0;
@@ -140,7 +140,7 @@ export struct SlideList{
             .fontWeight(500)
             .fontColor(this.themeState.tokens.onBackground)
         }
-        .translate({y:circularDelta(item.index,this.selectedIndex,7) * (ITEM_HEIGHT + ITEM_SPACE) + this.distance.y})
+        .translate({x:circularDelta(item.index,this.selectedIndex,7) * (ITEM_HEIGHT + ITEM_SPACE) + this.distance.x})
         .width(ITEM_WIDTH)
         .opacity(this.fadeOpacity)
         .height(ITEM_HEIGHT)
@@ -152,17 +152,16 @@ export struct SlideList{
         .fill("#00ffffff")
         .width("100%")
         .height("100%")
-        .linearGradient({direction:GradientDirection.Top,colors:[
-          [this.themeState.tokens.background,0.0],
-          [this.themeState.tokens.background,0.2],
-          [colorWithAlpha(this.themeState.tokens.background,0),0.5],
-          [this.themeState.tokens.background,0.8],
-          [this.themeState.tokens.background,1.0]]})
+        .linearGradient({direction:GradientDirection.Left,colors:[
+          [this.themeState.tokens.surface,0.0],
+          [this.themeState.tokens.surface,0.05],
+          [colorWithAlpha(this.themeState.tokens.surface,0),0.5],
+          [this.themeState.tokens.surface,0.95],
+          [this.themeState.tokens.surface,1.0]]})
     }
-    .width(50)
-    .height(280)
+    .height(50)
     .clip(true)
-    .translate({y: -119})
+    .translate({y:1})
     .backgroundColor("#00ffffff")
     .hitTestBehavior(this.display ? HitTestMode.Default : HitTestMode.None)
     .onTouch((event) => {
@@ -172,16 +171,16 @@ export struct SlideList{
           this.touchState = TouchState.MOVE;
         }
         else if(this.touchState == TouchState.MOVE && event.type === TouchType.Move){
-          this.distance.y = this.touchM.curPos.y - this.touchM.downPos.y;
+          this.distance.x = this.touchM.curPos.x - this.touchM.downPos.x;
           let itemNum = 0;
-          if(this.distance.y > 0){
-            itemNum = Math.floor(this.distance.y / (ITEM_WIDTH + ITEM_SPACE));
+          if(this.distance.x > 0){
+            itemNum = Math.floor(this.distance.x / (ITEM_WIDTH + ITEM_SPACE));
           } else {
-            itemNum = Math.ceil(this.distance.y / (ITEM_WIDTH + ITEM_SPACE));
+            itemNum = Math.ceil(this.distance.x / (ITEM_WIDTH + ITEM_SPACE));
           }
 
           if(itemNum !== 0){
-            this.distance.y -= (ITEM_WIDTH + ITEM_SPACE) * itemNum;
+            this.distance.x -= (ITEM_WIDTH + ITEM_SPACE) * itemNum;
             if(itemNum > 0){
               let newData = this.slidingDateModel.createItem(this.DisplayList[(this.selectedIndex + 3) % 7].dataInfo.date,-7);
               this.DisplayList[(this.selectedIndex + 3) % 7] = {dataInfo:newData,index:(this.selectedIndex + 3) % 7};
@@ -193,20 +192,20 @@ export struct SlideList{
               this.selectedIndex  = (this.selectedIndex + 1) % 7;
               this.change = true;
             }
-            this.touchM.downPos.y = this.touchM.curPos.y;
+            this.touchM.downPos.x = this.touchM.curPos.x;
           }
 
         }
         else if(this.touchState == TouchState.MOVE && event.type === TouchType.Up){
           this.touchState = TouchState.IDLE;
-          this.lastPos = this.distance.y;
-          if(Math.abs(this.distance.y) < ITEM_WIDTH / 2){
+          this.lastPos = this.distance.x;
+          if(Math.abs(this.distance.x) < ITEM_WIDTH / 2){
             this.targetPos = 0;
           }
-          else if(this.distance.y < 0){
+          else if(this.distance.x < 0){
             this.targetPos = -(ITEM_WIDTH + ITEM_SPACE);
           }
-          else if(this.distance.y > 0){
+          else if(this.distance.x > 0){
             this.targetPos = (ITEM_WIDTH + ITEM_SPACE);
           }
           if(this.resetAnim){
