@@ -1,0 +1,44 @@
+{
+    "compatibility_info": {
+        "version": "22.00",
+        "type": "systemgraph"
+    },
+    "systems": [
+        {
+            "typeName": "AnimationSystem"
+        },
+        {
+            "typeName": "LocalMatrixSystem"
+        },
+        {
+            "typeName": "NodeSystem"
+        },
+        {
+            "typeName": "WeatherSystem"
+        },
+        {
+            "typeName": "RenderPreprocessorSystem"
+        },
+        {
+            "typeName": "MorphingSystem"
+        },
+        {
+            "typeName": "SkinningSystem"
+        },
+        {
+            "typeName": "ParticleSystem",
+            "optional": true
+        },
+        {
+            "typeName": "RenderSystem"
+        },
+        {
+            "typeName": "EditorRenderSystem",
+            "optional": true
+        },
+        {
+            "typeName": "DevGuiSystem",
+            "optional": true
+        }
+    ]
+}

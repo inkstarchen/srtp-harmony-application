@@ -8,6 +8,7 @@
 #include <hilog/log.h>
 #include <string>
 #include <cmath>
+#include <algorithm>
 #include "Inertial.h"
 #include "physicalSystem.h"
 #include "buffer.h"
@@ -27,6 +28,7 @@ napi_value PhysicsSystem::New(napi_env env, napi_callback_info info)
     OH_LOG_INFO(LOG_APP, "PhysicsSystem::New called");
     
     napi_value newTarget;
+    // 用于判断是否使用了 new 来进行构造
     napi_get_new_target(env, info, &newTarget);
     if (newTarget != nullptr) {
         size_t argc = 1;
@@ -38,6 +40,7 @@ napi_value PhysicsSystem::New(napi_env env, napi_callback_info info)
         size_t capacity = 0;
         napi_valuetype valuetype;
         napi_typeof(env, args[0], &valuetype);
+        // 判断是否传入了容量初始化值
         if (valuetype != napi_undefined) {
             napi_get_value_uint32(env, args[0], &value);
             capacity = static_cast<size_t>(value);
@@ -93,7 +96,7 @@ napi_value PhysicsSystem::Release(napi_env env, napi_callback_info info){
 
 // 初始化获取足够的内存空间
 PhysicsSystem::PhysicsSystem(size_t cap)
-    : count(0), env_(nullptr), wrapper_(nullptr), gravity(Vector3(0.0f,0.0f,1.0f)), cameraPos(Vector3(0.0f,0.0f,-4.0f)), fov(1.57f),ratio(1.0f)
+    : count(0), env_(nullptr), wrapper_(nullptr), gravity(Vector3(0.0f,0.0f,1.0f)), cameraPos(Vector3(0.0f,0.0f,-6.0f)), fov(1.57f),ratio(1.0f)
 {
     initHandlers();
     capacity = alignCapacity(cap);
@@ -104,8 +107,10 @@ PhysicsSystem::PhysicsSystem(size_t cap)
     
     // 计算 float / int / byte 数量
     const size_t floatCount = 
-        3 + 4 + 3 + 3 + 3 + 6 + 3;
-    // pos + rot + vel + acc + force + bounds + material
+        3  +  4  +  3  +   3    +   3   +   3    
+    // pos + rot + vel + angVel + force + torque
+    +   3  +  3 +  + 3 + 3 + 3 + 3;
+    // impulse + invInertial + scale + scale + extent + material
     
     size_t bytes = 
         capacity * (
@@ -204,16 +209,13 @@ uint32_t PhysicsSystem::newNode()
 {
     uint32_t id;
     if(!free_list.empty()) {
-        OH_LOG_INFO(LOG_APP,"free_list not empty");
         id = free_list.back();
         free_list.pop_back();
         count++;
     } else {
-        OH_LOG_INFO(LOG_APP,"free_list empty");
         id = count++;
         assert(id < capacity && "Exceed capacity");
     }
-    OH_LOG_INFO(LOG_APP, "id test | %{public}d", id);
     return id;
 }
 
@@ -265,26 +267,11 @@ napi_value PhysicsSystem::Update(napi_env env, napi_callback_info info)
     return returnObj;
 }
 
-//napi_value PhysicsSystem::RayCast(napi_env env, napi_callback_info info) {
-//    size_t argc = 1;
-//    napi_value argv[1];
-//    napi_value jsThis;
-//    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
-//
-//    napi_value touch_pos_val = argv[0];
-//    Vector2 touch_pos = napi_helpers::parse_vector2(env, touch_pos_val);
-//
-//    Vector3 cameraPos = Vector3(0.0,0.0,-4.0);
-//    Vector3 front = Vector3(0.0,0.0,1.0);
-//    Vector3 up = Vector3(0.0,1.0,0.0);
-//    Vector3 right = Vector3(1.0,0.0,0.0);
-//    Vector3 virtual_pos = (up * touch_pos.y + right * touch_pos.x) * (- cameraPos.z);
-//    Vector3 dir = (virtual_pos - cameraPos).normalized();
-//}
+
 
 // 处理 ArkTS 传递的事件队列
 void PhysicsSystem::processEventQueueFromJS(const std::vector<std::vector<EventCommand>> &events) {
-//    OH_LOG_INFO(LOG_APP,"EVENTCOMMAND | START %{public}d", events.size());
+    OH_LOG_INFO(LOG_APP,"EVENTCOMMAND | START %{public}d", events.size());
     // 按优先级处理事件（HIGH → NORMAL → LOW）
     for (const auto& queue : events) {       // 外层队列
 //        OH_LOG_INFO(LOG_APP,"EVENTCOMMAND | MID %{public}d", queue.size());
@@ -650,24 +637,103 @@ napi_value PhysicsSystem::update(napi_env env, napi_callback_info info)
 
 void PhysicsSystem::step(float dt)
 {
+    // === 自适应子步长 ===
+//    int subSteps = computeSubSteps(dt);
+    int subSteps = 1;
+    float subDt = dt / subSteps;
 
-    // 1. 碰撞检测
-    detectCollisions();
+    for (int i = 0; i < subSteps; ++i)
+    {
+        // 1. 碰撞检测
+        detectCollisions();
 
-    // 2. 构建接触点
-    buildContacts();
+        // 2. 构建接触点
+        buildContacts();
 
-    // 3. 解算接触点
-    solveContacts();
+        // 3. 解算接触点
+        solveContacts();
 
-    // 4. 速度积分
-    integrateVelocity(dt);
+        // 4. 速度积分
+        integrateVelocity(subDt);
 
-    // 5. 位置修正
-    positionalCorrection();
+        // 5. 速度限制（防止穿透）
+        clampVelocity(subDt);
 
-    // 6. 位置积分
-    integratePosition(dt);
+        // 6. 位置修正
+        positionalCorrection();
+
+        // 7. 位置积分
+        integratePosition(subDt);
+    }
+}
+
+// 计算需要的子步数
+int PhysicsSystem::computeSubSteps(float dt)
+{
+    const int MAX_SUB_STEPS = 8;       // 最大子步数限制
+    const float SAFETY_FACTOR = 0.4f;  // 安全系数：最大位移 = minExtent * SAFETY_FACTOR
+
+    int maxNeeded = 1;
+
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        if (isStatic[i]) continue;
+
+        // 计算速度
+        float speed = sqrtf(vel_x[i]*vel_x[i] + vel_y[i]*vel_y[i] + vel_z[i]*vel_z[i]);
+
+        if (speed < 1e-6f) continue;
+
+        // 计算物体最小尺寸
+        float minExtent = std::min({extent_x[i], extent_y[i], extent_z[i]});
+
+        // 最大允许位移 = 最小尺寸 * 安全系数
+        float maxMove = minExtent * SAFETY_FACTOR;
+        if (maxMove < 1e-6f) maxMove = 0.01f;  // 防止太薄的物体
+
+        // 需要的子步数 = ceil(位移 / 最大位移)
+        float move = speed * dt;
+        int needed = static_cast<int>(ceilf(move / maxMove));
+
+        maxNeeded = std::max(maxNeeded, needed);
+    }
+
+    return std::min(maxNeeded, MAX_SUB_STEPS);
+}
+
+// 限制速度，防止穿透
+void PhysicsSystem::clampVelocity(float dt)
+{
+    const float SAFETY_FACTOR = 0.4f;
+
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        if (isStatic[i]) continue;
+
+        float speed = sqrtf(vel_x[i]*vel_x[i] + vel_y[i]*vel_y[i] + vel_z[i]*vel_z[i]);
+
+        if (speed < 1e-6f) continue;
+
+        // 计算最小尺寸
+        float minExtent = std::min({extent_x[i], extent_y[i], extent_z[i]});
+        float maxMove = minExtent * SAFETY_FACTOR;
+        if (maxMove < 1e-6f) maxMove = 0.01f;
+
+        // 最大允许速度
+        float maxSpeed = maxMove / dt;
+
+        if (speed > maxSpeed)
+        {
+            float scale = maxSpeed / speed;
+            vel_x[i] *= scale;
+            vel_y[i] *= scale;
+            vel_z[i] *= scale;
+
+            OH_LOG_INFO(LOG_APP,
+                "Velocity clamped: id=%{public}u, oldSpeed=%{public}.3f, newSpeed=%{public}.3f, minExtent=%{public}.3f",
+                i, speed, maxSpeed, minExtent);
+        }
+    }
 }
 
 void PhysicsSystem::detectCollisions() {
@@ -675,8 +741,17 @@ void PhysicsSystem::detectCollisions() {
     for(uint32_t i = 0 ; i < count; ++i){
         for(uint32_t j = i + 1 ; j < count; ++j){
             if(isStatic[i] && isStatic[j]) continue;
+            
+            // 调试日志：输出每个物体的位置和尺寸
+//            OH_LOG_INFO(LOG_APP, 
+//                "Debug: i=%{public}u pos=(%{public}.3f,%{public}.3f,%{public}.3f) extent=(%{public}.3f,%{public}.3f,%{public}.3f) shape=%{public}d static=%{public}d",
+//                i, pos_x[i], pos_y[i], pos_z[i], extent_x[i], extent_y[i], extent_z[i], shapeType[i], isStatic[i]);
+//            OH_LOG_INFO(LOG_APP, 
+//                "Debug: j=%{public}u pos=(%{public}.3f,%{public}.3f,%{public}.3f) extent=(%{public}.3f,%{public}.3f,%{public}.3f) shape=%{public}d static=%{public}d",
+//                j, pos_x[j], pos_y[j], pos_z[j], extent_x[j], extent_y[j], extent_z[j], shapeType[j], isStatic[j]);
+            
             if(testCollision(i, j)){
-//                OH_LOG_INFO(LOG_APP, "YES");
+                OH_LOG_INFO(LOG_APP, "CollisionTest: A=%{public}u B=%{public}u",i,j);
                 possiblePairs.emplace_back(i,j);
             }
         }
@@ -692,6 +767,8 @@ void PhysicsSystem::buildContacts() {
         c.a = idA;
         c.b = idB;
         ContactDispatch::dispatch(*this, idA, idB,c);
+        OH_LOG_INFO(LOG_APP,"CollisionTest: Contact | A=%{public}u, B=%{public}u, penetration=%{public}f, normalx=%{public}f,normaly=%{public}f,normalz=%{public}f,pointx=%{public}f,pointy=%{public}f,pointz=%{public}f,res=%{public}f",
+        idA,idB,c.penetration,c.normal.x,c.normal.y,c.normal.z,c.point.x,c.point.y,c.point.z,c.restitution);
         contact.emplace_back(c);
     }
 }
@@ -699,13 +776,13 @@ void PhysicsSystem::solveContacts() {
     for(const auto&c : contact){
         uint32_t a = c.a;
         uint32_t b = c.b;
-        
-        // 法向冲量
+
+        // 法向
         float nx = c.normal.x;
         float ny = c.normal.y;
         float nz = c.normal.z;
-        
-        // 相对位置 r = contactPoint - pos
+
+        // 接触点相对位置
         float rax = c.point.x - pos_x[a];
         float ray = c.point.y - pos_y[a];
         float raz = c.point.z - pos_z[a];
@@ -713,101 +790,196 @@ void PhysicsSystem::solveContacts() {
         float rbx = c.point.x - pos_x[b];
         float rby = c.point.y - pos_y[b];
         float rbz = c.point.z - pos_z[b];
-        
-         // 速度差 v_rel = (v_b + ω_b × r_b) - (v_a + ω_a × r_a)
+
+        // 角速度叉乘 r：ω × r
         float cross_ax = angVel_y[a]*raz - angVel_z[a]*ray;
         float cross_ay = angVel_z[a]*rax - angVel_x[a]*raz;
         float cross_az = angVel_x[a]*ray - angVel_y[a]*rax;
 
-        float va_rel_x = vel_x[b] + (angVel_y[b]*rbz - angVel_z[b]*rby) - (vel_x[a] + cross_ax);
-        float va_rel_y = vel_y[b] + (angVel_z[b]*rbx - angVel_x[b]*rbz) - (vel_y[a] + cross_ay);
-        float va_rel_z = vel_z[b] + (angVel_x[b]*rby - angVel_y[b]*rbx) - (vel_z[a] + cross_az);
+        float cross_bx = angVel_y[b]*rbz - angVel_z[b]*rby;
+        float cross_by = angVel_z[b]*rbx - angVel_x[b]*rbz;
+        float cross_bz = angVel_x[b]*rby - angVel_y[b]*rbx;
 
-        // 冲量大小 j = -(1 + e) * (v_rel ⋅ n) / (1/m_a + 1/m_b + ...旋转项略)
+        // 相对速度 v_rel = vA + ωA×rA - (vB + ωB×rB)
+        float va_rel_x = (vel_x[a] + cross_ax) - (vel_x[b] + cross_bx);
+        float va_rel_y = (vel_y[a] + cross_ay) - (vel_y[b] + cross_by);
+        float va_rel_z = (vel_z[a] + cross_az) - (vel_z[b] + cross_bz);
+
+        // 法向相对速度
         float relVelAlongNormal = va_rel_x*nx + va_rel_y*ny + va_rel_z*nz;
+
+        // 法线指向 A，relVelAlongNormal > 0 表示 A 正在远离 B（分离），跳过
+        if (relVelAlongNormal > 0.0f) {
+            continue;
+        }
+
         float e = std::min(restitution[a], restitution[b]);
-        float invMassSum = invMass[a] + invMass[b]; // 这里暂时忽略角动量的转动影响
+
+        float invMassA = isStatic[a] ? 0.0f : invMass[a];
+        float invMassB = isStatic[b] ? 0.0f : invMass[b];
+
+        // 简化惯性张量（假设物体绕主轴旋转）
+        float invInertiaA_xx = isStatic[a] ? 0.0f : invInertial_xx[a];
+        float invInertiaA_yy = isStatic[a] ? 0.0f : invInertial_yy[a];
+        float invInertiaA_zz = isStatic[a] ? 0.0f : invInertial_zz[a];
+
+        float invInertiaB_xx = isStatic[b] ? 0.0f : invInertial_xx[b];
+        float invInertiaB_yy = isStatic[b] ? 0.0f : invInertial_yy[b];
+        float invInertiaB_zz = isStatic[b] ? 0.0f : invInertial_zz[b];
+
+        // r × n
+        float rn_ax = ray*nz - raz*ny;
+        float rn_ay = raz*nx - rax*nz;
+        float rn_az = rax*ny - ray*nx;
+
+        float rn_bx = rby*nz - rbz*ny;
+        float rn_by = rbz*nx - rbx*nz;
+        float rn_bz = rbx*ny - rby*nx;
+
+        // 角动量贡献（简化版：假设惯性张量对角）
+        float angularTerm_a = invInertiaA_xx*rn_ax*rn_ax
+                             + invInertiaA_yy*rn_ay*rn_ay
+                             + invInertiaA_zz*rn_az*rn_az;
+
+        float angularTerm_b = invInertiaB_xx*rn_bx*rn_bx
+                             + invInertiaB_yy*rn_by*rn_by
+                             + invInertiaB_zz*rn_bz*rn_bz;
+
+        float invMassSum = invMassA + invMassB + angularTerm_a + angularTerm_b;
+
+        const float EPSILON = 1e-6f;
+        if (invMassSum < EPSILON) continue;
+
+        // 法向冲量
         float j = -(1.0f + e) * relVelAlongNormal / invMassSum;
 
-        // 线性冲量累加
+        // 防止冲量过大
+        const float MAX_IMPULSE = 1e6f;
+        if (std::abs(j) > MAX_IMPULSE) {
+            j = (j > 0 ? MAX_IMPULSE : -MAX_IMPULSE);
+        }
+
+        // 切向摩擦冲量
+        float tx = va_rel_x - relVelAlongNormal * nx;
+        float ty = va_rel_y - relVelAlongNormal * ny;
+        float tz = va_rel_z - relVelAlongNormal * nz;
+        float tLen = sqrtf(tx*tx + ty*ty + tz*tz);
+        
+        float frictionImpulse = 0.0f;
+        float frictionCoeff = (friction[a] + friction[b]) * 0.5f;
+        
+        if (tLen > EPSILON) {
+            // 切向单位向量
+            tx /= tLen;
+            ty /= tLen;
+            tz /= tLen;
+
+            // 切向相对速度
+            float relVelTangent = va_rel_x*tx + va_rel_y*ty + va_rel_z*tz;
+
+            // 计算切向冲量（与法向类似）
+            float rn_t_ax = ray*tz - raz*ty;
+            float rn_t_ay = raz*tx - rax*tz;
+            float rn_t_az = rax*ty - ray*tx;
+
+            float rn_t_bx = rby*tz - rbz*ty;
+            float rn_t_by = rbz*tx - rbx*tz;
+            float rn_t_bz = rbx*ty - rby*tx;
+
+            float angularTerm_t_a = invInertiaA_xx*rn_t_ax*rn_t_ax
+                                   + invInertiaA_yy*rn_t_ay*rn_t_ay
+                                   + invInertiaA_zz*rn_t_az*rn_t_az;
+
+            float angularTerm_t_b = invInertiaB_xx*rn_t_bx*rn_t_bx
+                                   + invInertiaB_yy*rn_t_by*rn_t_by
+                                   + invInertiaB_zz*rn_t_bz*rn_t_bz;
+
+            float invMassSum_t = invMassA + invMassB + angularTerm_t_a + angularTerm_t_b;
+
+            if (invMassSum_t > EPSILON) {
+                float jt = -relVelTangent / invMassSum_t;
+                
+                // Coulomb 摩擦定律：摩擦冲量 ≤ 法向冲量 * 摩擦系数
+                float maxFriction = std::abs(j) * frictionCoeff;
+                // 手动实现 clamp 兼容 C++14 及以下标准
+                frictionImpulse = jt < -maxFriction ? -maxFriction : (jt > maxFriction ? maxFriction : jt);
+            }
+        }
+
+        // 法向冲量施加
         float impulseX = j * nx;
         float impulseY = j * ny;
         float impulseZ = j * nz;
 
-        impulse_x[a] -= impulseX;
-        impulse_y[a] -= impulseY;
-        impulse_z[a] -= impulseZ;
+        // 切向冲量施加
+        impulseX += frictionImpulse * tx;
+        impulseY += frictionImpulse * ty;
+        impulseZ += frictionImpulse * tz;
 
-        impulse_x[b] += impulseX;
-        impulse_y[b] += impulseY;
-        impulse_z[b] += impulseZ;
+        // A 受到正冲量（法线指向 A）
+        if (!isStatic[a]) {
+            vel_x[a] += impulseX * invMassA;
+            vel_y[a] += impulseY * invMassA;
+            vel_z[a] += impulseZ * invMassA;
 
-        // 角冲量累加: τ = r × J
-        torque_x[a] -= ray*impulseZ - raz*impulseY;
-        torque_y[a] -= raz*impulseX - rax*impulseZ;
-        torque_z[a] -= rax*impulseY - ray*impulseX;
+            // 角冲量：r × impulse
+            angVel_x[a] += (ray*impulseZ - raz*impulseY) * invInertiaA_xx;
+            angVel_y[a] += (raz*impulseX - rax*impulseZ) * invInertiaA_yy;
+            angVel_z[a] += (rax*impulseY - ray*impulseX) * invInertiaA_zz;
+        }
 
-        torque_x[b] += rby*impulseZ - rbz*impulseY;
-        torque_y[b] += rbz*impulseX - rbx*impulseZ;
-        torque_z[b] += rbx*impulseY - rby*impulseX;
+        // B 受到负冲量
+        if (!isStatic[b]) {
+            vel_x[b] -= impulseX * invMassB;
+            vel_y[b] -= impulseY * invMassB;
+            vel_z[b] -= impulseZ * invMassB;
+
+            angVel_x[b] -= (rby*impulseZ - rbz*impulseY) * invInertiaB_xx;
+            angVel_y[b] -= (rbz*impulseX - rbx*impulseZ) * invInertiaB_yy;
+            angVel_z[b] -= (rbx*impulseY - rby*impulseX) * invInertiaB_zz;
+        }
     }
 }
 void PhysicsSystem::integrateVelocity(float dt) {
-    for (uint32_t i = 0; i < count; ++i)
-    {
-        if (isStatic[i]){
-            vel_x[i] = 0.0f;
-            vel_y[i] = 0.0f;
-            vel_z[i] = 0.0f;
-
-            angVel_x[i] = 0.0f;
-            angVel_y[i] = 0.0f;
-            angVel_z[i] = 0.0f;
-//            OH_LOG_INFO(LOG_APP,"STATIC TEST | %{public}d",i);  
+    for (uint32_t i = 0; i < count; ++i) {
+        if (isStatic[i]) {
+            vel_x[i] = vel_y[i] = vel_z[i] = 0.0f;
+            angVel_x[i] = angVel_y[i] = angVel_z[i] = 0.0f;
             continue;
         }
-        OH_LOG_INFO(LOG_APP, 
-            "i=%{public}u vel=(%{public}.3f, %{public}.3f, %{public}.3f) impulse=(%{public}.3f, %{public}.3f, %{public}.3f) "
-            "force=(%{public}.3f, %{public}.3f, %{public}.3f) dt = %{public}.3f, invMass=%{public}.3f, gravity=(%{public}.3f,%{public}.3f,%{public}.3f)",
-            i,
-            vel_x[i], vel_y[i], vel_z[i],
-            impulse_x[i], impulse_y[i], impulse_z[i],
-            force_x[i], force_y[i], force_z[i],dt,invMass[i],
-            gravity.x,gravity.y,gravity.z
-        );
-        // --- 线性冲量积分 ---
-        impulse_x[i] += force_x[i] * dt;
-        impulse_y[i] += force_y[i] * dt;
-        impulse_z[i] += force_z[i] * dt;
 
-        vel_x[i] += impulse_x[i] * invMass[i] + gravity.x * dt;
-        vel_y[i] += impulse_y[i] * invMass[i] + gravity.y * dt;
-        vel_z[i] += impulse_z[i] * invMass[i] + gravity.z * dt;
-    
-//        OH_LOG_INFO(LOG_APP, 
-//            "i=%{public}u vel=(%{public}.3f, %{public}.3f, %{public}.3f) impulse=(%{public}.3f, %{public}.3f, %{public}.3f) "
-//            "force=(%{public}.3f, %{public}.3f, %{public}.3f)",
-//            i,
-//            vel_x[i], vel_y[i], vel_z[i],
-//            impulse_x[i], impulse_y[i], impulse_z[i],
-//            force_x[i], force_y[i], force_z[i]
-//        );
-        // --- 线性阻尼 ---
-        float linearDamp = std::max(0.0f, 1.0f - friction[i] * dt);
-        vel_x[i] *= linearDamp;
-        vel_y[i] *= linearDamp;
-        vel_z[i] *= linearDamp;
+        // 1. 线性速度积分（外力 + 重力）
+        vel_x[i] += (force_x[i] * invMass[i] + gravity.x) * dt;
+        vel_y[i] += (force_y[i] * invMass[i] + gravity.y) * dt;
+        vel_z[i] += (force_z[i] * invMass[i] + gravity.z) * dt;
 
-        // --- 角冲量积分 ---
+        // 2. 角速度积分（简化版：忽略陀螺项，适用于低速/主轴对齐物体）
         angVel_x[i] += torque_x[i] * invInertial_xx[i] * dt;
         angVel_y[i] += torque_y[i] * invInertial_yy[i] * dt;
         angVel_z[i] += torque_z[i] * invInertial_zz[i] * dt;
 
-        // --- 角阻尼 ---
-        float angularDamp = std::max(0.0f, 1.0f - friction[i] * dt);
-        angVel_x[i] *= angularDamp;
-        angVel_y[i] *= angularDamp;
-        angVel_z[i] *= angularDamp;
+        // 3. 指数衰减阻尼（替代错误的 friction 用法，帧率无关且数值稳定）
+        // 若需每物体独立配置，可替换为 linearDamping[i] / angularDamping[i]
+        const float LIN_DAMP_COEFF = 0.02f;
+        const float ANG_DAMP_COEFF = 0.05f;
+        float linDamp = expf(-LIN_DAMP_COEFF * dt);
+        float angDamp = expf(-ANG_DAMP_COEFF * dt);
+        vel_x[i] *= linDamp; vel_y[i] *= linDamp; vel_z[i] *= linDamp;
+        angVel_x[i] *= angDamp; angVel_y[i] *= angDamp; angVel_z[i] *= angDamp;
+
+        // 4. NaN/Inf 防护（统一检查线速度与角速度）
+        if (std::isinf(vel_x[i]) || std::isnan(vel_x[i]) ||
+            std::isinf(vel_y[i]) || std::isnan(vel_y[i]) ||
+            std::isinf(vel_z[i]) || std::isnan(vel_z[i])) {
+            OH_LOG_INFO(LOG_APP, "NaN/Inf in linear velocity at id=%{public}u, resetting", i);
+            vel_x[i] = vel_y[i] = vel_z[i] = 0.0f;
+        }
+        if (std::isinf(angVel_x[i]) || std::isnan(angVel_x[i]) ||
+            std::isinf(angVel_y[i]) || std::isnan(angVel_y[i]) ||
+            std::isinf(angVel_z[i]) || std::isnan(angVel_z[i])) {
+            OH_LOG_INFO(LOG_APP, "NaN/Inf in angular velocity at id=%{public}u, resetting", i);
+            angVel_x[i] = angVel_y[i] = angVel_z[i] = 0.0f;
+        }
     }
 
     clearForceAll();
@@ -842,19 +1014,19 @@ void PhysicsSystem::positionalCorrection(){
         float dy = c.normal.y * correction;
         float dz = c.normal.z * correction;
 
-        // 应用到物体位置
+        // 法线指向 A，所以 A 沿法线正方向移，B 沿法线负方向移
         if (!isStatic[a])
         {
-            pos_x[a] -= dx * invMassA;
-            pos_y[a] -= dy * invMassA;
-            pos_z[a] -= dz * invMassA;
+            pos_x[a] += dx * invMassA;
+            pos_y[a] += dy * invMassA;
+            pos_z[a] += dz * invMassA;
         }
 
         if (!isStatic[b])
         {
-            pos_x[b] += dx * invMassB;
-            pos_y[b] += dy * invMassB;
-            pos_z[b] += dz * invMassB;
+            pos_x[b] -= dx * invMassB;
+            pos_y[b] -= dy * invMassB;
+            pos_z[b] -= dz * invMassB;
         }
     }
 }
@@ -938,7 +1110,6 @@ napi_value PhysicsSystem::AddNode(napi_env env, napi_callback_info info) {
         Vector3 position;
         napi_get_named_property(env, data_value, "position", &position_value);
         position = napi_helpers::parse_vector3(env, position_value);
-        OH_LOG_INFO(LOG_APP, "POSITION ACCEPT:%{public}f", position.y);
         obj->setPosition(id, position);
     }
     
@@ -984,10 +1155,13 @@ napi_value PhysicsSystem::AddNode(napi_env env, napi_callback_info info) {
         uint32_t isStatic;
         napi_get_named_property(env, data_value, "isStatic", &is_static_value);
         napi_get_value_uint32(env, is_static_value, &isStatic);
-        obj->setIsStatic(id, static_cast<uint8_t>(isStatic));
+        obj->setIsStatic(id, isStatic);
+        OH_LOG_INFO(LOG_APP, "AddNode: id=%{public}u isStatic=%{public}u", id, isStatic);
     }
-    
+
+    // setMass 必须在 setIsStatic 之后调用，确保 invMass 正确设置
     obj->setMass(id, 1.0f);
+    OH_LOG_INFO(LOG_APP, "AddNode: id=%{public}u invMass=%{public}f", id, obj->invMass[id]);
 
     napi_value id_val;
     napi_create_int32(env, id, &id_val);

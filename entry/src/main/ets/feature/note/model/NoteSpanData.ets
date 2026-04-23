@@ -32,5 +32,6 @@ export interface NoteSpanData {
 export interface NoteData {
   id : string;
   title: string;
+  type: number;
   content: NoteSpanData[];
 }

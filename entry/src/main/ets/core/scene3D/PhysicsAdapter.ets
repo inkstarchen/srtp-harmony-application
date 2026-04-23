@@ -22,11 +22,19 @@ export class PhysicsAdapter {
     let geom = node as Geometry;
     let aabb = geom.mesh.aabb;
 
+    // 应用 scale 到 extent
     let extent = {
-      x: (aabb.aabbMax.x - aabb.aabbMin.x) / 2,
-      y: (aabb.aabbMax.y - aabb.aabbMin.y) / 2,
-      z: (aabb.aabbMax.z - aabb.aabbMin.z) / 2
+      x: Math.abs((aabb.aabbMax.x - aabb.aabbMin.x) / 2 * scale.x),
+      y: Math.abs((aabb.aabbMax.y - aabb.aabbMin.y) / 2 * scale.y),
+      z: Math.abs((aabb.aabbMax.z - aabb.aabbMin.z) / 2 * scale.z)
     } as Vec3;
+    
+    // 防止 extent 为 0
+    const MIN_EXTENT = 0.001;
+    if (extent.x < MIN_EXTENT) extent.x = MIN_EXTENT;
+    if (extent.y < MIN_EXTENT) extent.y = MIN_EXTENT;
+    if (extent.z < MIN_EXTENT) extent.z = MIN_EXTENT;
+    
     let shapeType:number = 0;
     if(type == ShapeType.SPHERE){
       shapeType = 1;
@@ -35,6 +43,8 @@ export class PhysicsAdapter {
       extent.y = max;
       extent.z = max;
     }
+    
+    console.info(`RegisterNode | node=${node.name} aabbMin=(${aabb.aabbMin.x},${aabb.aabbMin.y},${aabb.aabbMin.z}) aabbMax=(${aabb.aabbMax.x},${aabb.aabbMax.y},${aabb.aabbMax.z}) scale=(${scale.x},${scale.y},${scale.z}) extent=(${extent.x},${extent.y},${extent.z})`);
 
     return {
       position: position,

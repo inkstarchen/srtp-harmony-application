@@ -115,7 +115,7 @@ enum MotionState {
 export enum PageId {
   MAIN = 0,
   PHOTO = 1,
-  PLAYGROUND = 2,
+  ARTICLE = 2,
   NONE = 3,
 }
 @ObservedV2

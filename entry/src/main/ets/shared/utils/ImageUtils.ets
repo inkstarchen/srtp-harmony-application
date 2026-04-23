@@ -320,4 +320,56 @@ export class ImageUtils {
     }
     return '';
   }
+
+  async makeTransparent(pixelMap: image.PixelMap) : Promise<image.PixelMap> {
+    const info = await pixelMap.getImageInfo();
+    const width = info.size.width;
+    const height = info.size.height;
+
+    // 1. 准备缓冲区
+    const byteLength = width * height * 4;
+    const buffer = new ArrayBuffer(byteLength);
+
+    const area: image.PositionArea = {
+      offset: 0,
+      pixels: buffer,
+      stride: width * 4,
+      region: { size: { width: width, height: height }, x: 0, y: 0 }
+    };
+
+    const initOptions: image.InitializationOptions = {
+      editable: true, // 【关键】设置为可编辑
+      pixelFormat: image.PixelMapFormat.RGBA_8888, // 建议指定格式，通常将 BGRA 转为 RGBA 使用
+      size: {
+        width: width,
+        height: height
+      }
+    };
+    await pixelMap.readPixels(area);
+
+
+    console.log("pixelMap is editable" + pixelMap.isEditable);
+
+    // 3. 使用 Uint32Array 视图
+    // 在小端序系统中，RGBA (0,0,0,1) 对应的 32位整数是 0x01000000
+    const pixelData = new Uint32Array(buffer);
+
+    // 定义目标匹配值：Alpha=1 (0x01), R=0, G=0, B=0
+    // 注意：这里假设 PixelMap 格式是 RGBA_8888
+    const TARGET_COLOR = 0x01000000;
+
+    for (let i = 0; i < pixelData.length; i++) {
+      // 直接比较 32 位整数，比分别比较 R,G,B,A 快得多
+      if (pixelData[i] === TARGET_COLOR) {
+        // 将 Alpha 变为 0 (即整个像素变为 0x00000000)
+        pixelData[i] = 0x01010101;
+      }
+    }
+    let editablePixelMap = await image.createPixelMap(buffer, initOptions);
+    console.log("editablePixelMap is editable" + editablePixelMap.isEditable);
+    // 4. 写回
+    await editablePixelMap.writePixels(area);
+    return editablePixelMap;
+  }
+
 }

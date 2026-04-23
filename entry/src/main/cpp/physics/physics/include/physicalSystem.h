@@ -1,4 +1,4 @@
-//
+﻿//
 // Created on 2026/2/4.
 //
 // Node APIs are not fully supported. To solve the compilation error of the interface cannot be found,
@@ -18,6 +18,7 @@
 #include "vec.h"
 #include "napi/native_api.h"
 #include "../../event_queue/include/event_queue.h"
+#include "hilog/log.h"
 
 class PhysicsSystem {
 public:
@@ -115,6 +116,7 @@ private:
         gravity = g;
     }
     void setPosition(uint32_t id, Vector3 position){
+//        OH_LOG_INFO(LOG_APP, "node %{public}d update,position: x %{public}f,y %{public}f, z %{public}f",id,position.x,position.y,position.z);
         pos_x[id] = position.x;
         pos_y[id] = position.y;
         pos_z[id] = position.z;
@@ -141,16 +143,17 @@ private:
         scale_z[id] = scale.z;
     }
     void setMass(uint32_t id, float m){
-        if(m < 1e-6) {
-            invMass[id] = INFINITY;
-        }else {
-            invMass[id] = 1 / m;
+        if(m < 1e-6f) {
+            invMass[id] = 0.0f;  // 质量为0视为静态
+        } else {
+            invMass[id] = 1.0f / m;
         }
     }
     void setExtent(uint32_t id, Vector3 extent){
         extent_x[id] = extent.x;
         extent_y[id] = extent.y;
         extent_z[id] = extent.z;
+        OH_LOG_INFO(LOG_APP, "setExtent: id=%{public}u extent=(%{public}.6f,%{public}.6f,%{public}.6f)", id, extent.x, extent.y, extent.z);
     }
     void setRestitution(uint32_t id, float r){
         restitution[id] = r;
@@ -163,6 +166,25 @@ private:
     }
     void setIsStatic(uint32_t id, uint8_t value){
         isStatic[id] = value;
+        if(value) {
+            // 静态物体：invMass = 0，invInertia = 0
+            invMass[id] = 0.0f;
+            invInertial_xx[id] = 0.0f;
+            invInertial_yy[id] = 0.0f;
+            invInertial_zz[id] = 0.0f;
+            // 速度清零
+            vel_x[id] = 0.0f;
+            vel_y[id] = 0.0f;
+            vel_z[id] = 0.0f;
+            angVel_x[id] = 0.0f;
+            angVel_y[id] = 0.0f;
+            angVel_z[id] = 0.0f;
+        } else {
+            // 动态物体：恢复默认质量（如果之前没有设置过）
+            if(invMass[id] == 0.0f) {
+                invMass[id] = 1.0f;  // 默认质量 1kg
+            }
+        }
     }
     void applyImpulse(uint32_t id, Vector3 impulse){
         impulse_x[id] = impulse.x;
@@ -199,6 +221,10 @@ private:
     void integrateVelocity(float dt);
     void positionalCorrection();
     void integratePosition(float dt);
+
+    // 防穿透相关
+    int computeSubSteps(float dt);
+    void clampVelocity(float dt);
 
     // 事件处理方法
     void handleTouchDown(const EventCommand& e) {
@@ -276,6 +302,7 @@ void handleSetProperty(const EventCommand& e) {
     switch (propId) {
         case static_cast<int>(Property::POS): {
             // values[0], values[1], values[2] = x, y, z
+            OH_LOG_INFO(LOG_APP, "node %{public}d update,position: x %{public}f,y %{public}f, z %{public}f",e.nodeId,values[0], values[1], values[2]);
             setPosition(e.nodeId, Vector3(values[0], values[1], values[2]));
             break;
         }

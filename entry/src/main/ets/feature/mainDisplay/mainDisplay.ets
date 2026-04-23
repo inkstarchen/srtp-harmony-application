@@ -3,12 +3,12 @@ import { DateInfo, getDateByTimeStamp, getDateInfo, getDateStringWithTimeStamp }
 import { entryCard } from "../note/component/entryCard/entryCard";
 import { AnimatorResult} from "@kit.ArkUI";
 import { NoteService } from "../note/NoteService";
-import { NoteInfo } from "../note/NoteState";
+import { NoteAction, NoteInfo, NotePageParams } from "../note/NoteState";
 import { DateItem} from "../../shared/utils/Time/SlideTimeModel";
 import { clipNum } from "../../core/math/mathUtil";
 import { TraceVec2 } from "../../core/math/vec";
 import { ThemeManager, ThemeState } from "../../theme/core/ThemeManager";
-import { NoteViewModel } from "../note/NoteViewModel";
+import { NoteType, NoteViewModel } from "../note/NoteViewModel";
 
 export enum CardState {
   SHOW = 0,
@@ -97,6 +97,7 @@ export struct mainDisplay{
         if (!exist.has(value)) {
 
           let info: NoteInfo = {
+            type: NoteType.NOTE,
             fileDir: fileDir,
             fileName: value,
             time: this.parseDateTimeFromPath(fileDir, value)
@@ -148,6 +149,7 @@ export struct mainDisplay{
         this.fileList.forEach((value) => {
           console.info("check filelist | " + value);
           let info:NoteInfo = {
+            type:NoteType.NOTE,
             fileDir: fileDir,
             fileName: value,
             time: this.parseDateTimeFromPath(fileDir,value)
@@ -210,7 +212,7 @@ export struct mainDisplay{
               editNote: (info:NoteInfo) => {
                 this.getUIContext().getRouter().pushUrl({
                   url:"pages/NotePage",
-                  params: info
+                  params: {action:NoteAction.SHOW,info:info} as NotePageParams,
                 })
               },
               deleteNote:(info:NoteInfo) => {

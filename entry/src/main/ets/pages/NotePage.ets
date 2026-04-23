@@ -1,9 +1,9 @@
 import { common } from "@kit.AbilityKit";
 import { ToolBarComponent } from "../feature/note/component/toolBar/toolBar";
-import { NoteViewModel } from "../feature/note/NoteViewModel";
+import { NoteType, NoteViewModel } from "../feature/note/NoteViewModel";
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { getDateByTimeStamp } from "../shared/utils/Time/time";
-import { NoteInfo } from "../feature/note/NoteState";
+import { NoteAction, NoteInfo, NotePageParams } from "../feature/note/NoteState";
 import { ThemeManager, ThemeState } from "../theme/core/ThemeManager";
 
 const TAG: string = '[NoteApp]';
@@ -27,20 +27,13 @@ export struct NotePage {
 
 
   onPageShow(): void {
-    let info:NoteInfo = this.getUIContext().getRouter().getParams() as NoteInfo;
-    this.noteViewModel.loadFromNoteInfo(info);
+    let info:NotePageParams = this.getUIContext().getRouter().getParams() as NotePageParams;
+    if(info.action == NoteAction.SHOW){
+      this.noteViewModel.loadFromNoteInfo(info.info);
+    }else if(info.action == NoteAction.NEW){
+      this.noteViewModel.newNote(NoteType.ARTICLE);
+    }
   }
-
-
-  // async init(){
-  //   const appContext = this.context.getApplicationContext();
-  //   let timestamp = Date.now();
-  //   let timeArray = getDateByTimeStamp(timestamp);
-  //   let path = `${appContext.filesDir}/data/${timeArray[0]}/${timeArray[1]}/${timeArray[2]}/`;
-  //   let initFlag = await this.noteViewModel.init(path);
-  //   this.currentNoteTitle = this.noteViewModel.noteState.title;
-  //   // await this.noteViewModel.loadCurrentNote();
-  // }
 
   build() {
     Stack({alignContent:Alignment.Center}){
@@ -84,9 +77,9 @@ export struct NotePage {
             clearSpan: () => {
               this.noteViewModel.editorController.cleanAll();
             },
-            newNote: () => {
-              this.noteViewModel.newNote();
-            },
+            // newNote: () => {
+            //   this.noteViewModel.newNote();
+            // },
             selectImage: () => {
               this.noteViewModel.selectImage();
             },
@@ -162,11 +155,6 @@ export struct NotePage {
                 style: FontStyle.Normal
               }
             })
-            // .border({
-            //   width: 1,
-            //   color: '#EEEEEE',
-            //   radius: 8
-            // })
             .backgroundColor("#ffffffff")
             .width('100%')
             .height('100%')
@@ -184,18 +172,6 @@ export struct NotePage {
       .width("90%")
       .height('90%')
 
-      // Stack({alignContent:Alignment.Bottom}){
-      //
-      //   if(this.editing) {
-      //
-      //   }
-      //
-      // }
-      // .height("100%")
-      // .width("100%")
-      // .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
-      // .hitTestBehavior(HitTestMode.None)
-      // .backgroundColor("#00ffffff")
 
     }
     .backgroundColor(this.themeState.tokens.background)

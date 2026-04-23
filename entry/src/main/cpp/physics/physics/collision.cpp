@@ -67,24 +67,6 @@ inline void getOBBVerticesSOA(
                 out[idx++] = center + axis[0]*ex*ix + axis[1]*ey*iy + axis[2]*ez*iz;
 }
 
-// 简单裁剪，生成单个接触点
-inline Vector3 clipContactPointSOA(
-    Vector3 normal,
-    const Vector3 vertsA[8],
-    const Vector3 vertsB[8])
-{
-    std::vector<Vector3> contactPoints;
-    for(int i=0;i<8;i++){
-        float proj = (vertsA[i] - vertsB[0]).dot(normal);
-        if(proj <= 0.0f) contactPoints.push_back(vertsA[i]);
-    }
-    Vector3 avg{0,0,0};
-    for(auto& p: contactPoints) avg += p;
-    if(contactPoints.size()>0) avg *= 1.0f / (float)contactPoints.size();
-    else avg = (vertsA[0]+vertsB[0])*0.5f; // fallback
-    return avg;
-}
-
 // Sphere-Sphere Contact
 inline void generateContactSphereSphereSOA(
     const PhysicsSystem& physics,
@@ -97,13 +79,13 @@ inline void generateContactSphereSphereSOA(
     float dist = sqrtf(d.x*d.x+d.y*d.y+d.z*d.z);
     float r = physics.extent_x[idA]+physics.extent_x[idB];
     if(dist<1e-6f) return;
-    Vector3 n = d/dist;
-    c.normal = n;
+    Vector3 n = d/dist;  // n 从 A 指向 B，需要翻转
+    c.normal = n * -1.0f;  // 法线指向 A（从 B 指向 A）
     c.penetration = r - dist;
     c.point = Vector3{
-        physics.pos_x[idA] + n.x*physics.extent_x[idA],
-        physics.pos_y[idA] + n.y*physics.extent_x[idA],
-        physics.pos_z[idA] + n.z*physics.extent_x[idA]
+        physics.pos_x[idA] + (-n.x)*physics.extent_x[idA],
+        physics.pos_y[idA] + (-n.y)*physics.extent_x[idA],
+        physics.pos_z[idA] + (-n.z)*physics.extent_x[idA]
     };
 }
 
@@ -155,22 +137,22 @@ inline void generateContactSphereOBBSOA(
     c.point = closest; // 接触点在 OBB 表面最靠近球的点
 }
 
-// OBB-OBB Contact
+// OBB-OBB Contact (完备版)
 inline void generateContactOBBOBBSOA(
     const PhysicsSystem& physics,
     uint32_t idA, uint32_t idB,
     Contact& c)
 {
-    // 1. SAT 找最小穿透轴
+    // 1. 获取 OBB 轴和中心
     Vector3 axisA[3], axisB[3];
     Collision::getOBBAxis(
         Quaternion{physics.rot_x[idA], physics.rot_y[idA], physics.rot_z[idA], physics.rot_w[idA]}, axisA);
     Collision::getOBBAxis(
         Quaternion{physics.rot_x[idB], physics.rot_y[idB], physics.rot_z[idB], physics.rot_w[idB]}, axisB);
 
-    Vector3 tVec{physics.pos_x[idB]-physics.pos_x[idA],
-                 physics.pos_y[idB]-physics.pos_y[idA],
-                 physics.pos_z[idB]-physics.pos_z[idA]};
+    Vector3 centerA{physics.pos_x[idA], physics.pos_y[idA], physics.pos_z[idA]};
+    Vector3 centerB{physics.pos_x[idB], physics.pos_y[idB], physics.pos_z[idB]};
+    Vector3 tVec = centerB - centerA;
 
     float R[3][3], AbsR[3][3];
     const float EPSILON = 1e-6f;
@@ -181,43 +163,152 @@ inline void generateContactOBBOBBSOA(
         }
 
     float t[3] = { static_cast<float>(tVec.dot(axisA[0])),
-        static_cast<float>(tVec.dot(axisA[1])),
-        static_cast<float>(tVec.dot(axisA[2])) };
+                   static_cast<float>(tVec.dot(axisA[1])),
+                   static_cast<float>(tVec.dot(axisA[2])) };
     float extentA[3] = {physics.extent_x[idA], physics.extent_y[idA], physics.extent_z[idA]};
     float extentB[3] = {physics.extent_x[idB], physics.extent_y[idB], physics.extent_z[idB]};
 
     float minPen = FLT_MAX;
     Vector3 bestAxis;
+    int bestAxisType = -1; // 0=A face, 1=B face, 2=cross
+    int bestAxisIndex = -1;
 
-    // A 轴
+    // A 的 3 个面法线轴
     for(int i=0;i<3;i++){
         float ra = extentA[i];
         float rb = extentB[0]*AbsR[i][0]+extentB[1]*AbsR[i][1]+extentB[2]*AbsR[i][2];
         float pen = ra+rb - fabsf(t[i]);
-        if(pen<0) return;
-        if(pen<minPen){minPen=pen; bestAxis = t[i]<0? axisA[i]*-1.0f:axisA[i];}
+        if(pen<0) return; // 分离轴，无碰撞
+        if(pen<minPen){
+            minPen=pen;
+            bestAxis = t[i]>0 ? axisA[i]*-1.0f : axisA[i];
+            bestAxisType = 0;
+            bestAxisIndex = i;
+        }
     }
-    // B 轴
+
+    // B 的 3 个面法线轴
     for(int i=0;i<3;i++){
         float ra = extentA[0]*AbsR[0][i]+extentA[1]*AbsR[1][i]+extentA[2]*AbsR[2][i];
         float rb = extentB[i];
         float val = t[0]*R[0][i]+t[1]*R[1][i]+t[2]*R[2][i];
         float pen = ra+rb - fabsf(val);
         if(pen<0) return;
-        if(pen<minPen){minPen=pen; bestAxis = val<0? axisB[i]*-1.0f:axisB[i];}
+        if(pen<minPen){
+            minPen=pen;
+            bestAxis = val>0 ? axisB[i]*-1.0f : axisB[i];
+            bestAxisType = 1;
+            bestAxisIndex = i;
+        }
     }
-    // 交叉轴略，可选进一步优化
+
+    // 9 个交叉轴 (A_i × B_j)
+    for(int i=0;i<3;i++){
+        for(int j=0;j<3;j++){
+            Vector3 cross = axisA[i].cross(axisB[j]);
+            float crossLen = cross.length();
+            if(crossLen < EPSILON) continue; // 平行轴，跳过
+            cross = cross / crossLen;
+
+            // 投影到交叉轴
+            float ra = extentA[(i+1)%3]*AbsR[(i+2)%3][j] + extentA[(i+2)%3]*AbsR[(i+1)%3][j];
+            float rb = extentB[(j+1)%3]*AbsR[i][(j+2)%3] + extentB[(j+2)%3]*AbsR[i][(j+1)%3];
+            
+            // 计算 t 在交叉轴上的投影
+            float val = fabsf(
+                t[(i+2)%3]*R[(i+1)%3][j] - t[(i+1)%3]*R[(i+2)%3][j]
+            );
+            float pen = ra+rb - val;
+            if(pen<0) return;
+            if(pen<minPen){
+                minPen=pen;
+                // 法线方向：确保指向 A
+                float dot = cross.dot(tVec);
+                bestAxis = dot>0 ? cross*-1.0f : cross;
+                bestAxisType = 2;
+                bestAxisIndex = i*3+j;
+            }
+        }
+    }
 
     c.normal = bestAxis;
     c.penetration = minPen;
 
-    // 2. 获取顶点
+    // 2. 生成接触点 - 使用参考面-入射面方法
     Vector3 vertsA[8], vertsB[8];
     getOBBVerticesSOA(physics, idA, vertsA);
     getOBBVerticesSOA(physics, idB, vertsB);
 
-    // 3. 裁剪生成接触点
-    c.point = clipContactPointSOA(c.normal, vertsA, vertsB);
+    // 确定参考面（reference face）和入射面（incident face）
+    // 参考面是法线方向上面积最大的面
+    Vector3 refAxis[4]; // 参考面的 4 条边方向
+    Vector3 incidentVerts[8];
+    int incidentCount = 0;
+
+    if(bestAxisType == 0){
+        // A 的面作为参考面
+        int idx = bestAxisIndex;
+        Vector3 refNormal = axisA[idx];
+        float refDist = refNormal.dot(centerA) - extentA[idx];
+
+        // 找出 B 在参考面法线方向上穿透的顶点
+        for(int i=0;i<8;i++){
+            float dist = refNormal.dot(vertsB[i]) - refDist;
+            if(dist > 0){ // 穿透参考面
+                incidentVerts[incidentCount++] = vertsB[i];
+            }
+        }
+
+        // 如果没找到穿透顶点，使用最近顶点
+        if(incidentCount == 0){
+            float minDist = FLT_MAX;
+            for(int i=0;i<8;i++){
+                float dist = fabsf(refNormal.dot(vertsB[i]) - refDist);
+                if(dist < minDist){
+                    minDist = dist;
+                    incidentVerts[0] = vertsB[i];
+                    incidentCount = 1;
+                }
+            }
+        }
+    } else {
+        // B 的面作为参考面
+        int idx = bestAxisIndex;
+        Vector3 refNormal = axisB[idx];
+        float refDist = refNormal.dot(centerB) - extentB[idx];
+
+        // 找出 A 在参考面法线方向上穿透的顶点
+        for(int i=0;i<8;i++){
+            float dist = refNormal.dot(vertsA[i]) - refDist;
+            if(dist > 0){
+                incidentVerts[incidentCount++] = vertsA[i];
+            }
+        }
+
+        if(incidentCount == 0){
+            float minDist = FLT_MAX;
+            for(int i=0;i<8;i++){
+                float dist = fabsf(refNormal.dot(vertsA[i]) - refDist);
+                if(dist < minDist){
+                    minDist = dist;
+                    incidentVerts[0] = vertsA[i];
+                    incidentCount = 1;
+                }
+            }
+        }
+    }
+
+    // 3. 计算接触点 - 取穿透顶点的平均
+    if(incidentCount > 0){
+        Vector3 avg{0,0,0};
+        for(int i=0;i<incidentCount;i++){
+            avg += incidentVerts[i];
+        }
+        c.point = avg * (1.0f / (float)incidentCount);
+    } else {
+        // fallback: 两个 OBB 中心的中间点
+        c.point = (centerA + centerB) * 0.5f;
+    }
 }
 
 Vector3 getVelocityAtPoint(const PhysicsSystem& physics, uint32_t id, const Vector3& point)

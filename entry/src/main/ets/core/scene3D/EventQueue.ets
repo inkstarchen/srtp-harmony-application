@@ -1,7 +1,7 @@
 import { PhysicsSystem } from "libphysics.so";
 import { EventType, EventCommand, EventPriority, getDefaultPriority, Property } from "./EventTypes";
 import { systemDateTime } from "@kit.BasicServicesKit";
-import { Vec3 } from "@kit.ArkGraphics3D";
+import { Quaternion, Vec3 } from "@kit.ArkGraphics3D";
 
 @ObservedV2
 export class EventQueueManager {
@@ -134,7 +134,7 @@ export class EventQueueManager {
       timestamp:systemDateTime.getUptime(systemDateTime.TimeType.ACTIVE,false),
       data:[0, angle.x,angle.y,angle.z]
     }
-    console.info("ANGLE ARK IS " + angle.x.toString() + '/' + angle.y.toString() + '/' + angle.z.toString());
+    // console.info("ANGLE ARK IS " + angle.x.toString() + '/' + angle.y.toString() + '/' + angle.z.toString());
     this.push(e);
   }
 
@@ -148,6 +148,14 @@ export class EventQueueManager {
 
   setMass(nodeId: number, mass: number){
     this.pushSetRequest(nodeId, Property.MASS, [mass]);
+  }
+
+  setScale(nodeId: number, scale: number){
+    this.pushSetRequest(nodeId, Property.SCALE, [scale,scale,scale]);
+  }
+
+  setRotation(nodeId:number, rotation:Quaternion){
+    this.pushSetRequest(nodeId, Property.ROTATION, [rotation.x,rotation.y,rotation.z,rotation.w]);
   }
 
 }

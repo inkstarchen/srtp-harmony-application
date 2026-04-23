@@ -17,6 +17,12 @@ export class TraceVec3{
 }
 
 @ObservedV2
+export class TraceSize{
+  @Trace width:number = 0;
+  @Trace height:number = 0;
+}
+
+@ObservedV2
 export class TraceVec2{
   @Trace x:number = 0;
   @Trace y:number = 0;

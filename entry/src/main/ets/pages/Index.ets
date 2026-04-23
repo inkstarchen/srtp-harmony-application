@@ -10,9 +10,9 @@ import {
 } from "../shared/utils/TouchManager";
 import { PageId, PhysicsScroller } from "../shared/utils/PosLimiter";
 import { mainDisplay } from "../feature/mainDisplay/mainDisplay";
-import { NoteViewModel } from "../feature/note/NoteViewModel";
+import { NoteType, NoteViewModel } from "../feature/note/NoteViewModel";
 import { ColorUtil } from "../shared/utils/ColorUtil";
-import { AnimatorResult, Prompt } from "@kit.ArkUI";
+import { AnimatorResult, Prompt, SymbolGlyphModifier } from "@kit.ArkUI";
 import { Test } from "../feature/TestComponent";
 import { TestPage } from "./TestPage";
 import { PlayGround } from "./PlayGround";
@@ -22,6 +22,9 @@ import { DeviceType } from "../theme/config/DeviceConfig";
 import { SceneProxy } from "../core/scene3D/GlobalSceneProxy";
 import { SlideList } from "../feature/SlideList/SlideList";
 import { DateItem, SlidingDateModel } from "../shared/utils/Time/SlideTimeModel";
+import { NoteAction, NoteInfo, NotePageParams } from "../feature/note/NoteState";
+import { rdbDataPersistence } from "../feature/DataStorage/datastore";
+import { ArticlePage } from "./ArticlePage";
 
 /**
  * 页面状态枚举
@@ -99,9 +102,20 @@ export struct MainPage {
   // Variable for children component
   @Local needsFreshNotes: boolean = false;
 
+  // =================== 新建栏 ===================
+  @Local editIconModifier: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.pencil_waveform')).fontSize('24vp');
+  @Builder
+  NewNote(onCreateArticle: () => void) {
+    Menu() {
+      MenuItem({ symbolStartIcon: this.editIconModifier, content: "编辑" })
+        .onChange(() => {
+          onCreateArticle();
+        })
+    }
+  }
+
   aboutToAppear(): void {
-    // Prompt.showToast({ message: this.deviceManager.currentDeviceInfo.type.toString() });
-    this.noteViewModel.newNote();
+
     // 灯光效果参数
     this.backId = setInterval(() => {
       this.timeNow += 0.05;
@@ -166,11 +180,17 @@ export struct MainPage {
           translatePos:this.rubber.pos
         })
       }
-      if(this.rubber.curPage == PageId.PLAYGROUND){
+      if(false){
         PlayGround({
           playOffset:this.rubber.playGroundOffset,
           translatePos:this.rubber.pos
         })
+      }
+
+      if((this.pageCurrent == PageId.ARTICLE&& this.pageState == PageState.READY)
+        || (this.pageBefore == PageId.ARTICLE && this.pageState == PageState.SWITCHING))
+      {
+        ArticlePage()
       }
 
       if((this.pageCurrent == PageId.MAIN&& this.pageState == PageState.READY)
@@ -292,6 +312,13 @@ export struct MainPage {
               .fontSize(20)
               .fontColor([Color.Black])
           }
+          .onClick(() => {
+            if(this.pageCurrent == PageId.MAIN){
+              this.pageCurrent = PageId.ARTICLE;
+            }else{
+              this.pageCurrent = PageId.MAIN
+            }
+          })
           .backgroundColor('#00000000')
           .width(40)
           .height(40)
@@ -332,6 +359,12 @@ export struct MainPage {
               .width(40)
               .height(40)
               .layoutWeight(0)
+              .bindMenu(this.NewNote(() => {
+                this.getUIContext().getRouter().pushUrl({
+                  url:'pages/NotePage',
+                  params:{action:NoteAction.NEW,info:{fileDir:'',fileName:'',time:null} as NoteInfo} as NotePageParams,
+                })
+              }))
             }
             .justifyContent(FlexAlign.End)
             .width(40)
@@ -378,7 +411,7 @@ export struct MainPage {
               .onClick(() => {
                 let spans = this.noteViewModel.editorController.controller.getSpans({start:0,end:1});
                 if (spans.length != 0){
-                  this.noteViewModel.newNote();
+                  this.noteViewModel.newNote(NoteType.NOTE);
                   this.noteViewModel.saveNote().then(() =>{
                     this.noteViewModel.editorController.cleanAll();
                     this.needsFreshNotes = true;

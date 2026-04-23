@@ -11,6 +11,12 @@ import { ImageUtils } from "../../shared/utils/ImageUtils";
 import { Constants } from "../../shared/constants";
 import { getDateByTimeStamp } from "../../shared/utils/Time/time";
 
+export enum NoteType{
+  UNINITIALIZED = 0,
+  NOTE = 1,
+  ARTICLE = 2,
+}
+
 const TAG: string = '[NoteApp]';
 const DOMAIN_NUMBER: number = 0xFF00;
 @ObservedV2
@@ -30,9 +36,9 @@ export class NoteViewModel {
     this.baseDir = dir + '/data/'
     if(dir){
     // 需要后续修改存储路径
-      this.noteState = new NoteState(this.baseDir,'');
+      this.noteState = new NoteState(this.baseDir,'',NoteType.UNINITIALIZED);
     }else{
-      this.noteState = new NoteState('','');
+      this.noteState = new NoteState('','',NoteType.UNINITIALIZED);
     }
   }
 
@@ -76,6 +82,7 @@ export class NoteViewModel {
         const noteId = latestFile.replace('.json', '');
         this.noteState.setDir(info.fileDir);
         this.noteState.setId(noteId);
+        this.noteState.type
         let path = `${info.fileDir}/${noteId}.json`;
         hilog.info(DOMAIN_NUMBER, TAG, '笔记目录是 is ' + path);
         let noteData = await NoteService.loadNote(path);
@@ -88,7 +95,6 @@ export class NoteViewModel {
         hilog.info(DOMAIN_NUMBER, TAG, '加载了笔记' + info.fileName);
     } catch (error) {
       hilog.error(DOMAIN_NUMBER, TAG, `加载最近笔记失败: ${error.message}`);
-      this.newNote();
     }
   }
 
@@ -112,23 +118,20 @@ export class NoteViewModel {
         await this.editorController.rebuildEditorContent(data);
 
         hilog.info(DOMAIN_NUMBER, TAG, '加载了最新笔记！！！！！！！！');
-      } else {
-        // 创建新笔记
-        this.newNote();
       }
     } catch (error) {
       hilog.error(DOMAIN_NUMBER, TAG, `加载最近笔记失败: ${error.message}`);
-      this.newNote();
     }
   }
 
-  newNote(): void {
+  newNote(type:NoteType): void {
     // let id = 'note_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     let timestamp = Date.now();
     let timeArray = getDateByTimeStamp(timestamp);
     let id = `note_${timeArray[3]}_${timeArray[4]}_${timeArray[5]}`;
     this.noteState.setDir(`${this.baseDir}${timeArray[0]}/${timeArray[1]}/${timeArray[2]}/`);
     this.noteState.setId(id);
+    this.noteState.setType(type);
     // this.editorController.cleanAll();
   }
 
@@ -207,6 +210,7 @@ export class NoteViewModel {
       const noteData: NoteData = {
         id: this.noteState.id,
         title: this.noteState.title,
+        type: this.noteState.type,
         content: noteContent
       };
 

@@ -1,4 +1,4 @@
-import { PhysicsData, PhysicsAdapter, ShapeType} from "./PhysicsAdapter"
+﻿import { PhysicsData, PhysicsAdapter, ShapeType} from "./PhysicsAdapter"
 import { Node, Quaternion, Vec3 } from "@ohos.graphics.scene";
 import { PhysicsSystem } from "libphysics.so";
 import { gamePerformance } from "@kit.GameServiceKit";
@@ -44,11 +44,12 @@ export class PhysicsSystemManager {
   }
 
   // 注册第三方Node
-  registerNode(node: Node, isStatic: boolean = false): void {
-    let id = this.physicsSystem.addNode(PhysicsAdapter.ToPhysicsData(node, ShapeType.AABB,true));
+  registerNode(node: Node, isStatic: boolean = true): number {
+    let id = this.physicsSystem.addNode(PhysicsAdapter.ToPhysicsData(node, ShapeType.AABB, isStatic));
     this.idMap.set(node.path + '/' + node.name, id);
     this.nodeMap.set(node.name, node);
-    console.info("register info " + node.name + '/' + id.toString());
+    console.info("RegisterNode | " + node.name + '/' + id.toString());
+    return id;
   }
 
   updateNodeData(eventCommands:EventCommand[][]){

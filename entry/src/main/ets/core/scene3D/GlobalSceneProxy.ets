@@ -14,6 +14,7 @@ import { EventQueueManager } from "./EventQueue";
 import { PhysicsSystemManager } from "./PhysicsSystemManager";
 import { getScreenSize } from "../../shared/ui/uiUtils";
 import { Property } from "./EventTypes";
+import { LayoutHelper } from "./layout/CameraViewUtils";
 
 
 const DOMAIN = 0x1;
@@ -115,6 +116,8 @@ export class SceneProxy {
       this.eventQueue.swapQueues();
       this.physicalSystem.updateNodeData(this.eventQueue.getReadQueues());
       this.scene?.renderFrame({ alwaysRender: false });
+    }else{
+      console.log('not available');
     }
   }
 
@@ -123,7 +126,34 @@ export class SceneProxy {
   }
 
   async loadSceneFrom() {
-    const resource = $rawfile("NewProject/assets/default.scene");
+    const resource = $rawfile("Wall/assets/default.scene");
+    this.scene = await Scene.load(resource);
+    this.options = { scene: this.scene, modelType: ModelType.SURFACE };
+    let rf = this.scene.getResourceFactory();
+
+    let camera = this.scene.root?.getNodeByPath("Perspective Camera") as Camera;
+
+    if (!camera) {
+
+      return;
+    }
+
+
+    camera.enabled = true;
+    camera.fov = Math.PI / 2;
+    camera.postProcess = {
+      toneMapping: { type: ToneMappingType.ACES, exposure: 1 }
+    } as PostProcessSettings;
+
+    if (this.scene.root) this.traversal(this.scene.root);
+
+    Prompt.showToast({ message: 'Scene Loaded' });
+    this.physicalSystem.setAvailable();
+    this.startRenderLoop();
+  }
+
+  async loadSceneFromDefault() {
+    const resource = $rawfile("Wall2/assets/default.scene");
     this.scene = await Scene.load(resource);
     this.options = { scene: this.scene, modelType: ModelType.SURFACE };
     let rf = this.scene.getResourceFactory();
@@ -133,7 +163,7 @@ export class SceneProxy {
 
     camera.enabled = true;
     camera.fov = Math.PI / 2;
-    lookAt(camera, { x: 0, y: 0, z: -10 }, { x: 0, y: 0, z: 0 }, { x: 0, y: 1, z: 0 });
+    // lookAt(camera, { x: 0, y: 0, z: -10 }, { x: 0, y: 0, z: 0 }, { x: 0, y: 1, z: 0 });
     this.scene.environment.backgroundType = EnvironmentBackgroundType.BACKGROUND_NONE;
     camera.postProcess = {
       toneMapping: { type: ToneMappingType.ACES, exposure: 1 }
@@ -142,7 +172,7 @@ export class SceneProxy {
     if (this.scene.root) this.traversal(this.scene.root);
 
     Prompt.showToast({ message: 'Scene Loaded' });
-
+    this.physicalSystem.setAvailable();
     this.startRenderLoop();
   }
 
@@ -185,6 +215,20 @@ export class SceneProxy {
       NodeUtil.attachShader(
         node,shaderName,$rawfile('shaders/Myshader/myshader.shader'),
         factory,"MyMATERIAL" + shaderName,'Image' + shaderName,ImageUri);
+    }
+  }
+
+  async addUIPlane(name:string,scale:Vec2){
+    let node = await this.addNodeWithScale('card','Plane', name,scale);
+  }
+
+  async addBall(name:string){
+    let scale = {x:1,y:1} as Vec2;
+    let nodeId = await this.addNodeWithScaleReturnId('ball','ball','ball',scale);
+    if(nodeId){
+      console.log('setball');
+      this.eventQueue.setPosition(nodeId, {x:0,y:0,z:-3});
+      this.eventQueue.setStatic(nodeId,false);
     }
   }
 
@@ -238,7 +282,7 @@ export class SceneProxy {
     }
   }
 
-  async addNode(res: string, name:string, reName:string):Promise<Node | undefined>{
+  async addNodeWithScaleReturnId(res: string, name:string, reName:string,scale:Vec2):Promise<number | undefined>{
     let resource = this.resMap.get(res);
     if(!resource) return;
     let resScene = await Scene.load(resource);
@@ -249,6 +293,63 @@ export class SceneProxy {
       if(parent && parent?.name == name){
         let node = this.scene?.importNode(reName,parent,this.scene.root);
         if(node && node.nodeType == NodeType.GEOMETRY){
+          node.scale.x = scale.x ;
+          node.scale.y = scale.y ;
+          node.position.z = -1;
+          let id = this.physicalSystem.registerNode(node,true);
+          return id;
+        }
+      }
+      let count = parent?.children.count();
+      if (count) {
+        for(let i = 0; i < count; i++) { nodeQueue.push(parent?.children.get(i) as Node)}
+      }
+    }
+    return;
+  }
+
+  async addNodeWithScale(res: string, name:string, reName:string,scale:Vec2):Promise<Node | undefined>{
+    let resource = this.resMap.get(res);
+    if(!resource) return;
+    let resScene = await Scene.load(resource);
+    let nodeQueue:Node[] = [];
+    if (resScene.root) { nodeQueue.push(resScene.root); }
+    while(nodeQueue.length != 0) {
+      let parent = nodeQueue.pop();
+      if(parent && parent?.name == name){
+        let node = this.scene?.importNode(reName,parent,this.scene.root);
+        if(node && node.nodeType == NodeType.GEOMETRY){
+          node.scale.x = scale.x ;
+          node.scale.y = scale.y ;
+          node.position.z = -1;
+          this.physicalSystem.registerNode(node,true);
+        }
+        return node;
+      }
+      let count = parent?.children.count();
+      if (count) {
+        for(let i = 0; i < count; i++) { nodeQueue.push(parent?.children.get(i) as Node)}
+      }
+    }
+    return;
+  }
+
+  async addNode(res: string, name:string, reName:string):Promise<Node | undefined>{
+    let resource = this.resMap.get(res);
+    if(!resource) return;
+    let resScene = await Scene.load(resource);
+    let nodeQueue:Node[] = [];
+    if (resScene.root) { nodeQueue.push(resScene.root); }
+    while(nodeQueue.length != 0) {
+      let parent = nodeQueue.pop();
+      if(parent && parent?.name == name){
+        let node = this.scene?.importNode(reName,parent,this.scene.root);
+        let pos = LayoutHelper.randomPosInCameraView();
+
+        if(node && node.nodeType == NodeType.GEOMETRY){
+          node.position.x = pos.x;
+          node.position.y = pos.y;
+          node.position.z = pos.z;
           this.physicalSystem.registerNode(node,true);
         }
         return node;
@@ -305,9 +406,9 @@ export class SceneProxy {
 
   sendTouchMove(pos:Vec2){
     this.eventQueue.pushTouchMove(pos.x,pos.y);
-    if(this.physicalSystem.selectId != 128){
-      this.eventQueue.pushRotateRequest(this.physicalSystem.selectId);
-    }
+    // if(this.physicalSystem.selectId != 128){
+    //   this.eventQueue.pushRotateRequest(this.physicalSystem.selectId);
+    // }
   }
 
   sendTouchUp(){
@@ -320,7 +421,6 @@ export class SceneProxy {
 
   async traversal(node: Node) {
     console.info('Node name: ' + node.name);
-    
     // 遍历获取灯光节点
     if (node.nodeType === NodeType.LIGHT) {
       const light = node as Light;

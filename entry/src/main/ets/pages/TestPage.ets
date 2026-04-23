@@ -1,29 +1,28 @@
 import image from '@ohos.multimedia.image'
 import { ImageUtils } from '../shared/utils/ImageUtils';
-import { Image, RaycastParameters, ShaderMaterial, Vec2, Vec3, Vec4 } from '@kit.ArkGraphics3D';
-import { AnimatorOptions, AnimatorResult } from '@kit.ArkUI';
-import { Touch, TouchDown, TouchMove, TouchUp, TOUCH_DEFAULT } from '../shared/utils/TouchManager';
+import { Image, LightType, RaycastParameters, ShaderMaterial, SpotLight, Vec2, Vec3, Vec4 } from '@kit.ArkGraphics3D';
+import { AnimatorOptions, AnimatorResult, matrix4 } from '@kit.ArkUI';
+import { Touch } from '../shared/utils/TouchManager';
 import { getScreenSize } from '../shared/ui/uiUtils';
 import { getDateByTimeStamp, getDateStringWithTimeStamp } from '../shared/utils/Time/time';
-import { TraceVec2 } from '../core/math/vec';
-import { ComponentSnapshot } from '@ohos.arkui.UIContext';
+import { TraceSize, TraceVec2 } from '../core/math/vec';
 import { NoteViewModel } from '../feature/note/NoteViewModel';
 import { SceneProxy } from '../core/scene3D/GlobalSceneProxy';
+import { PerspectiveTransform, PerspectiveMatrixBuilder } from '../core/math/PerspectiveTransform';
+import { Constants } from '../shared/constants';
 
+@ObservedV2
+export class UIInfo{
+  @Trace position: TraceVec2 = new TraceVec2();
+  @Trace size: TraceSize = new TraceSize();
+}
 
-const  ANIMATION_OPTION: AnimatorOptions = {
-  duration: 2000,
-  easing: 'ease',
-  delay: 0,
-  fill: 'none',
-  direction: 'normal',
-  iterations: -1,
-  begin: 100,
-  end: 200
-};
 
 @ComponentV2
 export struct TestPage {
+  @Local uiInfo: UIInfo = new UIInfo();
+  @Local nodeInit: boolean = false;
+  @Local TestMatrix: matrix4.Matrix4Transit = matrix4.identity();
   @Require @Param photoOffset: TraceVec2;
   @Require @Param translatePos: TraceVec2;
   @Event setBlock:(flag:boolean) => void;
@@ -51,8 +50,8 @@ export struct TestPage {
   @Local options: RichEditorOptions = { controller: this.noteViewModel.getController() };
 
   aboutToAppear(): void {
-    this.sceneProxy.loadScene('imagetest',this.getUIContext());
-    this.backAnimator = this.getUIContext().createAnimator(ANIMATION_OPTION);
+    this.sceneProxy.loadSceneFrom();
+    this.backAnimator = this.getUIContext().createAnimator(Constants.ANIMATION_OPTION);
     this.backAnimator.onFrame = () => {
       this.step++;
       if (this.material && this.material.colorShader) {
@@ -66,7 +65,6 @@ export struct TestPage {
         (this.material.colorShader.inputs['time'] as number) = this.step;
       }
     };
-
   }
 
   async captureAndLoadImage() {
@@ -79,9 +77,7 @@ export struct TestPage {
     let fileDir = this.uiContext.getHostContext()?.getApplicationContext().filesDir;
     let pixMap = await this.getUIContext().getComponentSnapshot().get("page");
     await this.ReadPixelsRGBA(pixMap);
-    let editablePixel = await this.makeTransparent(pixMap);
-    await this.ReadPixelsRGBA(editablePixel);
-    await ImageUtils.savePixelMapToFile(editablePixel, fileDir + interPath + '/component.png');
+    await ImageUtils.savePixelMapToFile(pixMap, fileDir + interPath + '/component.png');
     if(fileDir){
       array.push(fileDir + interPath + '/capture.png');
       array.push(fileDir + interPath + '/component.png');
@@ -94,81 +90,26 @@ export struct TestPage {
   }
 
   async ReadPixelsRGBA(pixelMap : image.PixelMap) {
-  const area: image.PositionArea = {
-    pixels: new ArrayBuffer(8), // 8为需要创建的像素buffer大小，取值为：height * width *4。
-    offset: 0,
-    stride: 8,
-    region: { size: { height: 1, width: 2 }, x: 0, y: 0 }
-  };
-  if (pixelMap != undefined) {
-    pixelMap.readPixels(area, (error: BusinessError) => {
-      if (error) {
-        console.error("Failed to read pixelmap from the specified area. code is ", error);
-        return;
-      } else {
-        console.info('Succeeded in reading pixelmap from the specified area.');
-        console.info('RGBA data is ', new Uint8Array(area.pixels));
-      }
-    })
-  }
-}
-
-  async makeTransparent(pixelMap: image.PixelMap) : Promise<image.PixelMap> {
-    const info = await pixelMap.getImageInfo();
-    const width = info.size.width;
-    const height = info.size.height;
-
-    // 1. 准备缓冲区
-    const byteLength = width * height * 4;
-    const buffer = new ArrayBuffer(byteLength);
-
     const area: image.PositionArea = {
+      pixels: new ArrayBuffer(8), // 8为需要创建的像素buffer大小，取值为：height * width *4。
       offset: 0,
-      pixels: buffer,
-      stride: width * 4,
-      region: { size: { width: width, height: height }, x: 0, y: 0 }
+      stride: 8,
+      region: { size: { height: 1, width: 2 }, x: 0, y: 0 }
     };
-
-    const initOptions: image.InitializationOptions = {
-      editable: true, // 【关键】设置为可编辑
-      pixelFormat: image.PixelMapFormat.RGBA_8888, // 建议指定格式，通常将 BGRA 转为 RGBA 使用
-      size: {
-        width: width,
-        height: height
-      }
-    };
-    await pixelMap.readPixels(area);
-
-
-    console.log("pixelMap is editable" + pixelMap.isEditable);
-
-    // 2. 读取像素
-
-
-    // 3. 使用 Uint32Array 视图
-    // 在小端序系统中，RGBA (0,0,0,1) 对应的 32位整数是 0x01000000
-    const pixelData = new Uint32Array(buffer);
-
-    // 定义目标匹配值：Alpha=1 (0x01), R=0, G=0, B=0
-    // 注意：这里假设 PixelMap 格式是 RGBA_8888
-    const TARGET_COLOR = 0x01000000;
-
-    for (let i = 0; i < pixelData.length; i++) {
-      // 直接比较 32 位整数，比分别比较 R,G,B,A 快得多
-      if (pixelData[i] === TARGET_COLOR) {
-        // 将 Alpha 变为 0 (即整个像素变为 0x00000000)
-        pixelData[i] = 0x01010101;
-      }
+    if (pixelMap != undefined) {
+      pixelMap.readPixels(area, (error: BusinessError) => {
+        if (error) {
+          console.error("Failed to read pixelmap from the specified area. code is ", error);
+          return;
+        } else {
+          console.info('Succeeded in reading pixelmap from the specified area.');
+          console.info('RGBA data is ', new Uint8Array(area.pixels));
+        }
+      })
     }
-    let editablePixelMap = await image.createPixelMap(buffer, initOptions);
-    console.log("editablePixelMap is editable" + editablePixelMap.isEditable);
-    // 4. 写回
-    await editablePixelMap.writePixels(area);
-    return editablePixelMap;
   }
 
   async captureAndDisplay() {
-
     let now = Date.now();
     let timeArray = getDateByTimeStamp(now);
     let array: Array<string> = [];
@@ -195,105 +136,30 @@ export struct TestPage {
 
   build() {
     Stack({alignContent:Alignment.Center}){
-      Column() {
-        Button("capture")
-          .onClick(async () => {
-            await this.captureAndDisplay();
-          })
-        Button("ImageTest")
-          .onClick(async () => {
-            await this.captureAndLoadImage();
-          })
-      }
-      .width("100%")
-      .height("100%")
-      .backgroundColor("#00fff8eb")
-
-      Stack({alignContent:Alignment.BottomStart}){
-        Stack(){
-          Column() {
-            Column() {
-              // 标题区域
-              Row() {  //, verticalAlign: ItemAlign.Center
-                TextInput({ text: "无标题" })
-                  .layoutWeight(1)
-                  .fontSize(20)
-                  .fontColor("#ff414141")
-                  .fontWeight(FontWeight.Bold)
-                  .backgroundColor(Color.Transparent)
-                  .maxLines(1)
-                  .textAlign(TextAlign.Start)
-              }
-              .width('100%')
-              .padding({ left: 12, right: 12, top: 8, bottom: 4 })
-              .alignItems(VerticalAlign.Center)
-            }
-            .width('100%')
-            .height("15%")
-            .backgroundColor(Color.White)
-            .borderRadius(8)
-            .padding({ top: 4, bottom: 4 })
-
-            Divider().strokeWidth(4).color('#F1F3F5').width("80%")
-
-            // 富文本编辑器区域
-            Column() {
-              RichEditor(this.options)
-                .placeholder('开始记录您的想法...', {
-                  fontColor: Color.Gray,
-                  font: {
-                    size: 16,
-                    weight: FontWeight.Normal,
-                    family: "HarmonyOS Sans",
-                    style: FontStyle.Normal
-                  }
-                })
-                .onSelectionChange((range: RichEditorRange) => {
-                  if (range.start === undefined || range.end === undefined) {
-                    return;
-                  }
-                  const start = range.start;
-                  const end = range.end;
-                  // hilog.debug(DOMAIN_NUMBER, TAG, `选中范围: [${start}, ${end}]`);
-                  this.noteViewModel.updateSelection(start, end);
-                })
-                .backgroundColor("#ffffffff")
-                .width('100%')
-                .height('100%')
-            }
-            .layoutWeight(1)
-            .width("100%")
-            .padding({top:5,left:10,right:10,bottom:20})
-            .margin({top:10})
-            .backgroundColor('#00ffffff')
-          }
-          .backgroundColor('#ffffffff')
-          .padding(10)
-          .width("100%")
-          .height('100%')
-        }
-        .clip(true)
-        .id("page")
-        .border({radius: 60,width:0})
-        .shadow(ShadowStyle.OUTER_DEFAULT_XS)
-        .width("60%")
-        .height('60%')
-
-      }
-      .hitTestBehavior(HitTestMode.None)
-      .backgroundColor("#00ffffff")
-      .width("100%")
-      .height("100%")
 
       Stack({alignContent:Alignment.Center}){
-        if(this.sceneProxy.options){
-          Component3D(this.sceneProxy.options)
-            .renderWidth('100%')
-            .renderHeight('100%')
-            .id('3D')
-            .hitTestBehavior(HitTestMode.None)
+
+        Column(){
+          if(this.sceneProxy.options){
+            Component3D(this.sceneProxy.options)
+              .renderWidth('100%')
+              .renderHeight('100%')
+              .hitTestBehavior(HitTestMode.None)
+          }
         }
+        .id('3D')
+        .width("100%")
+        .height("100%")
+        Column(){
+
+        }
+        .width(this.uiInfo.size.width)
+        .height(this.uiInfo.size.height)
+        .id('ui')
+        // .transform3D(this.TestMatrix)
+        .backgroundColor("#72ea3d3d")
       }
+      .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
       .backgroundColor("#00ffffff")
       .hitTestBehavior(HitTestMode.None)
       .width("100%")
@@ -301,8 +167,34 @@ export struct TestPage {
 
     }
     .backgroundColor("#00ffffff")
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     .hitTestBehavior(HitTestMode.Transparent)
     .onTouch((event) => {
+      let info = this.uiContext.getComponentUtils().getRectangleById('3D');
+      console.info("3D ViewPort Size is " + info.size.width.toString() + "*" + info.size.height.toString());
+      this.uiInfo.size.width = 200;
+      this.uiInfo.size.height = 200;
+      console.log('uiInfo Size: ' + this.uiInfo.size.width.toString() +"*" + this.uiInfo.size.height.toString());
+      let uiposition = this.uiContext.getComponentUtils().getRectangleById('ui').windowOffset;
+      let centeroffset = uiposition.x + this.uiContext.vp2px(this.uiInfo.size.width) / 2 - info.size.width / 2;
+      // this.TestMatrix = this.getTiltMatrix(90,info.size.height/2,0,0,centeroffset,0);
+      let relativeFactor:Vec2 = {
+        x:this.uiContext.vp2px(this.uiInfo.size.height - 2) / info.size.height,
+        y:this.uiContext.vp2px(this.uiInfo.size.width - 2) / info.size.height
+      } as Vec2;
+      let scale: Vec2 = {
+        x: 10 * relativeFactor.x,
+        y: 10 * relativeFactor.y
+      } as Vec2;
+      if(!this.nodeInit){
+        this.sceneProxy.addUIPlane('ui',scale);
+        this.sceneProxy.addBall('ball');
+        this.nodeInit = true;
+      }
+
+      console.info("3D Screen Position is " + info.screenOffset.x.toString() + "*" + info.screenOffset.y.toString());
+      console.info("3D Window Position is " + info.windowOffset.x.toString() + "*" + info.screenOffset.y.toString());
+      console.info("3D Local Position is " + info.localOffset.x.toString() + "*" + info.localOffset.y.toString());
       if(event.type == TouchType.Down){
         this.sceneProxy.sendTouchDown({x:event.touches[0].x, y:event.touches[0].y});
         this.sceneProxy.rayCast({x:event.touches[0].x, y:event.touches[0].y},this.getUIContext());
@@ -312,9 +204,78 @@ export struct TestPage {
         this.sceneProxy.sendTouchUp();
       }
     })
-    // .translate({x:this.photoOffset.x + this.translatePos.x,y:this.photoOffset.y + this.translatePos.y})
     .width("100%")
     .height("100%")
+  }
 
+  /**
+   * 使用新的透视变换工具计算矩阵
+   *
+   * 参数说明：
+   * - fovy: 相机视场角 (度) - 值越大透视效果越明显
+   * - distance: 相机距离平面中心的距离 (像素)
+   * - rotateX/rotateY: 平面组件的旋转角度 (度)
+   * - translateX/translateY: 平面组件离中心的偏移 (像素)
+   */
+  private getTiltMatrix(
+    fovy: number = 90,
+    distance: number = 400,
+    rotateX: number = 0,
+    rotateY: number = 45,
+    translateX: number = 0,
+    translateY: number = 0
+  ): matrix4.Matrix4Transit {
+    // 使用透视变换工具计算矩阵
+    const matrixArray = PerspectiveTransform.calculateSimpleTransform(
+      PerspectiveTransform.degToRad(fovy),    // 转换为弧度
+      distance,
+      PerspectiveTransform.degToRad(rotateX),
+      PerspectiveTransform.degToRad(rotateY),
+      translateX,
+      translateY
+    );
+
+    return matrix4.init(matrixArray);
+  }
+
+  /**
+   * 完整参数版本的透视变换矩阵计算
+   * 支持平面尺寸和偏移视差效果
+   */
+  private getTiltMatrixWithParallax(
+    fovy: number,
+    distance: number,
+    rotateX: number,
+    rotateY: number,
+    offsetX: number,
+    offsetY: number,
+    planeWidth: number,
+    planeHeight: number
+  ): matrix4.Matrix4Transit {
+    const matrixArray = PerspectiveTransform.calculateTransformMatrix({
+      fovy: PerspectiveTransform.degToRad(fovy),
+      cameraDistance: distance,
+      rotation: {
+        x: PerspectiveTransform.degToRad(rotateX),
+        y: PerspectiveTransform.degToRad(rotateY)
+      } as Vec3,
+      offset: { x: offsetX, y: offsetY },
+      planeSize: { width: planeWidth, height: planeHeight }
+    });
+
+    return matrix4.init(matrixArray);
+  }
+
+  /**
+   * 使用链式API构建变换矩阵 (推荐用于复杂场景)
+   */
+  private getTiltMatrixBuilder(): matrix4.Matrix4Transit {
+    const matrixArray = new PerspectiveMatrixBuilder()
+      .setCamera(60, 400, this.ScreenSize.width, this.ScreenSize.height)
+      .setRotation(0, 45)
+      .setTranslation(0, 0)
+      .build();
+
+    return matrix4.init(matrixArray);
   }
 }

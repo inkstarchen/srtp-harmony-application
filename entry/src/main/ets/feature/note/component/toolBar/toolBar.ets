@@ -6,7 +6,7 @@ import { AnimatorResult } from "@kit.ArkUI";
 export struct ToolBarComponent{
 
   @Require @Param clearSpan:() => void;
-  @Require @Param newNote:() => void;
+  // @Require @Param newNote:() => void;
   @Require @Param selectImage:() => void;
   @Require @Param saveNote:() => void;
   @Require @Param toggleBold:() => void;
@@ -57,15 +57,15 @@ export struct ToolBarComponent{
       Scroll( ) {
         Row() {
           this.ToolBarButton({ icon: $r('sys.symbol.archivebox_badge_clock'), action: () => this.saveNote() })
-          this.ToolBarButton({
-            icon: $r('sys.symbol.folder_badge_plus'),
-            action: async () => {
-              this.newNote();
-              this.clearSpan();
-              // await this.notesController.initializeNewNote();
-              // this.currentNoteTitle = this.notesController.note?.noteTitle ?? '未命名笔记';
-            }
-          })
+          // this.ToolBarButton({
+          //   icon: $r('sys.symbol.folder_badge_plus'),
+          //   action: async () => {
+          //     this.newNote();
+          //     this.clearSpan();
+          //     // await this.notesController.initializeNewNote();
+          //     // this.currentNoteTitle = this.notesController.note?.noteTitle ?? '未命名笔记';
+          //   }
+          // })
           this.ToolBarButton({ icon: $r('sys.symbol.ohos_photo'), action: () => this.selectImage() })
 
           Divider().vertical(true).height(20).margin({ left: 4, right: 4 })
