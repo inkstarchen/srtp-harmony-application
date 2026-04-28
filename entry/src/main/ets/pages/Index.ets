@@ -3,10 +3,6 @@ import {
   getTouchDefault,
   HandleTouch,
   Touch,
-  TouchDown,
-  TouchMove,
-  TouchUp,
-  TOUCH_DEFAULT
 } from "../shared/utils/TouchManager";
 import { PageId, PhysicsScroller } from "../shared/utils/PosLimiter";
 import { mainDisplay } from "../feature/mainDisplay/mainDisplay";
@@ -136,11 +132,6 @@ export struct MainPage {
 
   build() {
     Stack({ alignContent: Alignment.Center}) {
-      // Test({
-      //   navDirection:this.rubber.navDir,
-      //   nextPage: this.rubber.nextPage
-      // })
-
       if(true){
         Stack(){}
         .width("100%")

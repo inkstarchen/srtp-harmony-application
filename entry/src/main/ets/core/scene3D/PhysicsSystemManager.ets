@@ -76,14 +76,19 @@ export class PhysicsSystemManager {
       if(id != undefined){
         if(buffer){
           let dataView = new Float32Array(buffer);
+          // 同步位置
           node.position.x = dataView[id];
           node.position.y = dataView[id + this.capacity];
           node.position.z = dataView[id + this.capacity * 2];
+          // 同步旋转
           node.rotation.x = dataView[id + this.capacity * 3];
           node.rotation.y = dataView[id + this.capacity * 4];
           node.rotation.z = dataView[id + this.capacity * 5];
           node.rotation.w = dataView[id + this.capacity * 6];
-          // console.info("check data id" + id.toString() + "pos :" + node.position.z);
+          node.scale.x = dataView[id + this.capacity * 7];
+          console.info("update id" + id.toString() +  "scalex is" + node.scale.x.toString());
+          node.scale.y = dataView[id + this.capacity * 8];
+          node.scale.z = dataView[id + this.capacity * 9];
         } else {
           console.info("update info buffer is undefined")
         }

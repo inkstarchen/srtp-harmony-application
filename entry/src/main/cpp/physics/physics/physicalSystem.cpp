@@ -147,6 +147,10 @@ PhysicsSystem::PhysicsSystem(size_t cap)
     ALLOC_FLOAT(rot_z)
     ALLOC_FLOAT(rot_w)
 
+    ALLOC_FLOAT(scale_x)
+    ALLOC_FLOAT(scale_y)
+    ALLOC_FLOAT(scale_z)
+
     // velocity / acc / force
     ALLOC_FLOAT(vel_x)
     ALLOC_FLOAT(vel_y)
@@ -172,9 +176,7 @@ PhysicsSystem::PhysicsSystem(size_t cap)
     ALLOC_FLOAT(invInertial_yy)
     ALLOC_FLOAT(invInertial_zz)
 
-    ALLOC_FLOAT(scale_x)
-    ALLOC_FLOAT(scale_y)
-    ALLOC_FLOAT(scale_z)
+
     // bounds
     ALLOC_FLOAT(extent_x)
     ALLOC_FLOAT(extent_y)
@@ -613,18 +615,18 @@ napi_value PhysicsSystem::update(napi_env env, napi_callback_info info)
         return result;
     }
     
-    FloatBuffer *bufferData = new FloatBuffer{pos_x, capacity * 7};
+    FloatBuffer *bufferData = new FloatBuffer{pos_x, capacity * 10};
 
     napi_value arrayBuffer;
-    napi_status status = 
-        napi_create_external_arraybuffer(env, pos_x, capacity * 7 * sizeof(float), FinalizeCallback, bufferData, &result);
+    napi_status status =
+        napi_create_external_arraybuffer(env, pos_x, capacity * 10 * sizeof(float), FinalizeCallback, bufferData, &result);
     if(status != napi_ok) {
         napi_throw_error(env, nullptr, "Node-API napi_create_external_arraybuffer fail");
         return nullptr;
     }
 
     napi_value outputArray;
-    status = napi_create_typedarray(env, napi_float32_array, capacity * 7, result, 0, &outputArray);
+    status = napi_create_typedarray(env, napi_float32_array, capacity * 10, result, 0, &outputArray);
 
     if(status != napi_ok) {
         napi_throw_error(env, nullptr, "Node-API napi_create_typedarray fail");

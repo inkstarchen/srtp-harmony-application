@@ -61,15 +61,14 @@ public:
     Vector3 gravity;
     float *pos_x, *pos_y, *pos_z;
     float *rot_x, *rot_y, *rot_z, *rot_w;
+    float *scale_x, *scale_y, *scale_z;
     float *vel_x, *vel_y, *vel_z;
     float *angVel_x, *angVel_y, *angVel_z;
     float *force_x, *force_y, *force_z;
     float *torque_x, *torque_y, *torque_z;
     float *impulse_x, *impulse_y, *impulse_z;
     float *invInertial_xx, *invInertial_yy, *invInertial_zz;
-    float *scale_x, *scale_y, *scale_z;
     float *extent_x, *extent_y, *extent_z;
-    
     float *invMass, *restitution, *friction;
     
     int32_t *shapeType;

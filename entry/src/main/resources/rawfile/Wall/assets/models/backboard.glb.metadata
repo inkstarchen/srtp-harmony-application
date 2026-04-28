@@ -4,17 +4,17 @@
         "type": "metafile"
     },
     "metainfo": {
-        "iid": "58a5b806-48ae-4cb8-b787-ea7f665e2746",
-        "uri": "project://assets/default.scene",
-        "xxh3": "dff2f0d9b67f8b51b7e2538028361a84",
+        "iid": "4c8e707e-322f-46df-a6fa-c771d2fecd78",
+        "uri": "project://assets/models/backboard.glb",
+        "xxh3": "45542d245f093d55348f1fda0ff25e69",
         "spec": {
             "$meta": {
                 "meta-version": "2.0"
             },
             "$root": {
-                "$classId": "9d85188c-1bfc-49c8-9a01-59cc9258b979",
-                "$className": "SceneAsset",
-                "$instanceId": "0000d5e3-9465-77fc-c112-ba114363ba37",
+                "$classId": "c1b8a9d8-2b56-4c42-9e39-043ced9dfb83",
+                "$className": "ModelAsset",
+                "$instanceId": "0000d5af-ecfe-771c-6f37-e866b37d625f",
                 "__attachments": [
                     {
                         "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",
@@ -29,7 +29,7 @@
                             {
                                 "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
                                 "$className": "Any",
-                                "value": "58a5b806-48ae-4cb8-b787-ea7f665e2746"
+                                "value": "4c8e707e-322f-46df-a6fa-c771d2fecd78"
                             }
                         ],
                         "modifiers": []
@@ -47,7 +47,7 @@
                             {
                                 "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
                                 "$className": "Any",
-                                "value": "project://assets/default.scene"
+                                "value": "project://assets/models/backboard.glb"
                             }
                         ],
                         "modifiers": []
@@ -65,7 +65,7 @@
                             {
                                 "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
                                 "$className": "Any",
-                                "value": "default.scene"
+                                "value": "backboard.glb"
                             }
                         ],
                         "modifiers": []
@@ -83,7 +83,7 @@
                             {
                                 "$classId": "4c56efce-a00b-20a3-4275-696c74416e79",
                                 "$className": "Any",
-                                "value": "application/vnd.ark.scene+json"
+                                "value": "model/gltf-binary"
                             }
                         ],
                         "modifiers": []

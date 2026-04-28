@@ -71,15 +71,15 @@
                 "view3d-enable-directional-light-pivot-point-aid": true,
                 "view3d-enable-spot-light-pivot-point-aid": true,
                 "view3d-camera-rotation": [
-                  0,
-                  1,
-                  0,
-                  -4.3711388286737929e-08
+                  0.01336380373686552,
+                  0.96569734811782837,
+                  0.2543131411075592,
+                  -0.050745513290166855
                 ],
                 "view3d-camera-position": [
-                  2.9926354727649596e-08,
-                  0,
-                  -6
+                  -4.0033473968505859,
+                  15.226849555969238,
+                  -28.590204238891602
                 ],
                 "view3d-camera-scale": [
                   1,
@@ -103,7 +103,7 @@
       "setting-key": "MainWindow",
       "setting-val": {
         "size": [
-          1414,
+          1442,
           930
         ],
         "position": [

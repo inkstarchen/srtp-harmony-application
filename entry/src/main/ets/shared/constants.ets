@@ -16,5 +16,16 @@ export class Constants{
     end: 200
   };
 
+  static readonly ANIMATION_OPTION_2: AnimatorOptions = {
+    duration: 2000,
+    easing: 'ease-in-out',
+    delay: 0,
+    fill: 'forwards',
+    direction: 'normal',
+    iterations: 1,
+    begin: 0,
+    end: 1
+  };
+
 }
 

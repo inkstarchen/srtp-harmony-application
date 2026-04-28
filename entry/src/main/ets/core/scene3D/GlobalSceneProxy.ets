@@ -51,6 +51,8 @@ export class SceneProxy {
   private screenSize: Size = getScreenSize();
   private renderId: number | undefined;
   private context: Context;
+  // 2D UI ID → 3D Node ID 映射
+  private uiToNodeIdMap: Map<string, number> = new Map();
 
   // ================= 构造函数私有化 =================
   private constructor(context: Context) {
@@ -218,8 +220,31 @@ export class SceneProxy {
     }
   }
 
-  async addUIPlane(name:string,scale:Vec2){
-    let node = await this.addNodeWithScale('card','Plane', name,scale);
+  /**
+   * 添加 2D UI 替身（静态平面，用于阴影/碰撞）
+   * 注意：默认为静态节点，位置由 syncUIto3D() 显式控制
+   * 如需物理交互（如碰撞推动），请使用 addDynamicUIPlane()
+   */
+  async addUIPlane(name:string,scale:Vec2):Promise<number | undefined>{
+    let nodeId = await this.addNodeWithScaleReturnId('card','Plane', name,scale);
+    if(nodeId !== undefined){
+      this.registerUI2DTo3D(name, nodeId); // 注册 2D→3D 映射
+    }
+    return nodeId;
+  }
+
+  /**
+   * 添加动态 2D UI 替身（受物理引擎控制）
+   * 可用于需要碰撞、重力等物理交互的 UI 元素
+   */
+  async addDynamicUIPlane(name:string,scale:Vec2):Promise<number | undefined>{
+    let nodeId = await this.addNodeWithScaleReturnId('card','Plane', name,scale);
+    if(nodeId !== undefined){
+      this.registerUI2DTo3D(name, nodeId);
+      this.eventQueue.setStatic(nodeId, false); // 设置为动态
+      this.eventQueue.setMass(nodeId, 1.0);     // 设置质量
+    }
+    return nodeId;
   }
 
   async addBall(name:string){
@@ -417,6 +442,21 @@ export class SceneProxy {
 
   getNode(name:string): Node | undefined{
     return this.physicalSystem.getNode(name);
+  }
+
+  /**
+   * 注册 2D UI ID 到 3D Node ID 的映射
+   */
+  registerUI2DTo3D(uiId: string, nodeId: number) {
+    this.uiToNodeIdMap.set(uiId, nodeId);
+    console.info(`[UI2D→3D] 注册映射: '${uiId}' → nodeId ${nodeId}`);
+  }
+
+  /**
+   * 获取 2D UI 对应的 3D Node ID
+   */
+  get3DNodeId(uiId: string): number | undefined {
+    return this.uiToNodeIdMap.get(uiId);
   }
 
   async traversal(node: Node) {

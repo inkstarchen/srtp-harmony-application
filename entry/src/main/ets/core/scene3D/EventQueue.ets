@@ -1,7 +1,7 @@
 import { PhysicsSystem } from "libphysics.so";
 import { EventType, EventCommand, EventPriority, getDefaultPriority, Property } from "./EventTypes";
 import { systemDateTime } from "@kit.BasicServicesKit";
-import { Quaternion, Vec3 } from "@kit.ArkGraphics3D";
+import { Quaternion, Vec2, Vec3 } from "@kit.ArkGraphics3D";
 
 @ObservedV2
 export class EventQueueManager {
@@ -156,6 +156,14 @@ export class EventQueueManager {
 
   setRotation(nodeId:number, rotation:Quaternion){
     this.pushSetRequest(nodeId, Property.ROTATION, [rotation.x,rotation.y,rotation.z,rotation.w]);
+  }
+
+  /**
+   * 同时更新位置和缩放（用于 2D UI → 3D 替身同步）
+   */
+  updateTransform(nodeId: number, position: Vec3, scale: Vec2) {
+    this.pushSetRequest(nodeId, Property.POS, [position.x, position.y, position.z]);
+    this.pushSetRequest(nodeId, Property.SCALE, [scale.x, scale.y, 1.0]);
   }
 
 }

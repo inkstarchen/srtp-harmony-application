@@ -48,7 +48,7 @@ export struct TestPage {
   @Local init:boolean = false;
   @Local noteViewModel: NoteViewModel = new NoteViewModel(this.getUIContext().getHostContext());
   @Local options: RichEditorOptions = { controller: this.noteViewModel.getController() };
-
+  @Local animTest: AnimatorResult | undefined;
   aboutToAppear(): void {
     this.sceneProxy.loadSceneFrom();
     this.backAnimator = this.getUIContext().createAnimator(Constants.ANIMATION_OPTION);
@@ -65,6 +65,12 @@ export struct TestPage {
         (this.material.colorShader.inputs['time'] as number) = this.step;
       }
     };
+    this.animTest = this.getUIContext().createAnimator(Constants.ANIMATION_OPTION_2);
+    this.animTest.onFrame = (progress) => {
+      this.uiInfo.size.width = 200 - (progress * 100);
+      console.info("UI Width = " + this.uiInfo.size.width.toString());
+      this.syncUIto3D('ui');
+    }
   }
 
   async captureAndLoadImage() {
@@ -134,6 +140,55 @@ export struct TestPage {
     this.sceneProxy.releaseScene();
   }
 
+  /**
+   * 将 2D UI 的位置和尺寸同步到对应的 3D 替身
+   * @param uiId 2D UI 组件的 id
+   */
+  syncUIto3D(uiId: string) {
+    // 1. 获取 3D Node ID
+    const nodeId = this.sceneProxy.get3DNodeId(uiId);
+    if (nodeId === undefined) {
+      console.warn(`[syncUIto3D] 未找到 UI '${uiId}' 对应的 3D 节点`);
+      return;
+    }
+
+    // 2. 获取 3D 视口尺寸（用于归一化）
+    const viewportInfo = this.uiContext.getComponentUtils().getRectangleById('3D');
+    const vpWidth = viewportInfo.size.width;
+    const vpHeight = viewportInfo.size.height;
+
+    // 3. 获取 2D UI 的实时位置和尺寸
+    const uiInfo = this.uiContext.getComponentUtils().getRectangleById(uiId);
+    const uiWidth = this.uiContext.vp2px(this.uiInfo.size.width);
+    const uiHeight = this.uiContext.vp2px(this.uiInfo.size.height);
+
+    // 4. 计算 3D 归一化位置（屏幕坐标 → 3D 相机空间）
+    // 相机在 z=-6 处，fov=90°，视口宽度对应约 10 个 3D 单位
+    const worldScale = 10.0;
+    const centerX = vpWidth / 2;
+    const centerY = vpHeight / 2;
+    const uiCenterX = uiInfo.windowOffset.x + uiWidth / 2;
+    const uiCenterY = uiInfo.windowOffset.y + uiHeight / 2;
+
+    const posX = ((uiCenterX - centerX) / vpHeight) * worldScale;
+    const posY = -((uiCenterY - centerY) / vpHeight) * worldScale;
+    const posZ = -1.0; // 固定深度层
+
+    // 5. 计算 3D 缩放
+    console.info('uiWidth is ' + uiWidth.toString());
+    const scaleX = (uiWidth / vpHeight) * worldScale;
+    const scaleY = (uiHeight / vpHeight) * worldScale;
+
+    // 6. 通过 EventQueue 发送更新指令
+    this.sceneProxy.eventQueue.updateTransform(
+      nodeId,
+      { x: posX, y: posY, z: posZ },
+      { x: scaleX, y: scaleY }
+    );
+
+    console.info(`[syncUIto3D] '${uiId}' → pos(${posX.toFixed(2)}, ${posY.toFixed(2)}, ${posZ}) scale(${scaleX.toFixed(2)}, ${scaleY.toFixed(2)})`);
+  }
+
   build() {
     Stack({alignContent:Alignment.Center}){
 
@@ -156,6 +211,9 @@ export struct TestPage {
         .width(this.uiInfo.size.width)
         .height(this.uiInfo.size.height)
         .id('ui')
+        .onClick(() => {
+            this.animTest?.play()
+        })
         // .transform3D(this.TestMatrix)
         .backgroundColor("#72ea3d3d")
       }
@@ -170,36 +228,49 @@ export struct TestPage {
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     .hitTestBehavior(HitTestMode.Transparent)
     .onTouch((event) => {
-      let info = this.uiContext.getComponentUtils().getRectangleById('3D');
-      console.info("3D ViewPort Size is " + info.size.width.toString() + "*" + info.size.height.toString());
-      this.uiInfo.size.width = 200;
-      this.uiInfo.size.height = 200;
-      console.log('uiInfo Size: ' + this.uiInfo.size.width.toString() +"*" + this.uiInfo.size.height.toString());
-      let uiposition = this.uiContext.getComponentUtils().getRectangleById('ui').windowOffset;
-      let centeroffset = uiposition.x + this.uiContext.vp2px(this.uiInfo.size.width) / 2 - info.size.width / 2;
-      // this.TestMatrix = this.getTiltMatrix(90,info.size.height/2,0,0,centeroffset,0);
-      let relativeFactor:Vec2 = {
-        x:this.uiContext.vp2px(this.uiInfo.size.height - 2) / info.size.height,
-        y:this.uiContext.vp2px(this.uiInfo.size.width - 2) / info.size.height
-      } as Vec2;
-      let scale: Vec2 = {
-        x: 10 * relativeFactor.x,
-        y: 10 * relativeFactor.y
-      } as Vec2;
-      if(!this.nodeInit){
-        this.sceneProxy.addUIPlane('ui',scale);
-        this.sceneProxy.addBall('ball');
-        this.nodeInit = true;
+      if(!this.init){
+        let info = this.uiContext.getComponentUtils().getRectangleById('3D');
+        console.info("3D ViewPort Size is " + info.size.width.toString() + "*" + info.size.height.toString());
+        this.uiInfo.size.width = 200;
+        this.uiInfo.size.height = 200;
+        console.log('uiInfo Size: ' + this.uiInfo.size.width.toString() +"*" + this.uiInfo.size.height.toString());
+        let uiposition = this.uiContext.getComponentUtils().getRectangleById('ui').windowOffset;
+        let centeroffset = uiposition.x + this.uiContext.vp2px(this.uiInfo.size.width) / 2 - info.size.width / 2;
+        // this.TestMatrix = this.getTiltMatrix(90,info.size.height/2,0,0,centeroffset,0);
+        let relativeFactor:Vec2 = {
+          x:this.uiContext.vp2px(this.uiInfo.size.height - 2) / info.size.height,
+          y:this.uiContext.vp2px(this.uiInfo.size.width - 2) / info.size.height
+        } as Vec2;
+        let scale: Vec2 = {
+          x: 10 * relativeFactor.x,
+          y: 10 * relativeFactor.y
+        } as Vec2;
+        if(!this.nodeInit){
+          this.sceneProxy.addUIPlane('ui',scale);
+          this.sceneProxy.addBall('ball');
+          this.nodeInit = true;
+          // 初始化完成后立即同步一次
+          setTimeout(() => {
+            this.syncUIto3D('ui');
+          }, 100);
+        }
+        this.init = true;
+        console.info("3D Screen Position is " + info.screenOffset.x.toString() + "*" + info.screenOffset.y.toString());
+        console.info("3D Window Position is " + info.windowOffset.x.toString() + "*" + info.screenOffset.y.toString());
+        console.info("3D Local Position is " + info.localOffset.x.toString() + "*" + info.localOffset.y.toString());
       }
 
-      console.info("3D Screen Position is " + info.screenOffset.x.toString() + "*" + info.screenOffset.y.toString());
-      console.info("3D Window Position is " + info.windowOffset.x.toString() + "*" + info.screenOffset.y.toString());
-      console.info("3D Local Position is " + info.localOffset.x.toString() + "*" + info.localOffset.y.toString());
+
+
       if(event.type == TouchType.Down){
         this.sceneProxy.sendTouchDown({x:event.touches[0].x, y:event.touches[0].y});
         this.sceneProxy.rayCast({x:event.touches[0].x, y:event.touches[0].y},this.getUIContext());
       }else if(event.type == TouchType.Move){
         this.sceneProxy.sendTouchMove({x:event.touches[0].x, y:event.touches[0].y});
+        // 示例：如果 UI 位置发生变化，调用同步
+        // this.uiInfo.position.x = event.touches[0].x;
+        // this.uiInfo.position.y = event.touches[0].y;
+        // this.syncUIto3D('ui');
       }else if(event.type == TouchType.Up){
         this.sceneProxy.sendTouchUp();
       }
@@ -278,4 +349,41 @@ export struct TestPage {
 
     return matrix4.init(matrixArray);
   }
+
+  // ==================== 2D UI → 3D 替身同步使用示例 ====================
+  /**
+   * 使用示例：在任何涉及 2D 组件移动和尺寸变化的函数中，调用 syncUIto3D()
+   *
+   * 示例 1：拖拽移动
+   * onDragUpdate(newX: number, newY: number) {
+   *   this.uiInfo.position.x = newX;
+   *   this.uiInfo.position.y = newY;
+   *   this.syncUIto3D('ui');  // ← 只需这一行
+   * }
+   *
+   * 示例 2：缩放调整
+   * onResize(newWidth: number, newHeight: number) {
+   *   this.uiInfo.size.width = newWidth;
+   *   this.uiInfo.size.height = newHeight;
+   *   this.syncUIto3D('ui');  // ← 只需这一行
+   * }
+   *
+   * 示例 3：动画结束后同步
+   * onAnimationEnd() {
+   *   this.syncUIto3D('ui');
+   * }
+   *
+   * 核心流程：
+   * 1. 2D UI 变化（位置/尺寸）
+   * 2. 调用 syncUIto3D(uiId)
+   * 3. 自动查找对应的 3D Node ID
+   * 4. 计算归一化坐标和缩放
+   * 5. 通过 EventQueue 发送到物理引擎
+   * 6. 3D 替身自动跟随更新
+   *
+   * 注意事项：
+   * - 默认使用 addUIPlane() 创建静态替身，位置完全由 syncUIto3D() 控制
+   * - 如需物理交互（碰撞、重力），使用 addDynamicUIPlane() 创建动态替身
+   * - 动态替身的位置会受物理引擎影响，syncUIto3D() 会设置初始位置
+   */
 }
