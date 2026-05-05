@@ -6,7 +6,7 @@
     "metainfo": {
         "iid": "58a5b806-48ae-4cb8-b787-ea7f665e2746",
         "uri": "project://assets/default.scene",
-        "xxh3": "dff2f0d9b67f8b51b7e2538028361a84",
+        "xxh3": "c8ed8510dab862c7d4da7269806b25fc",
         "spec": {
             "$meta": {
                 "meta-version": "2.0"
@@ -14,7 +14,7 @@
             "$root": {
                 "$classId": "9d85188c-1bfc-49c8-9a01-59cc9258b979",
                 "$className": "SceneAsset",
-                "$instanceId": "0000d5e3-9465-77fc-c112-ba114363ba37",
+                "$instanceId": "0000fdf6-7a02-58cc-3b0f-74455a410bd4",
                 "__attachments": [
                     {
                         "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",

@@ -14,7 +14,7 @@ import { EventQueueManager } from "./EventQueue";
 import { PhysicsSystemManager } from "./PhysicsSystemManager";
 import { getScreenSize } from "../../shared/ui/uiUtils";
 import { Property } from "./EventTypes";
-import { LayoutHelper } from "./layout/CameraViewUtils";
+import { CameraConfig, LayoutHelper } from "./layout/CameraViewUtils";
 
 
 const DOMAIN = 0x1;
@@ -23,6 +23,7 @@ const TAG = "SceneProxy"
 @ObservedV2
 export class SceneProxy {
   private static instance: SceneProxy | null = null;
+
   static ratio: number = 1.5;
   static sceneSize: Size = {width:1600, height:2500};
   static getInstance(context?:Context): SceneProxy {
@@ -45,6 +46,7 @@ export class SceneProxy {
   eventQueue: EventQueueManager = new EventQueueManager();
   resMap: Map<string, Resource> = new Map();
   lightNodes: Node[] = [];
+  enableRotateRequest: boolean = false;
   @Trace scene: Scene | undefined;
   @Trace options: SceneOptions | undefined;
   @Trace physicalSystem: PhysicsSystemManager = new PhysicsSystemManager();
@@ -127,20 +129,31 @@ export class SceneProxy {
     this.eventQueue.pushSetRequest(0,Property.CAMERA,[camera.position.x,camera.position.y, camera.position.z,camera.fov,SceneProxy.ratio]);
   }
 
-  async loadSceneFrom() {
-    const resource = $rawfile("Wall/assets/default.scene");
+  getCameraConfig():CameraConfig | undefined{
+    if(!this.camera){
+      console.info("get no camera")
+      return undefined;
+    }
+    let config:CameraConfig ={
+      aspectRatio:SceneProxy.ratio,
+      position:this.camera.position,
+      fov:this.camera.fov,
+      nearClip:this.camera.nearPlane,
+      farClip:this.camera.farPlane
+    }
+    return config;
+  }
+
+  async LoadPhotoWall(){
+    const resource = $rawfile("PhotoWall/assets/default.scene");
     this.scene = await Scene.load(resource);
     this.options = { scene: this.scene, modelType: ModelType.SURFACE };
     let rf = this.scene.getResourceFactory();
-
     let camera = this.scene.root?.getNodeByPath("Perspective Camera") as Camera;
-
     if (!camera) {
-
       return;
     }
-
-
+    this.camera = camera;
     camera.enabled = true;
     camera.fov = Math.PI / 2;
     camera.postProcess = {
@@ -148,9 +161,61 @@ export class SceneProxy {
     } as PostProcessSettings;
 
     if (this.scene.root) this.traversal(this.scene.root);
-
     Prompt.showToast({ message: 'Scene Loaded' });
     this.physicalSystem.setAvailable();
+    this.physicalSystem
+    this.startRenderLoop();
+  }
+
+  async LoadRotationBall(){
+    const resource = $rawfile("RotationBall/assets/default.scene");
+    this.scene = await Scene.load(resource);
+    this.options = { scene: this.scene, modelType: ModelType.SURFACE };
+    let rf = this.scene.getResourceFactory();
+    let camera = this.scene.root?.getNodeByPath("Perspective Camera") as Camera;
+    if (!camera) {
+      return;
+    }
+    this.camera = camera;
+    this.scene.environment.backgroundType = EnvironmentBackgroundType.BACKGROUND_NONE;
+    camera.enabled = true;
+    camera.fov = Math.PI / 2;
+    camera.clearColor = null;
+    // camera.clearColor = {r:0,g:0,b:0,a:0};
+    camera.postProcess = {
+      toneMapping: { type: ToneMappingType.ACES, exposure: 1 }
+    } as PostProcessSettings;
+
+    if (this.scene.root) this.traversal(this.scene.root);
+    Prompt.showToast({ message: 'Scene Loaded' });
+    this.physicalSystem.setAvailable();
+    this.physicalSystem
+    this.startRenderLoop();
+  }
+
+  async LoadCollision(){
+    const resource = $rawfile("Collision/assets/default.scene");
+    this.scene = await Scene.load(resource);
+    this.options = { scene: this.scene, modelType: ModelType.SURFACE };
+    let rf = this.scene.getResourceFactory();
+    let camera = this.scene.root?.getNodeByPath("Perspective Camera") as Camera;
+    if (!camera) {
+      return;
+    }
+    this.camera = camera;
+    this.scene.environment.backgroundType = EnvironmentBackgroundType.BACKGROUND_NONE;
+    camera.enabled = true;
+    camera.fov = Math.PI / 2;
+    camera.clearColor = null;
+    // camera.clearColor = {r:0,g:0,b:0,a:0};
+    camera.postProcess = {
+      toneMapping: { type: ToneMappingType.ACES, exposure: 1 }
+    } as PostProcessSettings;
+
+    if (this.scene.root) this.traversal(this.scene.root);
+    Prompt.showToast({ message: 'Scene Loaded' });
+    this.physicalSystem.setAvailable();
+    this.physicalSystem
     this.startRenderLoop();
   }
 
@@ -165,8 +230,29 @@ export class SceneProxy {
 
     camera.enabled = true;
     camera.fov = Math.PI / 2;
-    // lookAt(camera, { x: 0, y: 0, z: -10 }, { x: 0, y: 0, z: 0 }, { x: 0, y: 1, z: 0 });
     this.scene.environment.backgroundType = EnvironmentBackgroundType.BACKGROUND_NONE;
+    camera.postProcess = {
+      toneMapping: { type: ToneMappingType.ACES, exposure: 1 }
+    } as PostProcessSettings;
+
+    if (this.scene.root) this.traversal(this.scene.root);
+
+    Prompt.showToast({ message: 'Scene Loaded' });
+    this.physicalSystem.setAvailable();
+    this.startRenderLoop();
+  }
+
+  async loadSceneFrom() {
+    const resource = $rawfile("Wall/assets/default.scene");
+    this.scene = await Scene.load(resource);
+    this.options = { scene: this.scene, modelType: ModelType.SURFACE };
+    let rf = this.scene.getResourceFactory();
+    let camera = this.scene.root?.getNodeByPath("Perspective Camera") as Camera;
+    if (!camera) {
+      return;
+    }
+    camera.enabled = true;
+    camera.fov = Math.PI / 2;
     camera.postProcess = {
       toneMapping: { type: ToneMappingType.ACES, exposure: 1 }
     } as PostProcessSettings;
@@ -211,12 +297,14 @@ export class SceneProxy {
   }
 
   async addCard(ImageUri:string,shaderName:string){
-    let node = await this.addNode('card','Cube',shaderName);
+    let node = await this.addNode('card','Plane',shaderName);
     let factory = this.scene?.getResourceFactory();
     if(factory && node){
       NodeUtil.attachShader(
         node,shaderName,$rawfile('shaders/Myshader/myshader.shader'),
         factory,"MyMATERIAL" + shaderName,'Image' + shaderName,ImageUri);
+    }else{
+      console.error("未找到节点")
     }
   }
 
@@ -375,7 +463,8 @@ export class SceneProxy {
           node.position.x = pos.x;
           node.position.y = pos.y;
           node.position.z = pos.z;
-          this.physicalSystem.registerNode(node,true);
+          let id = this.physicalSystem.registerNode(node,true);
+          this.eventQueue.pushSetRequest(id,Property.CAN_ROTATE,[1]);
         }
         return node;
       }
@@ -422,6 +511,7 @@ export class SceneProxy {
   rayCast(pos:Vec2,ui:UIContext){
     let fx =  (2 * ui.vp2px(pos.x) / SceneProxy.sceneSize.width) - 1;
     let fy = 1 - (2 * ui.vp2px(pos.y) / SceneProxy.sceneSize.height);
+    Prompt.showToast({message:"touchFrac" + fx.toFixed(2) + '/' + fy.toFixed(2)});
     this.eventQueue.pushRayCastRequest(fx,fy);
   }
 
@@ -431,9 +521,9 @@ export class SceneProxy {
 
   sendTouchMove(pos:Vec2){
     this.eventQueue.pushTouchMove(pos.x,pos.y);
-    // if(this.physicalSystem.selectId != 128){
-    //   this.eventQueue.pushRotateRequest(this.physicalSystem.selectId);
-    // }
+    if(this.physicalSystem.selectId != 128 && this.enableRotateRequest){
+      this.eventQueue.pushRotateRequest(this.physicalSystem.selectId);
+    }
   }
 
   sendTouchUp(){

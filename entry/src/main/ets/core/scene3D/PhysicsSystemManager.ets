@@ -5,6 +5,7 @@ import { gamePerformance } from "@kit.GameServiceKit";
 import { systemDateTime } from "@kit.BasicServicesKit";
 import { sensor } from "@kit.SensorServiceKit";
 import { EventCommand, EventType, ReturnData } from "./EventTypes";
+import { CameraConfig, generateLayoutConfigForCameraView, LayoutConfig } from "./layout/CameraViewUtils";
 
 export class PhysicsSystemManager {
   private idMap: Map<string, number> = new Map();
@@ -19,6 +20,13 @@ export class PhysicsSystemManager {
   // 获取底层 PhysicsSystem 实例（用于事件队列初始化）
   getPhysicsSystem(): PhysicsSystem {
     return this.physicsSystem;
+  }
+
+  enableLayout(cameraConfig: CameraConfig){
+    let config: LayoutConfig = generateLayoutConfigForCameraView(
+      -1, 3, 4, 0.1,0.1, 0.1, cameraConfig
+    );
+    this.physicsSystem.enableLayout(config);
   }
 
   constructor() {
@@ -86,7 +94,7 @@ export class PhysicsSystemManager {
           node.rotation.z = dataView[id + this.capacity * 5];
           node.rotation.w = dataView[id + this.capacity * 6];
           node.scale.x = dataView[id + this.capacity * 7];
-          console.info("update id" + id.toString() +  "scalex is" + node.scale.x.toString());
+          // console.info("update id" + id.toString() +  "scalex is" + node.scale.x.toString());
           node.scale.y = dataView[id + this.capacity * 8];
           node.scale.z = dataView[id + this.capacity * 9];
         } else {

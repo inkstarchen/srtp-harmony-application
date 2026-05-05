@@ -17,6 +17,8 @@ export interface NoteInfo{
   fileDir: string;
   fileName: string;
   time: string | null;
+  dbId?: number;  // 数据库主键ID（仅 ARTICLE 类型使用）
+  title?: string; // 笔记标题（用于列表展示）
 }
 
 @ObservedV2
@@ -26,6 +28,7 @@ export class NoteState{
   type: NoteType;
   @Trace title: string = '无标题';
   content: NoteSpanData[] | undefined;
+  dbId?: number;  // 数据库主键ID（仅 ARTICLE 类型使用）
 
   constructor(dir: string, id: string, type:NoteType) {
     this.id = id;
@@ -63,6 +66,10 @@ export class NoteState{
   setType(type: NoteType){ this.type = type; }
 
   setNoteData(data: NoteSpanData[] | undefined){ this.content = data; }
+
+  getDbId(): number | undefined { return this.dbId; }
+
+  setDbId(id: number | undefined){ this.dbId = id; }
 
 
 }

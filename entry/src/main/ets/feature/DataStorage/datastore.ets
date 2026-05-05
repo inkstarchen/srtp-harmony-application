@@ -24,15 +24,30 @@ export interface ArticleEntry{
   date: string;
   type: string;
 }
+
+/**
+ * 笔记数据库条目（用于 ARTICLE 类型）
+ */
+export interface NoteEntry {
+  id?: number;          // 数据库主键ID
+  title: string;
+  date: string;
+  type: string;
+  filePath: string;     // 文件完整路径
+  noteId: string;       // 笔记ID（文件名不含.json）
+}
 const DOMAIN = 0x0000;
 
 let store: relationalStore.RdbStore | undefined = undefined;
+let dbInitPromise: Promise<void> | undefined = undefined; // 缓存初始化 Promise
+let appContext: common.UIAbilityContext | undefined = undefined; // 全局应用上下文
 let tokenType = relationalStore.Tokenizer.ICU_TOKENIZER;
 let tokenTypeSupported = relationalStore.isTokenizerSupported(tokenType);
 if (!tokenTypeSupported) {
   tokenType = relationalStore.Tokenizer.NONE_TOKENIZER;
   hilog.error(DOMAIN, 'rdbDataPersistence', `ICU_TOKENIZER is not supported on this platform.`);
 }
+
 const STORE_CONFIG: relationalStore.StoreConfig = {
   // 数据库文件名
   name: 'RdbTest.db',
@@ -48,95 +63,86 @@ const STORE_CONFIG: relationalStore.StoreConfig = {
   tokenizer: tokenType,
 };
 
-// [StartExclude persistence_get_store]
-export async function rdbDataPersistence() {
-  // [EndExclude persistence_get_store]
-  // 判断数据库版本，如果不匹配则需进行升降级操作
-  // 假设当前数据库版本为3，表结构：ARTICLE (TITLE, TIME, TYPE)
-  // 建表Sql语句, IDENTITY为bigint类型，sql中指定类型为UNLIMITED INT
-  const SQL_CREATE_TABLE =
-    'CREATE TABLE IF NOT EXISTS ARTICLE (ID INTEGER PRIMARY KEY AUTOINCREMENT, TITLE TEXT NOT NULL, TIME DATE,TYPE TEXT)';
-  if (store === undefined) {
-    try {
-      const context = new UIContext().getHostContext() as common.UIAbilityContext;
-      store = await relationalStore.getRdbStore(context, STORE_CONFIG);
-    } catch (e) {
-      const err = e as BusinessError;
-      hilog.error(DOMAIN, 'rdbDataPersistence', `Failed to get RdbStore. Code:${err.code}, message:${err.message}`);
-      return;
-    }
-  }
-  hilog.info(DOMAIN, 'rdbDataPersistence', 'Succeeded in getting RdbStore.');
-  if (store !== undefined) {
-    try {
-      let transaction = await store.createTransaction({});
-      let storeVersion = await transaction.execute('PRAGMA user_version');
-      // 当数据库创建时，数据库默认版本为0
-      // 示例应用升级流程较短，所以使用单个事务。如果实际业务中升级逻辑较多，建议拆分多个独立事务串行执行。
-      if (storeVersion === 0) {
-        try {
-          await transaction.execute(SQL_CREATE_TABLE); // 创建数据表，以便后续调用insert接口插入数据
-          storeVersion = 1;
-          hilog.info(DOMAIN, 'rdbDataPersistence', 'Upgrade store version from 0 to 1 success.');
-          // 设置数据库的版本，入参为大于0的整数
-        } catch (e) {
-          const err = e as BusinessError;
-          await transaction.rollback();
-          hilog.error(DOMAIN, 'rdbDataPersistence', `Failed to execute sql. Code:${err.code}, message:${err.message}`);
-          return;
-        }
-      }
-      // 如果数据库版本不为0且和当前数据库版本不匹配，需要进行升降级操作
-      // 当前数据库存在并且版本为1，数据库需要从1版本升级到2版本
-      // if (storeVersion === 1) {
-      //   // version = 1：表结构：EMPLOYEE (NAME, AGE, SALARY, CODES, ADDRESS)
-      //   // => version = 2：表结构：EMPLOYEE (NAME, AGE, SALARY, CODES, ADDRESS, IDENTITY)
-      //   try {
-      //     await transaction.execute('ALTER TABLE EMPLOYEE ADD COLUMN IDENTITY UNLIMITED INT');
-      //     storeVersion = 2;
-      //     hilog.info(DOMAIN, 'rdbDataPersistence', 'Upgrade store version from 1 to 2 success.');
-      //   } catch (e) {
-      //     const err = e as BusinessError;
-      //     await transaction.rollback();
-      //     hilog.error(DOMAIN, 'rdbDataPersistence', `Failed to execute sql. Code:${err.code}, message:${err.message}`);
-      //     return;
-      //   }
-      // }
-      // // 当前数据库存在并且版本为2，数据库需要从2版本升级到3版本
-      // if (storeVersion === 2) {
-      //   // version = 2：表结构：EMPLOYEE (NAME, AGE, SALARY, CODES, ADDRESS, IDENTITY)
-      //   // => version = 3：表结构：EMPLOYEE (NAME, AGE, SALARY, CODES, IDENTITY)
-      //   try {
-      //     await transaction.execute('ALTER TABLE EMPLOYEE DROP COLUMN ADDRESS');
-      //     storeVersion = 3;
-      //     await transaction.execute('PRAGMA user_version = 3');
-      //     hilog.info(DOMAIN, 'rdbDataPersistence', 'Upgrade store version from 2 to 3 success.')
-      //   } catch (e) {
-      //     const err = e as BusinessError;
-      //     await transaction.rollback();
-      //     hilog.error(DOMAIN, 'rdbDataPersistence', `Failed to execute sql. Code:${err.code}, message:${err.message}`);
-      //     return;
-      //   }
-      // }
-      await transaction.commit();
-      // 请确保获取到RdbStore实例，完成数据表创建后，再进行数据库的增、删、改、查等操作
-    } catch (e) {
-      const err = e as BusinessError;
-      hilog.error(DOMAIN, 'rdbDataPersistence', `Failed to execute sql. Code:${err.code}, message:${err.message}`);
-      return;
-    }
-  }
-  // [End persistence_get_store]
+/**
+ * 手动初始化数据库（推荐在 EntryAbility 中调用）
+ */
+export function initDb(context: common.UIAbilityContext): void {
+  appContext = context;
+  console.info(`[datastore] initDb 已设置 appContext，触发后台初始化`);
+  ensureDbReady();
+}
 
+/**
+ * 内部数据库初始化逻辑
+ */
+async function initDatabase(): Promise<void> {
+  console.info(`[datastore] 开始初始化数据库`);
+  if (!appContext) {
+    console.error(`[datastore] 初始化失败: appContext 未提供`);
+    return;
+  }
+  const SQL_CREATE_TABLE = 'CREATE TABLE IF NOT EXISTS ARTICLE (ID INTEGER PRIMARY KEY AUTOINCREMENT, TITLE TEXT NOT NULL, TIME DATE,TYPE TEXT)';
+  const SQL_CREATE_NOTES_TABLE = 'CREATE TABLE IF NOT EXISTS NOTES (ID INTEGER PRIMARY KEY AUTOINCREMENT, TITLE TEXT NOT NULL, TIME DATE, TYPE TEXT, FILE_PATH TEXT NOT NULL, NOTE_ID TEXT NOT NULL)';
+  
+  try {
+    console.info(`[datastore] 调用 getRdbStore`);
+    store = await relationalStore.getRdbStore(appContext, STORE_CONFIG);
+    console.info(`[datastore] RdbStore 获取成功`);
+  } catch (e) {
+    const err = e as BusinessError;
+    console.error(`[datastore] RdbStore 获取失败: Code=${err.code}, message=${err.message}`);
+    return;
+  }
+
+  if (store) {
+    try {
+      const transaction = await store.createTransaction({});
+      const storeVersion = await transaction.execute('PRAGMA user_version');
+      console.info(`[datastore] 当前数据库版本: ${storeVersion}`);
+      
+      // 无论版本如何，都确保表存在（修复表不存在问题）
+      console.info(`[datastore] 创建/检查数据表`);
+      await transaction.execute(SQL_CREATE_TABLE);
+      await transaction.execute(SQL_CREATE_NOTES_TABLE);
+      
+      if (storeVersion === 0) {
+        await transaction.execute('PRAGMA user_version = 1');
+        console.info(`[datastore] 数据库版本已更新为 1`);
+      }
+      await transaction.commit();
+      console.info(`[datastore] 数据库初始化完成`);
+    } catch (e) {
+      const err = e as BusinessError;
+      console.error(`[datastore] 建表失败: Code=${err.code}, message=${err.message}`);
+    }
+  }
+}
+
+/**
+ * 确保数据库已就绪（全局守卫，内部自动调用）
+ */
+export async function ensureDbReady(): Promise<void> {
+  if (store !== undefined) return; // 已就绪，直接返回
+  if (dbInitPromise === undefined) {
+    dbInitPromise = initDatabase(); // 启动初始化
+  }
+  await dbInitPromise; // 等待初始化完成
+}
+
+/**
+ * 获取数据库实例（兼容旧接口，App 启动时调用）
+ */
+export async function getDataBase(): Promise<void> {
+  return ensureDbReady();
+}
+
+export async function InsertArticle(title:string,time:string,type:string) {
   // [Start persistence_insert_data]
   // 插入数据
-  let value1 = '从零到一的笔记库开发';
-  let value2 = '2026-4-14';
-  let value3 = '手记';
   const valueBucket: relationalStore.ValuesBucket = {
-    TITLE: value1,
-    TIME: value2,
-    TYPE: value3,
+    TITLE: title,
+    TIME: time,
+    TYPE: type,
   };
   if (store !== undefined) {
     try {
@@ -148,22 +154,20 @@ export async function rdbDataPersistence() {
     }
   }
   // [End persistence_insert_data]
+}
 
+export async function UpdateArticle(oldTitle:string,newTitle:string, time:string,type:string){
   // [Start persistence_update_and_delete_data]
   // 修改数据、删除数据
-  let value6 = '从一到二的笔记库开发';
-  let value7 = '2026-4-15';
-  let value8 = '博客';
-
   const valueBucket2: relationalStore.ValuesBucket = {
-    TITLE: value6,
-    TIME: value7,
-    TYPE: value8,
+    TITLE: newTitle,
+    TIME: time,
+    TYPE: type,
   };
 
   // 修改数据
-  let predicates1 = new relationalStore.RdbPredicates('ARTICLE'); // 创建表'EMPLOYEE'的predicates
-  predicates1.equalTo('TITLE', '从零到一的笔记库开发'); // 匹配表'EMPLOYEE'中'NAME'为'Lisa'的字段
+  let predicates1 = new relationalStore.RdbPredicates('ARTICLE');
+  predicates1.equalTo('TITLE', oldTitle);
   if (store !== undefined) {
     (store as relationalStore.RdbStore).update(valueBucket2, predicates1, (err: BusinessError, rows: number) => {
       if (err) {
@@ -173,25 +177,29 @@ export async function rdbDataPersistence() {
       hilog.info(DOMAIN, 'rdbDataPersistence', `Succeeded in updating data. row count: ${rows}`);
     })
   }
+}
 
+export async function DeleteArticle(title:string){
   // 删除数据
-  // predicates1 = new relationalStore.RdbPredicates('EMPLOYEE');
-  // predicates1.equalTo('NAME', 'Lisa');
-  // if (store !== undefined) {
-  //   (store as relationalStore.RdbStore).delete(predicates1, (err: BusinessError, rows: number) => {
-  //     if (err) {
-  //       hilog.error(DOMAIN, 'rdbDataPersistence', `Failed to delete data. Code:${err.code}, message:${err.message}`);
-  //       return;
-  //     }
-  //     hilog.info(DOMAIN, 'rdbDataPersistence', `Delete rows: ${rows}`);
-  //   })
-  // }
+  let predicates1 = new relationalStore.RdbPredicates('ARTICLE');
+  predicates1.equalTo('TITLE', title);
+  if (store !== undefined) {
+    (store as relationalStore.RdbStore).delete(predicates1, (err: BusinessError, rows: number) => {
+      if (err) {
+        hilog.error(DOMAIN, 'rdbDataPersistence', `Failed to delete data. Code:${err.code}, message:${err.message}`);
+        return;
+      }
+      hilog.info(DOMAIN, 'rdbDataPersistence', `Delete rows: ${rows}`);
+    })
+  }
   // [End persistence_update_and_delete_data]
+}
 
+export async function QueryArticle(title:string){
   // [Start persistence_query_data]
   // 查找数据
   let predicates2 = new relationalStore.RdbPredicates('ARTICLE');
-  predicates2.equalTo('TITLE', '从一到二的笔记库开发');
+  predicates2.equalTo('TITLE', title);
   if (store !== undefined) {
     (store as relationalStore.RdbStore).query(predicates2, ['ID', 'TITLE', 'TIME', 'TYPE'],
       (err: BusinessError, resultSet) => {
@@ -214,6 +222,10 @@ export async function rdbDataPersistence() {
       })
   }
   // [End persistence_query_data]
+}
+
+// [StartExclude persistence_get_store]
+export async function rdbDataPersistence() {
 
   // [Start persistence_chinese_query_data]
   // 中文关键字检索，查找数据
@@ -385,5 +397,257 @@ export async function getArticles():Promise<ArticleEntry[]>{
         resultSet.close();
       })
   }
+  return entries;
+}
+
+/**
+ * 按时间从后到先（降序）查询所有文章
+ * @param limit 可选，限制返回数量
+ * @returns 文章列表，按时间倒序排列
+ */
+export async function getArticlesByTimeDesc(limit?: number): Promise<ArticleEntry[]> {
+  let entries: ArticleEntry[] = [];
+
+  // 创建查询条件，不添加过滤条件以查询所有数据
+  let predicates = new relationalStore.RdbPredicates('ARTICLE');
+
+  // 按 TIME 字段降序排列（最新的在前）
+  predicates.orderByDesc('TIME');
+
+  if (store !== undefined) {
+    try {
+      const resultSet = await store.query(predicates, ['ID', 'TITLE', 'TIME', 'TYPE']);
+
+      hilog.info(DOMAIN, 'rdbDataPersistence',
+        `ResultSet column names: ${resultSet.columnNames}, column count: ${resultSet.columnCount}`);
+
+      // 遍历所有结果
+      while (resultSet.goToNextRow()) {
+        const title = resultSet.getString(resultSet.getColumnIndex('TITLE'));
+        const time = resultSet.getString(resultSet.getColumnIndex('TIME'));
+        const type = resultSet.getString(resultSet.getColumnIndex('TYPE'));
+
+        entries.push({ title: title, date: time, type: type } as ArticleEntry);
+
+        hilog.info(DOMAIN, 'rdbDataPersistence',
+          `title=${title}, time=${time}, type=${type}`);
+      }
+
+      // 释放数据集的内存
+      resultSet.close();
+
+    } catch (error) {
+      const err = error as BusinessError;
+      hilog.error(DOMAIN, 'rdbDataPersistence',
+        `Failed to query articles by time desc. Code:${err.code}, message:${err.message}`);
+    }
+  }
+
+  return entries;
+}
+
+// ==================== NOTES 表操作（ARTICLE 类型笔记专用）====================
+
+/**
+ * 插入笔记记录到数据库
+ * @param note 笔记条目
+ * @returns 插入的行 ID
+ */
+export async function InsertNote(note: NoteEntry): Promise<number | undefined> {
+  await ensureDbReady();
+  if (store === undefined) return undefined;
+  
+  console.info(`[datastore] InsertNote 开始: title=${note.title}, filePath=${note.filePath}, noteId=${note.noteId}`);
+  
+  const valueBucket: relationalStore.ValuesBucket = {
+    TITLE: note.title,
+    TIME: note.date,
+    TYPE: note.type,
+    FILE_PATH: note.filePath,
+    NOTE_ID: note.noteId,
+  };
+
+  console.info(`[datastore] InsertNote valueBucket: ${JSON.stringify(valueBucket)}`);
+
+  try {
+    const rowId = await store.insert('NOTES', valueBucket);
+    console.info(`[datastore] InsertNote 成功! rowId=${rowId}`);
+    hilog.info(DOMAIN, 'datastore', `Succeeded in inserting note. rowId:${rowId}`);
+    return rowId;
+  } catch (error) {
+    const err = error as BusinessError;
+    console.error(`[datastore] InsertNote 失败: Code=${err.code}, message=${err.message}`);
+    hilog.error(DOMAIN, 'datastore', `Failed to insert note. Code:${err.code}, message:${err.message}`);
+    return undefined;
+  }
+}
+
+/**
+ * 更新笔记记录
+ * @param id 数据库主键 ID
+ * @param note 笔记条目
+ */
+export async function UpdateNote(id: number, note: NoteEntry): Promise<boolean> {
+  await ensureDbReady();
+  if (store === undefined) return false;
+  
+  const valueBucket: relationalStore.ValuesBucket = {
+    TITLE: note.title,
+    TIME: note.date,
+    TYPE: note.type,
+    FILE_PATH: note.filePath,
+    NOTE_ID: note.noteId,
+  };
+
+  let predicates = new relationalStore.RdbPredicates('NOTES');
+  predicates.equalTo('ID', id);
+
+  try {
+    const rows = await store.update(valueBucket, predicates);
+    hilog.info(DOMAIN, 'datastore', `Succeeded in updating note. row count: ${rows}`);
+    return rows > 0;
+  } catch (error) {
+    const err = error as BusinessError;
+    hilog.error(DOMAIN, 'datastore', `Failed to update note. Code:${err.code}, message:${err.message}`);
+    return false;
+  }
+}
+
+/**
+ * 删除笔记记录
+ * @param id 数据库主键 ID
+ */
+export async function DeleteNote(id: number): Promise<boolean> {
+  await ensureDbReady();
+  if (store === undefined) return false;
+  
+  let predicates = new relationalStore.RdbPredicates('NOTES');
+  predicates.equalTo('ID', id);
+
+  try {
+    const rows = await store.delete(predicates);
+    hilog.info(DOMAIN, 'datastore', `Deleted note rows: ${rows}`);
+    return rows > 0;
+  } catch (error) {
+    const err = error as BusinessError;
+    hilog.error(DOMAIN, 'datastore', `Failed to delete note. Code:${err.code}, message:${err.message}`);
+    return false;
+  }
+}
+
+/**
+ * 根据笔记 ID（文件名）查询笔记
+ * @param noteId 笔记 ID（不含.json）
+ * @returns 笔记条目或 undefined
+ */
+export async function QueryNoteByNoteId(noteId: string): Promise<NoteEntry | undefined> {
+  await ensureDbReady();
+  if (store === undefined) return undefined;
+  
+  let predicates = new relationalStore.RdbPredicates('NOTES');
+  predicates.equalTo('NOTE_ID', noteId);
+
+  try {
+    const resultSet = await store.query(predicates, ['ID', 'TITLE', 'TIME', 'TYPE', 'FILE_PATH', 'NOTE_ID']);
+    if (resultSet.goToNextRow()) {
+      const entry: NoteEntry = {
+        id: resultSet.getLong(resultSet.getColumnIndex('ID')),
+        title: resultSet.getString(resultSet.getColumnIndex('TITLE')),
+        date: resultSet.getString(resultSet.getColumnIndex('TIME')),
+        type: resultSet.getString(resultSet.getColumnIndex('TYPE')),
+        filePath: resultSet.getString(resultSet.getColumnIndex('FILE_PATH')),
+        noteId: resultSet.getString(resultSet.getColumnIndex('NOTE_ID')),
+      };
+      resultSet.close();
+      return entry;
+    }
+    resultSet.close();
+  } catch (error) {
+    const err = error as BusinessError;
+    hilog.error(DOMAIN, 'datastore', `Failed to query note. Code:${err.code}, message:${err.message}`);
+  }
+  return undefined;
+}
+
+/**
+ * 按日期查询笔记列表（ARTICLE 类型）
+ * @param date 日期字符串，格式：YYYY-MM-DD
+ * @returns 笔记列表
+ */
+export async function GetNotesByDate(date: string): Promise<NoteEntry[]> {
+  await ensureDbReady();
+  if (store === undefined) return [];
+  
+  let entries: NoteEntry[] = [];
+
+  let predicates = new relationalStore.RdbPredicates('NOTES');
+  predicates.like('TIME', `${date}%`);
+  predicates.orderByDesc('TIME');
+
+  try {
+    const resultSet = await store.query(predicates, ['ID', 'TITLE', 'TIME', 'TYPE', 'FILE_PATH', 'NOTE_ID']);
+
+    while (resultSet.goToNextRow()) {
+      const entry: NoteEntry = {
+        id: resultSet.getLong(resultSet.getColumnIndex('ID')),
+        title: resultSet.getString(resultSet.getColumnIndex('TITLE')),
+        date: resultSet.getString(resultSet.getColumnIndex('TIME')),
+        type: resultSet.getString(resultSet.getColumnIndex('TYPE')),
+        filePath: resultSet.getString(resultSet.getColumnIndex('FILE_PATH')),
+        noteId: resultSet.getString(resultSet.getColumnIndex('NOTE_ID')),
+      };
+      entries.push(entry);
+    }
+
+    resultSet.close();
+    hilog.info(DOMAIN, 'datastore', `Query notes by date ${date}: ${entries.length} results`);
+  } catch (error) {
+    const err = error as BusinessError;
+    hilog.error(DOMAIN, 'datastore', `Failed to query notes by date. Code:${err.code}, message:${err.message}`);
+  }
+
+  return entries;
+}
+
+/**
+ * 查询所有笔记列表（ARTICLE 类型），按时间降序
+ * @returns 笔记列表
+ */
+export async function GetAllNotes(): Promise<NoteEntry[]> {
+  await ensureDbReady();
+  if (store === undefined) return [];
+  
+  console.info(`[datastore] GetAllNotes 开始查询`);
+  let entries: NoteEntry[] = [];
+
+  let predicates = new relationalStore.RdbPredicates('NOTES');
+  predicates.orderByDesc('TIME');
+
+  try {
+    const resultSet = await store.query(predicates, ['ID', 'TITLE', 'TIME', 'TYPE', 'FILE_PATH', 'NOTE_ID']);
+    console.info(`[datastore] GetAllNotes 查询结果: columnCount=${resultSet.columnCount}`);
+
+    while (resultSet.goToNextRow()) {
+      const entry: NoteEntry = {
+        id: resultSet.getLong(resultSet.getColumnIndex('ID')),
+        title: resultSet.getString(resultSet.getColumnIndex('TITLE')),
+        date: resultSet.getString(resultSet.getColumnIndex('TIME')),
+        type: resultSet.getString(resultSet.getColumnIndex('TYPE')),
+        filePath: resultSet.getString(resultSet.getColumnIndex('FILE_PATH')),
+        noteId: resultSet.getString(resultSet.getColumnIndex('NOTE_ID')),
+      };
+      entries.push(entry);
+      console.info(`[datastore] GetAllNotes 读取记录: id=${entry.id}, title=${entry.title}`);
+    }
+
+    resultSet.close();
+    console.info(`[datastore] GetAllNotes 完成: 共 ${entries.length} 条记录`);
+    hilog.info(DOMAIN, 'datastore', `Query all notes: ${entries.length} results`);
+  } catch (error) {
+    const err = error as BusinessError;
+    console.error(`[datastore] GetAllNotes 查询失败: Code=${err.code}, message=${err.message}`);
+    hilog.error(DOMAIN, 'datastore', `Failed to query all notes. Code:${err.code}, message:${err.message}`);
+  }
+
   return entries;
 }

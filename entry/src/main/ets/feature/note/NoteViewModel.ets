@@ -10,6 +10,7 @@ import { Prompt } from '@kit.ArkUI';
 import { ImageUtils } from "../../shared/utils/ImageUtils";
 import { Constants } from "../../shared/constants";
 import { getDateByTimeStamp } from "../../shared/utils/Time/time";
+import { InsertNote, UpdateNote, DeleteNote, NoteEntry, GetAllNotes, GetNotesByDate } from "../DataStorage/datastore";
 
 export enum NoteType{
   UNINITIALIZED = 0,
@@ -82,7 +83,13 @@ export class NoteViewModel {
         const noteId = latestFile.replace('.json', '');
         this.noteState.setDir(info.fileDir);
         this.noteState.setId(noteId);
-        this.noteState.type
+        this.noteState.setType(info.type);
+        
+        // 如果是 ARTICLE 类型且有 dbId，加载 dbId
+        if (info.type === NoteType.ARTICLE && info.dbId) {
+          this.noteState.setDbId(info.dbId);
+        }
+        
         let path = `${info.fileDir}/${noteId}.json`;
         hilog.info(DOMAIN_NUMBER, TAG, '笔记目录是 is ' + path);
         let noteData = await NoteService.loadNote(path);
@@ -132,6 +139,8 @@ export class NoteViewModel {
     this.noteState.setDir(`${this.baseDir}${timeArray[0]}/${timeArray[1]}/${timeArray[2]}/`);
     this.noteState.setId(id);
     this.noteState.setType(type);
+    this.noteState.setDbId(undefined);  // 新笔记清空 dbId
+    console.info(`[NoteViewModel] newNote 创建新笔记: id=${id}, type=${type}, type_name=${NoteType[type]}, dir=${this.noteState.dir}`);
     // this.editorController.cleanAll();
   }
 
@@ -155,7 +164,13 @@ export class NoteViewModel {
       hilog.info(Constants.DOMAIN_SERVICE_NOTE, "SERVICE-NOTE-DELETE", `删除文件: ${filePath}`);
       await deleteFile(filePath);
 
-      // // 2. 删除笔记目录（包含图片）
+      // 2. 如果是 ARTICLE 类型且有 dbId，删除数据库记录
+      if (info.type === NoteType.ARTICLE && info.dbId) {
+        await DeleteNote(info.dbId);
+        hilog.info(Constants.DOMAIN_SERVICE_NOTE, "SERVICE-NOTE-DELETE", `删除数据库记录 ID: ${info.dbId}`);
+      }
+
+      // // 3. 删除笔记目录（包含图片）
       // hilog.info(Constants.DOMAIN_SERVICE_NOTE, "SERVICE-NOTE-DELETE", `删除目录: ${dirPath}`);
       // await deleteDirectory(dirPath);
 
@@ -229,6 +244,16 @@ export class NoteViewModel {
 
       this.saveStatus = '保存成功!';
       hilog.info(Constants.DOMAIN_SERVICE_NOTE, "SERVICE-NOTE-SAVE", '保存笔记成功');
+
+      // 4. 如果是 ARTICLE 类型，同步到数据库
+      console.info(`[NoteViewModel] saveNote 完成, noteState.type=${this.noteState.type}, NoteType.ARTICLE=${NoteType.ARTICLE}`);
+      if (this.noteState.type === NoteType.ARTICLE) {
+        console.info(`[NoteViewModel] saveNote 开始同步到数据库, filePath=${filePath}`);
+        await this.syncNoteToDatabase(filePath);
+      } else {
+        console.info(`[NoteViewModel] saveNote 跳过数据库同步, 类型不是 ARTICLE`);
+      }
+
       setTimeout(() => { this.saveStatus = ''; }, 2000);
 
       Prompt.showToast({ message: '笔记已保存', duration: 1500 });
@@ -278,6 +303,105 @@ export class NoteViewModel {
 
   setTitle(title: string){
     this.noteState.setTitle(title);
+  }
+
+  /**
+   * 同步笔记到数据库（仅 ARTICLE 类型）
+   * @param filePath 文件完整路径
+   */
+  private async syncNoteToDatabase(filePath: string): Promise<void> {
+    try {
+      console.info(`[NoteViewModel] syncNoteToDatabase 开始: type=${this.noteState.type}, id=${this.noteState.id}, dbId=${this.noteState.dbId}`);
+      
+      const noteEntry: NoteEntry = {
+        title: this.noteState.title || '无标题',
+        date: new Date().toISOString().split('T')[0], // 只保留日期部分 YYYY-MM-DD
+        type: NoteType[this.noteState.type],
+        filePath: filePath,
+        noteId: this.noteState.id,
+      };
+
+      console.info(`[NoteViewModel] syncNoteToDatabase noteEntry: ${JSON.stringify(noteEntry)}`);
+
+      // 如果已有 dbId，则更新；否则插入新记录
+      if (this.noteState.dbId) {
+        console.info(`[NoteViewModel] syncNoteToDatabase 执行 UPDATE, dbId=${this.noteState.dbId}`);
+        await UpdateNote(this.noteState.dbId, noteEntry);
+        hilog.info(Constants.DOMAIN_SERVICE_NOTE, "SERVICE-NOTE-SAVE", `更新数据库记录 ID: ${this.noteState.dbId}`);
+      } else {
+        console.info(`[NoteViewModel] syncNoteToDatabase 执行 INSERT`);
+        const rowId = await InsertNote(noteEntry);
+        if (rowId) {
+          this.noteState.setDbId(rowId);
+          console.info(`[NoteViewModel] syncNoteToDatabase INSERT 成功, rowId=${rowId}`);
+          hilog.info(Constants.DOMAIN_SERVICE_NOTE, "SERVICE-NOTE-SAVE", `插入数据库记录 ID: ${rowId}`);
+        } else {
+          console.error(`[NoteViewModel] syncNoteToDatabase INSERT 失败, rowId 为 undefined`);
+        }
+      }
+    } catch (error) {
+      console.error(`[NoteViewModel] syncNoteToDatabase 异常: ${error.message}`);
+      hilog.error(Constants.DOMAIN_SERVICE_NOTE, "SERVICE-NOTE-SAVE", `同步数据库失败: ${error.message}`);
+    }
+  }
+
+  /**
+   * 从数据库加载所有 ARTICLE 笔记列表
+   * @returns 笔记信息列表
+   */
+  async loadArticlesFromDatabase(): Promise<NoteInfo[]> {
+    try {
+      console.info(`[NoteViewModel] loadArticlesFromDatabase 开始`);
+      const entries = await GetAllNotes();
+      console.info(`[NoteViewModel] loadArticlesFromDatabase 获取到 ${entries.length} 条记录`);
+      
+      const noteInfos = entries.map(entry => {
+        const noteInfo = this.convertNoteEntryToNoteInfo(entry);
+        console.info(`[NoteViewModel] loadArticlesFromDatabase 转换: ${entry.noteId} -> ${noteInfo.fileName}`);
+        return noteInfo;
+      });
+      
+      console.info(`[NoteViewModel] loadArticlesFromDatabase 完成, 返回 ${noteInfos.length} 条`);
+      return noteInfos;
+    } catch (error) {
+      console.error(`[NoteViewModel] loadArticlesFromDatabase 异常: ${error.message}`);
+      hilog.error(Constants.DOMAIN_SERVICE_NOTE, "SERVICE-NOTE", `加载文章列表失败: ${error.message}`);
+      return [];
+    }
+  }
+
+  /**
+   * 从数据库按日期加载 ARTICLE 笔记列表
+   * @param date 日期字符串 YYYY-MM-DD
+   * @returns 笔记信息列表
+   */
+  async loadArticlesByDate(date: string): Promise<NoteInfo[]> {
+    try {
+      const entries = await GetNotesByDate(date);
+      return entries.map(entry => this.convertNoteEntryToNoteInfo(entry));
+    } catch (error) {
+      hilog.error(Constants.DOMAIN_SERVICE_NOTE, "SERVICE-NOTE", `按日期加载文章失败: ${error.message}`);
+      return [];
+    }
+  }
+
+  /**
+   * 将 NoteEntry 转换为 NoteInfo
+   */
+  private convertNoteEntryToNoteInfo(entry: NoteEntry): NoteInfo {
+    // 从 filePath 中提取 fileDir 和 fileName
+    const lastSlashIndex = entry.filePath.lastIndexOf('/');
+    const fileDir = lastSlashIndex >= 0 ? entry.filePath.substring(0, lastSlashIndex) : '';
+    const fileName = lastSlashIndex >= 0 ? entry.filePath.substring(lastSlashIndex + 1) : entry.noteId + '.json';
+
+    return {
+      type: NoteType.ARTICLE,
+      fileDir: fileDir,
+      fileName: fileName.endsWith('.json') ? fileName : fileName + '.json',
+      time: entry.date,
+      dbId: entry.id,
+      title: entry.title, // 映射标题
+    };
   }
 
 }

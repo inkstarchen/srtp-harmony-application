@@ -115,27 +115,6 @@ export struct TestPage {
     }
   }
 
-  async captureAndDisplay() {
-    let now = Date.now();
-    let timeArray = getDateByTimeStamp(now);
-    let array: Array<string> = [];
-    let interPath:string = `/photoCards/${timeArray[0]}_${timeArray[1]}_${timeArray[2]}_${timeArray[3]}_${timeArray[4]}_${timeArray[5]}`;
-    let CardName = `${timeArray[0]}_${timeArray[1]}_${timeArray[2]}_${timeArray[3]}_${timeArray[4]}_${timeArray[5]}`
-    await ImageUtils.TakePictureAndSave(this.getUIContext().getHostContext(),interPath);
-    let fileDir = this.uiContext.getHostContext()?.getApplicationContext().filesDir;
-    let pixMap = await this.getUIContext().getComponentSnapshot().get("page");
-    await ImageUtils.savePixelMapToFile(pixMap, fileDir + interPath + '/component.png');
-    if(fileDir){
-      array.push(fileDir + interPath + '/capture.png');
-      array.push(fileDir + interPath + '/component.png');
-      let loadPixmap = ImageUtils.TwoImageStencil(array, false);
-      if(loadPixmap){
-        await ImageUtils.savePixelMapToFile(loadPixmap, fileDir + interPath + '/fix.png');
-        this.sceneProxy.addCard(fileDir + interPath + '/fix.png',CardName);
-      }
-    }
-  }
-
   aboutToDisappear(): void {
     this.sceneProxy.releaseScene();
   }
@@ -259,21 +238,19 @@ export struct TestPage {
         console.info("3D Window Position is " + info.windowOffset.x.toString() + "*" + info.screenOffset.y.toString());
         console.info("3D Local Position is " + info.localOffset.x.toString() + "*" + info.localOffset.y.toString());
       }
-
-
-
       if(event.type == TouchType.Down){
         this.sceneProxy.sendTouchDown({x:event.touches[0].x, y:event.touches[0].y});
         this.sceneProxy.rayCast({x:event.touches[0].x, y:event.touches[0].y},this.getUIContext());
       }else if(event.type == TouchType.Move){
         this.sceneProxy.sendTouchMove({x:event.touches[0].x, y:event.touches[0].y});
-        // 示例：如果 UI 位置发生变化，调用同步
-        // this.uiInfo.position.x = event.touches[0].x;
-        // this.uiInfo.position.y = event.touches[0].y;
-        // this.syncUIto3D('ui');
+
       }else if(event.type == TouchType.Up){
         this.sceneProxy.sendTouchUp();
       }
+      // 示例：如果 UI 位置发生变化，调用同步
+      // this.uiInfo.position.x = event.touches[0].x;
+      // this.uiInfo.position.y = event.touches[0].y;
+      // this.syncUIto3D('ui');
     })
     .width("100%")
     .height("100%")

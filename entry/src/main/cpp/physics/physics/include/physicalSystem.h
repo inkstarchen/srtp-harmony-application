@@ -19,8 +19,41 @@
 #include "napi/native_api.h"
 #include "../../event_queue/include/event_queue.h"
 #include "hilog/log.h"
-
+#include "./layoutSystem.h"
 class PhysicsSystem {
+public:
+    LayoutSystem* layoutManager;
+    // 启用布局系统
+    static napi_value EnableLayout(napi_env env, napi_callback_info info);
+    void enableLayout(const LayoutConfig& config);
+    // 禁用布局系统
+    void disableLayout();
+
+    // 是否启用了布局系统
+    bool isLayoutEnabled() const { return layoutManager != nullptr; }
+    
+    // 添加节点并自动布局（如果启用了布局系统）
+    uint32_t addNodeWithLayout();
+    
+    // 在指定格子位置添加节点
+    uint32_t addNodeAtCell(uint32_t cellIndex);
+
+    void updateInvInertia(uint32_t id) {
+        if (invMass[id] <= 1e-6f) return;
+        
+        float hx = extent_x[id], hy = extent_y[id], hz = extent_z[id];
+        float mass = 1.0f / invMass[id];
+        
+        // 简易惯性计算 (假设 Box)
+        // I_xx = 1/3 * m * (hy^2 + hz^2)
+        float Ixx = (mass / 3.0f) * (hy*hy + hz*hz);
+        float Iyy = (mass / 3.0f) * (hx*hx + hz*hz);
+        float Izz = (mass / 3.0f) * (hx*hx + hy*hy);
+        
+        invInertial_xx[id] = (Ixx > 1e-6f) ? (1.0f / Ixx) : 0.0f;
+        invInertial_yy[id] = (Iyy > 1e-6f) ? (1.0f / Iyy) : 0.0f;
+        invInertial_zz[id] = (Izz > 1e-6f) ? (1.0f / Izz) : 0.0f;
+    }
 public:
     PhysicsSystem(size_t capacity);
     ~PhysicsSystem();
@@ -73,6 +106,12 @@ public:
     
     int32_t *shapeType;
     uint8_t *isStatic;
+    uint8_t *canRotate;  // 节点是否可旋转标志 (0=不可旋转, 1=可旋转)
+    
+    // 旋转弹簧系统
+    float *rotSpringK; // 旋转弹簧刚度
+    float *rotSpringD; // 旋转弹簧阻尼
+    float *restRot_x, *restRot_y, *restRot_z, *restRot_w; // 目标旋转（复位目标）
 
 private:
     void initHandlers() {
@@ -166,23 +205,26 @@ private:
     void setIsStatic(uint32_t id, uint8_t value){
         isStatic[id] = value;
         if(value) {
-            // 静态物体：invMass = 0，invInertia = 0
-            invMass[id] = 0.0f;
-            invInertial_xx[id] = 0.0f;
-            invInertial_yy[id] = 0.0f;
-            invInertial_zz[id] = 0.0f;
-            // 速度清零
-            vel_x[id] = 0.0f;
-            vel_y[id] = 0.0f;
-            vel_z[id] = 0.0f;
-            angVel_x[id] = 0.0f;
-            angVel_y[id] = 0.0f;
-            angVel_z[id] = 0.0f;
-        } else {
-            // 动态物体：恢复默认质量（如果之前没有设置过）
-            if(invMass[id] == 0.0f) {
-                invMass[id] = 1.0f;  // 默认质量 1kg
+            // 静态物体：速度清零
+            vel_x[id] = vel_y[id] = vel_z[id] = 0.0f;
+            angVel_x[id] = angVel_y[id] = angVel_z[id] = 0.0f;
+            
+            // 修改：仅当不可旋转时清零惯性，允许旋转的静态物体保留惯性
+            if (!canRotate[id]) {
+                invMass[id] = 0.0f;
+                invInertial_xx[id] = 0.0f;
+                invInertial_yy[id] = 0.0f;
+                invInertial_zz[id] = 0.0f;
+            } else {
+                updateInvInertia(id);
             }
+        } else {
+            // 动态物体：恢复默认质量
+            if(invMass[id] == 0.0f) {
+                invMass[id] = 1.0f;
+            }
+            canRotate[id] = 1;
+            updateInvInertia(id);
         }
     }
     void applyImpulse(uint32_t id, Vector3 impulse){
@@ -224,6 +266,11 @@ private:
     // 防穿透相关
     int computeSubSteps(float dt);
     void clampVelocity(float dt);
+
+    // 旋转弹簧相关
+    void setRestRotation(uint32_t id, Vector4 rot);
+    void setRotationSpring(uint32_t id, float k, float d);
+    void applyRotationSprings(float dt);
 
     // 事件处理方法
     void handleTouchDown(const EventCommand& e) {
@@ -280,6 +327,10 @@ private:
     void handleRotateRequest(const EventCommand& e){
         uint32_t id = e.nodeId;
         if(id == capacity) return;
+        
+        // 检查节点是否可旋转
+        if(!canRotate[id]) return;
+        
         Vector2 distance = touchCur - touchLast;
         touchLast.x = touchCur.x;
         touchLast.y = touchCur.y;
@@ -337,8 +388,26 @@ void handleSetProperty(const EventCommand& e) {
             setIsStatic(e.nodeId, static_cast<bool>(values[0]));
             break;
         }
+        case static_cast<int>(Property::CAN_ROTATE): {
+            canRotate[e.nodeId] = static_cast<uint8_t>(values[0]);
+            // 启用旋转时，确保惯性张量已计算
+            if (canRotate[e.nodeId]) {
+                updateInvInertia(e.nodeId);
+            }
+            break;
+        }
         case static_cast<int>(Property::IMPULSE): {
             applyImpulse(e.nodeId, Vector3(values[0], values[1], values[2]));
+            break;
+        }
+        case static_cast<int>(Property::ROTATION_SPRING): {
+            // values[0] = K, values[1] = D
+            setRotationSpring(e.nodeId, static_cast<float>(values[0]), static_cast<float>(values[1]));
+            break;
+        }
+        case static_cast<int>(Property::REST_ROTATION): {
+            // values[0..3] = x, y, z, w
+            setRestRotation(e.nodeId, Vector4(values[0], values[1], values[2], values[3]));
             break;
         }
         case static_cast<int >(Property::CAMERA): {

@@ -1,0 +1,121 @@
+{
+  "settings": [
+    {
+      "setting-key": "PaneManagerDock",
+      "setting-val": {
+        "workspace-version": 2,
+        "floating-windows": [
+          {
+            "floating-window-resource-uri": "",
+            "floating-window-class-id": "com.huawei.editor.ProjectWindowDockContainer",
+            "floating-window-instance-id": "com.huawei.editor.ProjectWindowDockContainer#bqdhtm0YDd",
+            "floating-window-title": "Project",
+            "floating-window-state": "docked",
+            "floating-window-splitter-layout": "",
+            "panes": [
+              {
+                "pane-class-id": "com.huawei.editor.ProjectPane",
+                "pane-instance-id": "com.huawei.editor.ProjectPane#eP564OhjIr"
+              }
+            ]
+          },
+          {
+            "floating-window-resource-uri": "",
+            "floating-window-class-id": "com.huawei.editor.LogWindowDockContainer",
+            "floating-window-instance-id": "com.huawei.editor.LogWindowDockContainer#CnzWbRqhZq",
+            "floating-window-title": "Log",
+            "floating-window-state": "docked",
+            "floating-window-splitter-layout": "",
+            "panes": [
+              {
+                "pane-class-id": "com.huawei.editor.LogPane",
+                "pane-instance-id": "com.huawei.editor.LogPane#7pjryBkmpd"
+              }
+            ]
+          },
+          {
+            "floating-window-resource-uri": "project://assets/default.scene",
+            "floating-window-class-id": "com.huawei.editor.SceneWindowDockContainer",
+            "floating-window-instance-id": "com.huawei.editor.SceneWindowDockContainer#OxhKDTO35k",
+            "floating-window-title": "3D View [default.scene]",
+            "floating-window-state": "docked",
+            "floating-window-splitter-layout": "AAAA/wAAAAEAAAADAAABXgAAAhYAAAI7Af////8BAAAAAQA=",
+            "panes": [
+              {
+                "pane-class-id": "com.huawei.editor.UiHierarchyPane",
+                "pane-instance-id": "com.huawei.editor.UiHierarchyPane#arp2LFFZXs",
+                "resource-uri": "project://assets/default.scene"
+              },
+              {
+                "pane-class-id": "com.huawei.editor.ToolkitView3DPane",
+                "pane-instance-id": "com.huawei.editor.ToolkitView3DPane#4PMYn7pGNX",
+                "resource-uri": "project://assets/default.scene",
+                "media-type": "application/vnd.ark.scene+json",
+                "view3d-show-background": true,
+                "view3d-show-guide-grid": true,
+                "view3d-lock-camera": true,
+                "view3d-transform-tool": 2,
+                "view3d-enable-directional-light-gizmo": true,
+                "view3d-enable-point-light-gizmo": true,
+                "view3d-enable-spot-light-gizmo": true,
+                "view3d-enable-transform-gizmo": true,
+                "view3d-enable-camera-gizmo": true,
+                "view3d-enable-hover-gizmo": true,
+                "view3d-enable-selection-gizmo": true,
+                "view3d-enable-camera-aid": true,
+                "view3d-enable-point-light-aid": true,
+                "view3d-enable-directional-light-aid": true,
+                "view3d-enable-spot-light-aid": true,
+                "view3d-enable-camera-pivot-point-aid": true,
+                "view3d-enable-point-light-pivot-point-aid": true,
+                "view3d-enable-directional-light-pivot-point-aid": true,
+                "view3d-enable-spot-light-pivot-point-aid": true,
+                "view3d-camera-rotation": [
+                  -4.3711391839451608e-08,
+                  1,
+                  -4.3711391839451608e-08,
+                  -4.371138473402425e-08
+                ],
+                "view3d-camera-position": [
+                  0,
+                  0,
+                  -6
+                ],
+                "view3d-camera-scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              {
+                "pane-class-id": "com.huawei.editor.ToolkitPropertyPane",
+                "pane-instance-id": "com.huawei.editor.ToolkitPropertyPane#LSKxsQeyA6",
+                "resource-uri": "project://assets/default.scene",
+                "standalone": false
+              }
+            ]
+          }
+        ],
+        "docking-layout": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPFF0QWR2YW5jZWREb2NraW5nU3lzdGVtIFZlcnNpb249IjEiIFVzZXJWZXJzaW9uPSIwIiBDb250YWluZXJzPSIxIiBDZW50cmFsV2lkZ2V0PSJDZW50cmFsV2lkZ2V0Ij4KICAgIDxDb250YWluZXIgRmxvYXRpbmc9IjAiPgogICAgICAgIDxTcGxpdHRlciBPcmllbnRhdGlvbj0iLSIgQ291bnQ9IjIiPgogICAgICAgICAgICA8QXJlYSBUYWJzPSIyIiBDdXJyZW50PSJjb20uaHVhd2VpLmVkaXRvci5TY2VuZVdpbmRvd0RvY2tDb250YWluZXIjT3hoS0RUTzM1ayIgRmxhZ3M9IjEiPgogICAgICAgICAgICAgICAgPFdpZGdldCBOYW1lPSJDZW50cmFsV2lkZ2V0IiBDbG9zZWQ9IjAiLz4KICAgICAgICAgICAgICAgIDxXaWRnZXQgTmFtZT0iY29tLmh1YXdlaS5lZGl0b3IuU2NlbmVXaW5kb3dEb2NrQ29udGFpbmVyI094aEtEVE8zNWsiIENsb3NlZD0iMCIvPgogICAgICAgICAgICA8L0FyZWE+CiAgICAgICAgICAgIDxBcmVhIFRhYnM9IjIiIEN1cnJlbnQ9ImNvbS5odWF3ZWkuZWRpdG9yLlByb2plY3RXaW5kb3dEb2NrQ29udGFpbmVyI2JxZGh0bTBZRGQiPgogICAgICAgICAgICAgICAgPFdpZGdldCBOYW1lPSJjb20uaHVhd2VpLmVkaXRvci5Qcm9qZWN0V2luZG93RG9ja0NvbnRhaW5lciNicWRodG0wWURkIiBDbG9zZWQ9IjAiLz4KICAgICAgICAgICAgICAgIDxXaWRnZXQgTmFtZT0iY29tLmh1YXdlaS5lZGl0b3IuTG9nV2luZG93RG9ja0NvbnRhaW5lciNDbnpXYlJxaFpxIiBDbG9zZWQ9IjAiLz4KICAgICAgICAgICAgPC9BcmVhPgogICAgICAgICAgICA8U2l6ZXM+NTg3IDIxOSA8L1NpemVzPgogICAgICAgIDwvU3BsaXR0ZXI+CiAgICA8L0NvbnRhaW5lcj4KPC9RdEFkdmFuY2VkRG9ja2luZ1N5c3RlbT4K"
+      }
+    },
+    {
+      "setting-key": "MainWindow",
+      "setting-val": {
+        "size": [
+          1428,
+          930
+        ],
+        "position": [
+          0,
+          0
+        ],
+        "maximize": true
+      }
+    }
+  ],
+  "compatibility_info": {
+    "version": "24.1",
+    "type": "workspace"
+  }
+}

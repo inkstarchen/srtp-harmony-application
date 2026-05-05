@@ -106,17 +106,19 @@ PhysicsSystem::PhysicsSystem(size_t cap)
     }
     
     // 计算 float / int / byte 数量
-    const size_t floatCount = 
-        3  +  4  +  3  +   3    +   3   +   3    
+    const size_t floatCount =
+        3  +  4  +  3  +   3    +   3   +   3
     // pos + rot + vel + angVel + force + torque
-    +   3  +  3 +  + 3 + 3 + 3 + 3;
+    +   3  +  3 +  + 3 + 3 + 3 + 3
     // impulse + invInertial + scale + scale + extent + material
-    
-    size_t bytes = 
+    +   4  +  2; // restRot(4) + rotSpringK/D(2)
+
+    size_t bytes =
         capacity * (
             floatCount * sizeof(float) +
             sizeof(int32_t) +   // shapeType
-            sizeof(uint8_t)     // isStatic
+            sizeof(uint8_t) +   // isStatic
+            sizeof(uint8_t)     // canRotate
         );
     
     base_ptr = malloc(bytes);
@@ -190,6 +192,15 @@ PhysicsSystem::PhysicsSystem(size_t cap)
     // flags
     ALLOC_INT(shapeType)
     ALLOC_BYTE(isStatic)
+    ALLOC_BYTE(canRotate)
+    
+    // 旋转弹簧系统
+    ALLOC_FLOAT(restRot_x)
+    ALLOC_FLOAT(restRot_y)
+    ALLOC_FLOAT(restRot_z)
+    ALLOC_FLOAT(restRot_w)
+    ALLOC_FLOAT(rotSpringK)
+    ALLOC_FLOAT(rotSpringD)
     
 #undef ALLOC_FLOAT
 #undef ALLOC_INT
@@ -225,7 +236,13 @@ uint32_t PhysicsSystem::newNode()
 void PhysicsSystem::Destructor(napi_env env, void *nativeObject, [[maybe_unused]] void *finalize_hint)
 {
     OH_LOG_INFO(LOG_APP,"PhysicsSystem::Destructor called");
-    delete reinterpret_cast<PhysicsSystem*>(nativeObject);
+            // 清理布局系统
+    PhysicsSystem* obj = reinterpret_cast<PhysicsSystem*>(nativeObject);
+    if (obj->layoutManager) {
+        delete obj->layoutManager;
+        obj->layoutManager = nullptr;
+    }
+    delete obj;
 }
 
 // buffer数据销毁的入口
@@ -273,7 +290,7 @@ napi_value PhysicsSystem::Update(napi_env env, napi_callback_info info)
 
 // 处理 ArkTS 传递的事件队列
 void PhysicsSystem::processEventQueueFromJS(const std::vector<std::vector<EventCommand>> &events) {
-    OH_LOG_INFO(LOG_APP,"EVENTCOMMAND | START %{public}d", events.size());
+//    OH_LOG_INFO(LOG_APP,"EVENTCOMMAND | START %{public}d", events.size());
     // 按优先级处理事件（HIGH → NORMAL → LOW）
     for (const auto& queue : events) {       // 外层队列
 //        OH_LOG_INFO(LOG_APP,"EVENTCOMMAND | MID %{public}d", queue.size());
@@ -450,7 +467,7 @@ void PhysicsSystem::processRaycast(float touchX, float touchY) {
     Vector3 right = Vector3(-1.0, 0.0, 0.0);
 
     // 将屏幕坐标转换为世界空间射线方向
-    Vector3 virtual_pos = (up * touchY + right * touchX / ratio) * (-cameraPos.z);
+    Vector3 virtual_pos = (up * touchY + right * touchX * ratio) * (-cameraPos.z);
     Vector3 rayDir = (virtual_pos - cameraPos).normalized();
 
     uint32_t closestId = capacity;
@@ -654,6 +671,9 @@ void PhysicsSystem::step(float dt)
 
         // 3. 解算接触点
         solveContacts();
+
+        // 3.5 应用旋转弹簧力矩
+        applyRotationSprings(subDt);
 
         // 4. 速度积分
         integrateVelocity(subDt);
@@ -946,8 +966,12 @@ void PhysicsSystem::integrateVelocity(float dt) {
     for (uint32_t i = 0; i < count; ++i) {
         if (isStatic[i]) {
             vel_x[i] = vel_y[i] = vel_z[i] = 0.0f;
-            angVel_x[i] = angVel_y[i] = angVel_z[i] = 0.0f;
-            continue;
+            // 修改：如果允许旋转，则不清零角速度，允许弹簧力矩驱动
+            if (!canRotate[i]) {
+                angVel_x[i] = angVel_y[i] = angVel_z[i] = 0.0f;
+                continue;
+            }
+            OH_LOG_INFO(LOG_APP, "integrateVelocity: id=%{public}u is static but canRotate, processing angular velocity", i);
         }
 
         // 1. 线性速度积分（外力 + 重力）
@@ -956,9 +980,16 @@ void PhysicsSystem::integrateVelocity(float dt) {
         vel_z[i] += (force_z[i] * invMass[i] + gravity.z) * dt;
 
         // 2. 角速度积分（简化版：忽略陀螺项，适用于低速/主轴对齐物体）
+        float oldAngVelX = angVel_x[i];
         angVel_x[i] += torque_x[i] * invInertial_xx[i] * dt;
         angVel_y[i] += torque_y[i] * invInertial_yy[i] * dt;
         angVel_z[i] += torque_z[i] * invInertial_zz[i] * dt;
+
+        // Debug: 打印显著的角速度变化
+        if (std::abs(torque_x[i]) > 0.01f || std::abs(torque_y[i]) > 0.01f || std::abs(torque_z[i]) > 0.01f) {
+            OH_LOG_INFO(LOG_APP, "integrateVelocity: id=%{public}u torque=(%{public}f, %{public}f, %{public}f) invI=(%{public}f, %{public}f, %{public}f) angVel changed from (%{public}f, ...) to (%{public}f, ...)", 
+                        i, torque_x[i], torque_y[i], torque_z[i], invInertial_xx[i], invInertial_yy[i], invInertial_zz[i], oldAngVelX, angVel_x[i]);
+        }
 
         // 3. 指数衰减阻尼（替代错误的 friction 用法，帧率无关且数值稳定）
         // 若需每物体独立配置，可替换为 linearDamping[i] / angularDamping[i]
@@ -1036,13 +1067,18 @@ void PhysicsSystem::integratePosition(float dt)
 {
     for (uint32_t i = 0; i < count; ++i)
     {
-        if (isStatic[i])
-            continue;
+        // 静态物体默认跳过位置更新，但如果允许旋转，则仍需更新旋转
+        bool isStaticObj = isStatic[i];
+        bool canRot = canRotate[i];
+        
+        if (isStaticObj && !canRot) continue;
 
-        // --- 1. 更新位置 ---
-        pos_x[i] += vel_x[i] * dt;
-        pos_y[i] += vel_y[i] * dt;
-        pos_z[i] += vel_z[i] * dt;
+        // --- 1. 更新位置 (静态物体不更新位置) ---
+        if (!isStaticObj) {
+            pos_x[i] += vel_x[i] * dt;
+            pos_y[i] += vel_y[i] * dt;
+            pos_z[i] += vel_z[i] * dt;
+        }
 
         // --- 2. 更新旋转（四元数） ---
         // 构造角速度四元数 ω_quat = (0, ωx, ωy, ωz)
@@ -1163,6 +1199,36 @@ napi_value PhysicsSystem::AddNode(napi_env env, napi_callback_info info) {
 
     // setMass 必须在 setIsStatic 之后调用，确保 invMass 正确设置
     obj->setMass(id, 1.0f);
+    // ===== 布局系统覆盖 =====
+    if (obj->layoutManager) {
+        Vector3 layoutPos;
+        if (obj->layoutManager->getNextPosition(layoutPos)) {
+            // 用布局位置覆盖 JS 传入的 position
+            obj->setPosition(id, layoutPos);
+
+            // 用格子尺寸覆盖 JS 传入的 extent（取半长轴）
+            const auto& cfg = obj->layoutManager->getConfig();
+            Vector3 layoutExtent(cfg.cellWidth / 2.0f, cfg.cellHeight / 2.0f, cfg.cellDepth / 2.0f);
+            obj->setExtent(id, layoutExtent);
+
+            // 标记格子已占用
+            obj->layoutManager->occupyCell(id);
+
+            OH_LOG_INFO(LOG_APP,
+                "AddNode: id=%{public}u overridden by layout at (%{public}f, %{public}f, %{public}f)",
+                id, layoutPos.x, layoutPos.y, layoutPos.z);
+        } else {
+            OH_LOG_WARN(LOG_APP, "AddNode: layout full, using JS-provided position for id=%{public}u", id);
+        }
+
+        // 启用旋转弹簧：设置默认 K/D 参数，并将当前旋转作为复位目标
+        obj->setRotationSpring(id, 5.0f, 2.0f);
+        obj->setRestRotation(id, Vector4(
+            obj->rot_x[id], obj->rot_y[id], obj->rot_z[id], obj->rot_w[id]
+        ));
+        OH_LOG_INFO(LOG_APP, "AddNode: id=%{public}u rotation spring enabled (K=5.0, D=2.0), restRot=(%{public}f, %{public}f, %{public}f, %{public}f)", 
+                    id, obj->restRot_x[id], obj->restRot_y[id], obj->restRot_z[id], obj->restRot_w[id]);
+    }
     OH_LOG_INFO(LOG_APP, "AddNode: id=%{public}u invMass=%{public}f", id, obj->invMass[id]);
 
     napi_value id_val;
@@ -1222,12 +1288,148 @@ napi_value PhysicsSystem::Init(napi_env env, napi_value exports)
     napi_property_descriptor properties[] = {
         { "addNode", nullptr, AddNode, nullptr, nullptr, nullptr, napi_default, nullptr},
         { "update", nullptr, Update, nullptr, nullptr, nullptr, napi_default, nullptr},
-        { "release", nullptr, PhysicsSystem::Release, nullptr, nullptr, nullptr, napi_default, nullptr}
+        { "release", nullptr, PhysicsSystem::Release, nullptr, nullptr, nullptr, napi_default, nullptr},
+        { "enableLayout", nullptr, PhysicsSystem::EnableLayout, nullptr, nullptr, nullptr, napi_default,nullptr}
     };
 
     napi_value cons;
-    napi_define_class(env, "PhysicsSystem", NAPI_AUTO_LENGTH, New, nullptr, 3, properties, &cons);
+    napi_define_class(env, "PhysicsSystem", NAPI_AUTO_LENGTH, New, nullptr, 4, properties, &cons);
 
     napi_set_named_property(env, exports, "PhysicsSystem", cons);
     return exports;
+}
+
+
+// ========= 布局系统 ============
+// 启用布局系统
+napi_value PhysicsSystem::EnableLayout(napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value argv[1];
+    napi_value jsThis;
+    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
+    PhysicsSystem* obj;
+    napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
+
+    LayoutConfig config = napi_helpers::parse_layout_config(env, argv[0]);
+    obj->enableLayout(config);
+    return nullptr;
+}
+
+void PhysicsSystem::enableLayout(const LayoutConfig& config){
+    if (layoutManager) {
+        delete layoutManager;
+    }
+    layoutManager = new LayoutSystem();
+    layoutManager->init(config);
+}
+// 禁用布局系统
+void PhysicsSystem::disableLayout() {
+    delete layoutManager;
+    layoutManager = nullptr;
+}
+
+
+// 添加节点并自动布局
+uint32_t PhysicsSystem::addNodeWithLayout() {
+    uint32_t id = newNode();
+    
+    if (layoutManager) {
+        Vector3 pos;
+        if (layoutManager->getNextPosition(pos)) {
+            setPosition(id, pos);
+            // 设置物体 extent 为格子大小
+            setExtent(id, Vector3(
+                layoutManager->getConfig().cellWidth / 2,
+                layoutManager->getConfig().cellHeight / 2,
+                layoutManager->getConfig().cellDepth / 2
+            ));
+        } else {
+            // 布局已满，使用默认位置
+            setPosition(id, Vector3(0, 0, 0));
+        }
+    } else {
+        // 未启用布局系统，使用默认位置
+        setPosition(id, Vector3(0, 0, 0));
+    }
+    
+    return id;
+}
+
+// 在指定格子位置添加节点
+uint32_t PhysicsSystem::addNodeAtCell(uint32_t cellIndex) {
+    uint32_t id = newNode();
+    
+    if (layoutManager) {
+        Vector3 pos;
+        if (layoutManager->getPositionAt(cellIndex, pos)) {
+            setPosition(id, pos);
+            setExtent(id, Vector3(
+                layoutManager->getConfig().cellWidth / 2,
+                layoutManager->getConfig().cellHeight / 2,
+                layoutManager->getConfig().cellDepth / 2
+            ));
+        }
+    }
+
+    return id;
+}
+
+// ================= 旋转弹簧系统实现 =================
+
+void PhysicsSystem::setRestRotation(uint32_t id, Vector4 rot) {
+    restRot_x[id] = rot.x;
+    restRot_y[id] = rot.y;
+    restRot_z[id] = rot.z;
+    restRot_w[id] = rot.w;
+}
+
+void PhysicsSystem::setRotationSpring(uint32_t id, float k, float d) {
+    rotSpringK[id] = k;
+    rotSpringD[id] = d;
+}
+
+void PhysicsSystem::applyRotationSprings(float dt) {
+    // 仅在布局系统启用时应用旋转弹簧
+    if (layoutManager == nullptr) return;
+
+    for (uint32_t i = 0; i < count; ++i) {
+        // 核心条件：只对允许旋转的物体生效（无论是否静态）
+        if (!canRotate[i]) continue;
+
+        // 安全检查：如果惯性为 0 则重新计算，否则力矩无效
+        if (invInertial_xx[i] < 1e-6f) {
+            updateInvInertia(i);
+        }
+
+        // 当前四元数
+        Quaternion q_curr(rot_x[i], rot_y[i], rot_z[i], rot_w[i]);
+        // 目标四元数（复位目标）
+        Quaternion q_rest(restRot_x[i], restRot_y[i], restRot_z[i], restRot_w[i]);
+
+        // 计算误差四元数：deltaQ = q_rest * q_curr.conjugate()
+        Quaternion q_conj(-rot_x[i], -rot_y[i], -rot_z[i], rot_w[i]);
+        Quaternion deltaQ = q_rest * q_conj;
+
+        // 误差向量 (虚部) 近似表示旋转轴 * sin(theta/2)
+        Vector3 error(deltaQ.x, deltaQ.y, deltaQ.z);
+
+        // 弹簧力矩: T = K * error - D * angVel
+        float k = rotSpringK[i];
+        float d = rotSpringD[i];
+
+        float tx = 2.0f * k * error.x - d * angVel_x[i];
+        float ty = 2.0f * k * error.y - d * angVel_y[i];
+        float tz = 2.0f * k * error.z - d * angVel_z[i];
+
+        // 累加到当前力矩
+        torque_x[i] += tx;
+        torque_y[i] += ty;
+        torque_z[i] += tz;
+
+        // Debug: 打印显著的力矩
+        if (std::abs(tx) > 0.01f || std::abs(ty) > 0.01f || std::abs(tz) > 0.01f) {
+            OH_LOG_INFO(LOG_APP, "applyRotationSprings: id=%{public}u torque=(%{public}f, %{public}f, %{public}f) angVel=(%{public}f, %{public}f, %{public}f) error=(%{public}f, %{public}f, %{public}f)", 
+                        i, tx, ty, tz, angVel_x[i], angVel_y[i], angVel_z[i], error.x, error.y, error.z);
+        }
+    }
 }

@@ -4,6 +4,7 @@ import { window } from '@kit.ArkUI';
 import { SceneProxy } from '../core/scene3D/GlobalSceneProxy';
 import { ThemeManager } from '../theme/core/ThemeManager';
 import { DeviceAdapter } from '../theme/core/DeviceAdapter';
+import { initDb } from '../feature/DataStorage/datastore';
 
 const DOMAIN = 0x0000;
 
@@ -12,6 +13,10 @@ export default class EntryAbility extends UIAbility {
     SceneProxy.getInstance(this.context);
     ThemeManager.getInstance();
     DeviceAdapter.getInstance();
+    
+    // 初始化数据库（传入正确的 Ability Context）
+    initDb(this.context);
+    
     try {
       this.context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
     } catch (err) {

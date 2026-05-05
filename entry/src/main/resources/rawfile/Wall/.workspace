@@ -71,15 +71,15 @@
                 "view3d-enable-directional-light-pivot-point-aid": true,
                 "view3d-enable-spot-light-pivot-point-aid": true,
                 "view3d-camera-rotation": [
-                  0.01336380373686552,
-                  0.96569734811782837,
-                  0.2543131411075592,
-                  -0.050745513290166855
+                  0.052643336355686188,
+                  0.92538797855377197,
+                  0.13985875248908997,
+                  -0.34831812977790833
                 ],
                 "view3d-camera-position": [
-                  -4.0033473968505859,
-                  15.226849555969238,
-                  -28.590204238891602
+                  -16.764444351196289,
+                  12.317938804626465,
+                  -16.262519836425781
                 ],
                 "view3d-camera-scale": [
                   1,
@@ -96,14 +96,14 @@
             ]
           }
         ],
-        "docking-layout": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPFF0QWR2YW5jZWREb2NraW5nU3lzdGVtIFZlcnNpb249IjEiIFVzZXJWZXJzaW9uPSIwIiBDb250YWluZXJzPSIxIiBDZW50cmFsV2lkZ2V0PSJDZW50cmFsV2lkZ2V0Ij4KICAgIDxDb250YWluZXIgRmxvYXRpbmc9IjAiPgogICAgICAgIDxTcGxpdHRlciBPcmllbnRhdGlvbj0iLSIgQ291bnQ9IjIiPgogICAgICAgICAgICA8QXJlYSBUYWJzPSIyIiBDdXJyZW50PSJjb20uaHVhd2VpLmVkaXRvci5TY2VuZVdpbmRvd0RvY2tDb250YWluZXIjT3hoS0RUTzM1ayIgRmxhZ3M9IjEiPgogICAgICAgICAgICAgICAgPFdpZGdldCBOYW1lPSJDZW50cmFsV2lkZ2V0IiBDbG9zZWQ9IjAiLz4KICAgICAgICAgICAgICAgIDxXaWRnZXQgTmFtZT0iY29tLmh1YXdlaS5lZGl0b3IuU2NlbmVXaW5kb3dEb2NrQ29udGFpbmVyI094aEtEVE8zNWsiIENsb3NlZD0iMCIvPgogICAgICAgICAgICA8L0FyZWE+CiAgICAgICAgICAgIDxBcmVhIFRhYnM9IjIiIEN1cnJlbnQ9ImNvbS5odWF3ZWkuZWRpdG9yLlByb2plY3RXaW5kb3dEb2NrQ29udGFpbmVyI2JxZGh0bTBZRGQiPgogICAgICAgICAgICAgICAgPFdpZGdldCBOYW1lPSJjb20uaHVhd2VpLmVkaXRvci5Qcm9qZWN0V2luZG93RG9ja0NvbnRhaW5lciNicWRodG0wWURkIiBDbG9zZWQ9IjAiLz4KICAgICAgICAgICAgICAgIDxXaWRnZXQgTmFtZT0iY29tLmh1YXdlaS5lZGl0b3IuTG9nV2luZG93RG9ja0NvbnRhaW5lciNDbnpXYlJxaFpxIiBDbG9zZWQ9IjAiLz4KICAgICAgICAgICAgPC9BcmVhPgogICAgICAgICAgICA8U2l6ZXM+NTg3IDIxOSA8L1NpemVzPgogICAgICAgIDwvU3BsaXR0ZXI+CiAgICA8L0NvbnRhaW5lcj4KPC9RdEFkdmFuY2VkRG9ja2luZ1N5c3RlbT4K"
+        "docking-layout": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPFF0QWR2YW5jZWREb2NraW5nU3lzdGVtIFZlcnNpb249IjEiIFVzZXJWZXJzaW9uPSIwIiBDb250YWluZXJzPSIxIiBDZW50cmFsV2lkZ2V0PSJDZW50cmFsV2lkZ2V0Ij4KICAgIDxDb250YWluZXIgRmxvYXRpbmc9IjAiPgogICAgICAgIDxTcGxpdHRlciBPcmllbnRhdGlvbj0iLSIgQ291bnQ9IjIiPgogICAgICAgICAgICA8QXJlYSBUYWJzPSIyIiBDdXJyZW50PSJjb20uaHVhd2VpLmVkaXRvci5TY2VuZVdpbmRvd0RvY2tDb250YWluZXIjT3hoS0RUTzM1ayIgRmxhZ3M9IjEiPgogICAgICAgICAgICAgICAgPFdpZGdldCBOYW1lPSJDZW50cmFsV2lkZ2V0IiBDbG9zZWQ9IjAiLz4KICAgICAgICAgICAgICAgIDxXaWRnZXQgTmFtZT0iY29tLmh1YXdlaS5lZGl0b3IuU2NlbmVXaW5kb3dEb2NrQ29udGFpbmVyI094aEtEVE8zNWsiIENsb3NlZD0iMCIvPgogICAgICAgICAgICA8L0FyZWE+CiAgICAgICAgICAgIDxBcmVhIFRhYnM9IjIiIEN1cnJlbnQ9ImNvbS5odWF3ZWkuZWRpdG9yLlByb2plY3RXaW5kb3dEb2NrQ29udGFpbmVyI2JxZGh0bTBZRGQiPgogICAgICAgICAgICAgICAgPFdpZGdldCBOYW1lPSJjb20uaHVhd2VpLmVkaXRvci5Qcm9qZWN0V2luZG93RG9ja0NvbnRhaW5lciNicWRodG0wWURkIiBDbG9zZWQ9IjAiLz4KICAgICAgICAgICAgICAgIDxXaWRnZXQgTmFtZT0iY29tLmh1YXdlaS5lZGl0b3IuTG9nV2luZG93RG9ja0NvbnRhaW5lciNDbnpXYlJxaFpxIiBDbG9zZWQ9IjAiLz4KICAgICAgICAgICAgPC9BcmVhPgogICAgICAgICAgICA8U2l6ZXM+NTk3IDIyMyA8L1NpemVzPgogICAgICAgIDwvU3BsaXR0ZXI+CiAgICA8L0NvbnRhaW5lcj4KPC9RdEFkdmFuY2VkRG9ja2luZ1N5c3RlbT4K"
       }
     },
     {
       "setting-key": "MainWindow",
       "setting-val": {
         "size": [
-          1442,
+          1470,
           930
         ],
         "position": [

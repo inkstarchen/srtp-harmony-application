@@ -116,7 +116,10 @@ enum class Property : uint8_t {
     RESTITUTION   = 7,  // 弹性
     FRICTION      = 8,  // 摩擦
     STATIC        = 9,  // 是否静态
+    CAN_ROTATE    = 11, // 是否可旋转
     IMPULSE       = 10,  // 冲量
+    ROTATION_SPRING = 14, // 旋转弹簧 (K, D)
+    REST_ROTATION   = 15, // 复位目标旋转 (x, y, z, w)
 
     // System Property
     CAMERA        = 50, // 相机参数

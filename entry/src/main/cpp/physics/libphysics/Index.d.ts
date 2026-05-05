@@ -4,4 +4,5 @@ export class PhysicsSystem {
   addNode:(object:object) => number;
   update:(eventCommands:EventCommand[][],dt:number) => ReturnData | undefined;
   release:() => void;
+  enableLayout:(object:object)=> void;
 }

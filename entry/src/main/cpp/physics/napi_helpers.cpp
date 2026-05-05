@@ -120,4 +120,49 @@ bool check_args_count(napi_env env, size_t argc, size_t expected) {
     }
     return true;
 }
+
+LayoutConfig parse_layout_config(napi_env env, napi_value config_obj) {
+    LayoutConfig config = {};
+    napi_value val;
+    double d;
+    uint32_t u;
+
+    // 整数字段
+    napi_get_named_property(env, config_obj, "rows", &val);
+    napi_get_value_uint32(env, val, &config.rows);
+
+    napi_get_named_property(env, config_obj, "cols", &val);
+    napi_get_value_uint32(env, val, &config.cols);
+
+    // 浮点字段 (NAPI 只有 double，需强转 float)
+    napi_get_named_property(env, config_obj, "cellWidth", &val);
+    napi_get_value_double(env, val, &d); config.cellWidth = static_cast<float>(d);
+
+    napi_get_named_property(env, config_obj, "cellHeight", &val);
+    napi_get_value_double(env, val, &d); config.cellHeight = static_cast<float>(d);
+
+    napi_get_named_property(env, config_obj, "cellDepth", &val);
+    napi_get_value_double(env, val, &d); config.cellDepth = static_cast<float>(d);
+
+    napi_get_named_property(env, config_obj, "spacingX", &val);
+    napi_get_value_double(env, val, &d); config.spacingX = static_cast<float>(d);
+
+    napi_get_named_property(env, config_obj, "spacingY", &val);
+    napi_get_value_double(env, val, &d); config.spacingY = static_cast<float>(d);
+
+    napi_get_named_property(env, config_obj, "zPosition", &val);
+    napi_get_value_double(env, val, &d); config.zPosition = static_cast<float>(d);
+
+    // 枚举字段
+    napi_get_named_property(env, config_obj, "fillOrder", &val);
+    napi_get_value_uint32(env, val, &u); 
+    config.fillOrder = static_cast<FillOrder>(u);
+
+    // 嵌套对象
+    napi_value origin_obj;
+    napi_get_named_property(env, config_obj, "origin", &origin_obj);
+    config.origin = parse_vector3(env, origin_obj);
+
+    return config;
+}
 }

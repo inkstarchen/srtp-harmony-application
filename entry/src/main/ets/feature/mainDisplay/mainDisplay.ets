@@ -89,23 +89,33 @@ export struct mainDisplay{
     }
     let fileDir = NoteService.getNoteDir(appContext, timeArray);
 
-    NoteService.getNoteList(fileDir).then((data) => {
+    NoteService.getNoteList(fileDir).then(async (data) => {
       // 已存在文件
       let exist = new Set(this.notes.map(n => n.fileName));
 
-      data.forEach((value) => {
-        if (!exist.has(value)) {
+      for (const fileName of data) {
+        if (!exist.has(fileName)) {
+          try {
+            // 读取文件判断类型，过滤 ARTICLE
+            const noteData = await NoteService.loadNote(`${fileDir}/${fileName}`);
+            if (noteData && noteData.type === NoteType.ARTICLE) {
+              continue; // 跳过 ARTICLE 类型
+            }
+          } catch (e) {
+            // 忽略读取失败的文件
+            continue;
+          }
 
           let info: NoteInfo = {
             type: NoteType.NOTE,
             fileDir: fileDir,
-            fileName: value,
-            time: this.parseDateTimeFromPath(fileDir, value)
+            fileName: fileName,
+            time: this.parseDateTimeFromPath(fileDir, fileName)
           }
           // ⭐ 新卡片直接 push
           this.notes.push(info);
         }
-      })
+      }
     })
     this.FreshFinished();
   }
@@ -144,10 +154,20 @@ export struct mainDisplay{
     let appContext = this.getUIContext().getHostContext()?.getApplicationContext();
     if (appContext) {
       let fileDir = NoteService.getNoteDir(appContext,timeArray);
-      NoteService.getNoteList(fileDir).then((data) => {
+      NoteService.getNoteList(fileDir).then(async (data) => {
         this.fileList = data;
-        this.fileList.forEach((value) => {
+        for (const value of data) {
           console.info("check filelist | " + value);
+          try {
+            // 读取文件判断类型，过滤 ARTICLE
+            const noteData = await NoteService.loadNote(`${fileDir}/${value}`);
+            if (noteData && noteData.type === NoteType.ARTICLE) {
+              continue; // 跳过 ARTICLE 类型
+            }
+          } catch (e) {
+            continue;
+          }
+          
           let info:NoteInfo = {
             type:NoteType.NOTE,
             fileDir: fileDir,
@@ -155,7 +175,7 @@ export struct mainDisplay{
             time: this.parseDateTimeFromPath(fileDir,value)
           }
           this.notes.push(info);
-        })
+        }
         this.cardAppearAnim.play();
       })
     }

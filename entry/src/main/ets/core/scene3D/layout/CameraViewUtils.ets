@@ -1,5 +1,93 @@
 import { Vec3 } from "@kit.ArkGraphics3D";
 
+export enum LayoutType{
+    GRID = 0,       // 网格布局
+    CIRCLE = 1,     // 圆形布局（未来扩展）
+    HEXAGON = 2     // 六边形布局（未来扩展）
+}
+
+export enum FillOrder{
+    ROW_MAJOR = 0,          // 从左到右，从上到下（默认）
+    COL_MAJOR = 1          // 从上到下，从左到右
+}
+
+export interface LayoutConfig {
+    
+    // 网格布局参数
+    rows : number;
+    cols: number;
+    cellWidth: number;
+    cellHeight: number;
+    cellDepth: number;      // 物体厚度
+    spacingX: number;
+    spacingY: number;
+    origin: Vec3;         // 网格原点
+    zPosition: number;       // 固定 Z 坐标
+    
+    // 填充顺序
+    fillOrder: FillOrder;
+};
+
+
+/**
+ * 根据相机视野生成填满屏幕的网格布局配置
+ * @param targetZ 网格所在的 Z 坐标（世界坐标）
+ * @param rows 行数
+ * @param cols 列数
+ * @param spacingX 水平间距（默认 0.1）
+ * @param spacingY 垂直间距（默认 0.1）
+ * @param cellDepth 物体厚度（默认 0.1）
+ * @param camera 相机配置
+ * @returns LayoutConfig 可直接传入 physicsSystem.enableLayout()
+ */
+export function generateLayoutConfigForCameraView(
+  targetZ: number,
+  rows: number,
+  cols: number,
+  spacingX: number = 0.1,
+  spacingY: number = 0.1,
+  cellDepth: number = 0.1,
+  camera: CameraConfig = DEFAULT_CAMERA
+): LayoutConfig {
+  // 1. 计算目标平面到相机的 Z 轴距离
+  const zDistance = targetZ - camera.position.z;
+  if (zDistance <= camera.nearClip) {
+    console.warn(`targetZ (${targetZ}) 太靠近相机，可能小于 nearClip！`);
+  }
+
+  // 2. 获取该距离处的视野半宽和半高
+  const size = getCameraFrustumAtZ(zDistance, camera);
+  let halfWidth = size[0];
+  let halfHeight = size[1];
+  const visibleWidth = halfWidth * 2;
+  const visibleHeight = halfHeight * 2;
+
+  // 3. 计算格子大小，使其刚好填满可见区域
+  // 总宽度 = cols * cellWidth + (cols - 1) * spacingX
+  const cellWidth = (visibleWidth - (cols - 1) * spacingX) / cols;
+  const cellHeight = (visibleHeight - (rows - 1) * spacingY) / rows;
+
+  // 4. 计算原点（左上角），使整个网格在视野中居中
+  // X 原点 = 左边界 + 半个格子宽度
+  // Y 原点 = 上边界 - 半个格子高度 (因为行向下延伸)
+  const originX = -visibleWidth / 2 + cellWidth / 2;
+  const originY = visibleHeight / 2 - cellHeight / 2;
+
+  return {
+    rows,
+    cols,
+    cellWidth,
+    cellHeight,
+    cellDepth,
+    spacingX,
+    spacingY,
+    origin: { x: originX, y: originY, z: targetZ },
+    zPosition: targetZ,
+    fillOrder: FillOrder.ROW_MAJOR
+  };
+}
+
+
 /**
  * 相机参数配置
  */
@@ -57,8 +145,8 @@ export function getCameraFrustumAtZ(zDistance: number, camera: CameraConfig = DE
  * ```
  */
 export function getRandomPositionInCameraView(
-  minZ: number = 6, 
-  maxZ: number = 10, 
+  minZ: number = -1,
+  maxZ: number = -2,
   camera: CameraConfig = DEFAULT_CAMERA
 ): Vec3 {
   // 随机 Z 距离

@@ -78,6 +78,7 @@ export enum Property{
   FRICTION = 8,
   STATIC = 9,
   IMPULSE = 10,
+  CAN_ROTATE = 11,
   // System Property 50-99
   CAMERA = 50,
 }

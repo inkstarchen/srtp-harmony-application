@@ -1,8 +1,14 @@
 {
   "src": [
     "pages/Index",
+    "pages/MainPage",
     "pages/NotePage",
     "pages/NativePage",
-    "pages/DiaryHomePage"
+    "pages/DiaryHomePage",
+    "pages/DemoPage",
+
+    "feature/demo/Render1",
+    "feature/demo/Render2",
+    "feature/demo/Render3"
   ]
 }

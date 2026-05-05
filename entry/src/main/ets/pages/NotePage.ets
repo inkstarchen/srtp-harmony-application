@@ -29,9 +29,16 @@ export struct NotePage {
   onPageShow(): void {
     let info:NotePageParams = this.getUIContext().getRouter().getParams() as NotePageParams;
     if(info.action == NoteAction.SHOW){
-      this.noteViewModel.loadFromNoteInfo(info.info);
+      // 1. 优先显示数据库/路由传递的标题（实现秒显）
+      this.currentNoteTitle = info.info.title || '无标题';
+      
+      // 2. 加载文件内容，完成后以文件中的标题为准同步更新
+      this.noteViewModel.loadFromNoteInfo(info.info).then(() => {
+        this.currentNoteTitle = this.noteViewModel.noteState.title;
+      });
     }else if(info.action == NoteAction.NEW){
       this.noteViewModel.newNote(NoteType.ARTICLE);
+      this.currentNoteTitle = '无标题';
     }
   }
 

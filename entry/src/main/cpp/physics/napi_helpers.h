@@ -9,7 +9,7 @@
 
 #include <napi/native_api.h>
 #include "math/vec.h"
-
+#include "./physics/include/layoutSystem.h"
 
 
 namespace napi_helpers {
@@ -34,6 +34,8 @@ namespace napi_helpers {
     // 通用错误处理
     napi_value create_error(napi_env env, const char* message);
     bool check_args_count(napi_env env, size_t argc, size_t expected);
+
+    LayoutConfig parse_layout_config(napi_env env, napi_value config_obj);
 }
 
 

@@ -26,6 +26,7 @@ export class NodeUtil{
       material.colorShader.inputs['BASE_COLOR_Image'] = image;
     }
     geom.mesh.materialOverride = undefined;
+    console.info("new color shader");
     geom.mesh.subMeshes[0].material = material;
   }
 

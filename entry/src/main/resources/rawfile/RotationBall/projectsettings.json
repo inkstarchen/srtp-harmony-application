@@ -1,0 +1,31 @@
+{
+    "compatibility_info": {
+        "version": "30.0",
+        "type": "projectsettings"
+    },
+    "project": {
+        "name": "RotationBall",
+        "appUid": "f8b6a2d9-fa7f-4d3c-b2e7-f3f9662f3e26",
+        "projectType": "PROJECT_TYPE_3D_ETS",
+        "defaultScene": "project://assets/default.scene",
+        "windowWidth": 1280,
+        "windowHeight": 540,
+        "clearEnabled": false,
+        "templatePackageName": "@PLUGIN_NAME_LOWER@package",
+        "sdkVersion": "2.0.115",
+        "cameraForwardKey": 87,
+        "cameraBackwardKey": 83,
+        "cameraLeftKey": 65,
+        "cameraRightKey": 68,
+        "cameraUpwardKey": 82,
+        "cameraDownwardKey": 70,
+        "cameraSpeedFactor": 3,
+        "cameraCurrentSpeed": 1,
+        "defaultLocale": "en",
+        "platforms": [],
+        "shaderIncludePaths": [],
+        "defaultShaderGraphIncludePaths": [
+            "project://assets/shader_blocks/"
+        ]
+    }
+}
