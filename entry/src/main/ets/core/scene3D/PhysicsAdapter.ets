@@ -24,9 +24,9 @@ export class PhysicsAdapter {
 
     // 应用 scale 到 extent
     let extent = {
-      x: Math.abs((aabb.aabbMax.x - aabb.aabbMin.x) / 2 * scale.x),
-      y: Math.abs((aabb.aabbMax.y - aabb.aabbMin.y) / 2 * scale.y),
-      z: Math.abs((aabb.aabbMax.z - aabb.aabbMin.z) / 2 * scale.z)
+      x: Math.abs((aabb.aabbMax.x - aabb.aabbMin.x) / 2),
+      y: Math.abs((aabb.aabbMax.y - aabb.aabbMin.y) / 2),
+      z: Math.abs((aabb.aabbMax.z - aabb.aabbMin.z) / 2)
     } as Vec3;
     
     // 防止 extent 为 0

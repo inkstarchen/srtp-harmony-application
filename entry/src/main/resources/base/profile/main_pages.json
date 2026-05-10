@@ -1,9 +1,9 @@
 {
   "src": [
     "pages/Index",
+    "pages/PadMain",
     "pages/MainPage",
     "pages/NotePage",
-    "pages/NativePage",
     "pages/DiaryHomePage",
     "pages/DemoPage",
 

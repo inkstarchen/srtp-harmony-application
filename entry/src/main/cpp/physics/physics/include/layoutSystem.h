@@ -24,7 +24,6 @@ struct LayoutConfig {
     uint32_t cols;
     float cellWidth;
     float cellHeight;
-    float cellDepth;        // 物体厚度
     float spacingX;
     float spacingY;
     Vector3 origin;         // 网格原点
@@ -43,7 +42,7 @@ public:
     void init(const LayoutConfig& config);
     
     // 获取下一个可用格子的世界坐标
-    bool getNextPosition(Vector3& outPos);
+    uint32_t getNextPosition(Vector3& outPos);
     
     // 获取指定格子索引的世界坐标
     bool getPositionAt(uint32_t cellIndex, Vector3& outPos) const;

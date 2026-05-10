@@ -15,11 +15,11 @@ struct Render3{
   build(){
     Stack({alignContent:Alignment.Center}){
       if(this.sceneProxy.options){
-        Component3D(this.sceneProxy.options)
-          .renderWidth("100%")
-          .renderHeight("100%")
-          .hitTestBehavior(HitTestMode.None)
-          .backgroundColor("#00ffffff")
+          Component3D(this.sceneProxy.options)
+            .renderWidth("100%")
+            .renderHeight("100%")
+            .hitTestBehavior(HitTestMode.None)
+            .backgroundColor("#00ffffff")
       }
     }
     .width("100%")

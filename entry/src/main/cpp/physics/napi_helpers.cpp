@@ -141,9 +141,6 @@ LayoutConfig parse_layout_config(napi_env env, napi_value config_obj) {
     napi_get_named_property(env, config_obj, "cellHeight", &val);
     napi_get_value_double(env, val, &d); config.cellHeight = static_cast<float>(d);
 
-    napi_get_named_property(env, config_obj, "cellDepth", &val);
-    napi_get_value_double(env, val, &d); config.cellDepth = static_cast<float>(d);
-
     napi_get_named_property(env, config_obj, "spacingX", &val);
     napi_get_value_double(env, val, &d); config.spacingX = static_cast<float>(d);
 

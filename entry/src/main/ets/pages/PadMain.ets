@@ -36,7 +36,7 @@ enum PageState {
 
 @Entry
 @ComponentV2
-export struct MainPage {
+export struct PadMainPage {
   // Variable for head time
   @Local slideTime:SlidingDateModel = new SlidingDateModel();
   @Local selectedData: DateItem = this.slideTime.createItem(new Date(),0);

@@ -1,5 +1,5 @@
 ﻿import { PhysicsData, PhysicsAdapter, ShapeType} from "./PhysicsAdapter"
-import { Node, Quaternion, Vec3 } from "@ohos.graphics.scene";
+import { Camera, Node, Quaternion, Vec3 } from "@ohos.graphics.scene";
 import { PhysicsSystem } from "libphysics.so";
 import { gamePerformance } from "@kit.GameServiceKit";
 import { systemDateTime } from "@kit.BasicServicesKit";
@@ -22,9 +22,9 @@ export class PhysicsSystemManager {
     return this.physicsSystem;
   }
 
-  enableLayout(cameraConfig: CameraConfig){
+  enableLayout(camera:Camera){
     let config: LayoutConfig = generateLayoutConfigForCameraView(
-      -1, 3, 4, 0.1,0.1, 0.1, cameraConfig
+      -1, 3, 4, 0.1,0.1, camera
     );
     this.physicsSystem.enableLayout(config);
   }
@@ -60,6 +60,14 @@ export class PhysicsSystemManager {
     return id;
   }
 
+  registerNodeWithLayout(node: Node, isStatic: boolean = true): number {
+    let id = this.physicsSystem.addNodeInLayoutSys(PhysicsAdapter.ToPhysicsData(node, ShapeType.AABB, isStatic));
+    this.idMap.set(node.path + '/' + node.name, id);
+    this.nodeMap.set(node.name, node);
+    console.info("RegisterNode | " + node.name + '/' + id.toString());
+    return id;
+  }
+
   updateNodeData(eventCommands:EventCommand[][]){
     if(!this.available) return;
     // this.physicsSystem.getNormal(this.angle);
@@ -73,7 +81,7 @@ export class PhysicsSystemManager {
         if(result.status == 1){
           this.selectId = result.nodeId;
           let data = result.data;
-          // console.info("Raycast ArkTs | nodeId " + result.nodeId.toString() + "\ndistance " + data[1].toString() + "\npos " + data[2].toString() + '/' + data[3].toString() + '/' + data[4].toString());
+          console.info("Raycast ArkTs | nodeId " + result.nodeId.toString() + "\ndistance " + data[1].toString() + "\npos " + data[2].toString() + '/' + data[3].toString() + '/' + data[4].toString());
         }
       }
     })

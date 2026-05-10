@@ -1,4 +1,4 @@
-import { Vec3 } from "@kit.ArkGraphics3D";
+import { Camera, Vec3 } from "@kit.ArkGraphics3D";
 
 export enum LayoutType{
     GRID = 0,       // 网格布局
@@ -18,12 +18,10 @@ export interface LayoutConfig {
     cols: number;
     cellWidth: number;
     cellHeight: number;
-    cellDepth: number;      // 物体厚度
     spacingX: number;
     spacingY: number;
     origin: Vec3;         // 网格原点
     zPosition: number;       // 固定 Z 坐标
-    
     // 填充顺序
     fillOrder: FillOrder;
 };
@@ -46,12 +44,11 @@ export function generateLayoutConfigForCameraView(
   cols: number,
   spacingX: number = 0.1,
   spacingY: number = 0.1,
-  cellDepth: number = 0.1,
-  camera: CameraConfig = DEFAULT_CAMERA
+  camera: Camera
 ): LayoutConfig {
   // 1. 计算目标平面到相机的 Z 轴距离
   const zDistance = targetZ - camera.position.z;
-  if (zDistance <= camera.nearClip) {
+  if (zDistance <= camera.nearPlane) {
     console.warn(`targetZ (${targetZ}) 太靠近相机，可能小于 nearClip！`);
   }
 
@@ -64,21 +61,20 @@ export function generateLayoutConfigForCameraView(
 
   // 3. 计算格子大小，使其刚好填满可见区域
   // 总宽度 = cols * cellWidth + (cols - 1) * spacingX
-  const cellWidth = (visibleWidth - (cols - 1) * spacingX) / cols;
-  const cellHeight = (visibleHeight - (rows - 1) * spacingY) / rows;
+  const cellWidth = (visibleWidth - (cols + 1) * spacingX) / cols;
+  const cellHeight = (visibleHeight - (rows + 1) * spacingY) / rows;
 
   // 4. 计算原点（左上角），使整个网格在视野中居中
   // X 原点 = 左边界 + 半个格子宽度
   // Y 原点 = 上边界 - 半个格子高度 (因为行向下延伸)
-  const originX = -visibleWidth / 2 + cellWidth / 2;
-  const originY = visibleHeight / 2 - cellHeight / 2;
+  const originX = halfWidth;
+  const originY = halfHeight;
 
   return {
     rows,
     cols,
     cellWidth,
     cellHeight,
-    cellDepth,
     spacingX,
     spacingY,
     origin: { x: originX, y: originY, z: targetZ },
@@ -120,12 +116,12 @@ export const DEFAULT_CAMERA: CameraConfig = {
  * @param camera 相机配置
  * @returns 视野范围 { halfWidth, halfHeight }
  */
-export function getCameraFrustumAtZ(zDistance: number, camera: CameraConfig = DEFAULT_CAMERA): [number, number] {
+export function getCameraFrustumAtZ(zDistance: number, camera: Camera): [number, number] {
   // 计算半高（垂直视野的一半）
   const halfHeight = zDistance * Math.tan(camera.fov / 2);
   
   // 计算半宽（根据宽高比）
-  const halfWidth = halfHeight * camera.aspectRatio;
+  const halfWidth = halfHeight;
   
   return [halfWidth, halfHeight];
 }
@@ -147,7 +143,7 @@ export function getCameraFrustumAtZ(zDistance: number, camera: CameraConfig = DE
 export function getRandomPositionInCameraView(
   minZ: number = -1,
   maxZ: number = -2,
-  camera: CameraConfig = DEFAULT_CAMERA
+  camera: Camera
 ): Vec3 {
   // 随机 Z 距离
   const zDistance = Math.random() * (maxZ - minZ) + minZ;
@@ -182,7 +178,7 @@ export function getMultipleRandomPositionsInCameraView(
   minZ: number = 6,
   maxZ: number = 10,
   minDistance: number = 1.0,
-  camera: CameraConfig = DEFAULT_CAMERA
+  camera: Camera
 ): Vec3[] {
   const positions: Vec3[] = [];
   const maxAttempts = count * 10; // 最大尝试次数
@@ -226,7 +222,7 @@ export function getMultipleRandomPositionsInCameraView(
  * @param camera 相机配置
  * @returns 是否在视野内
  */
-export function isPointInCameraView(point: Vec3, camera: CameraConfig = DEFAULT_CAMERA): boolean {
+export function isPointInCameraView(point: Vec3, camera: Camera): boolean {
   // 计算相对于相机的位置
   const relativeX = point.x - camera.position.x;
   const relativeY = point.y - camera.position.y;
@@ -251,55 +247,39 @@ export function isPointInCameraView(point: Vec3, camera: CameraConfig = DEFAULT_
 /**
  * 在 GlobalSceneProxy 中使用示例
  */
-export class LayoutHelper {
-  /**
-   * 添加物体到相机视野内的随机位置
-   * @param sceneProxy SceneProxy 实例
-   * @param resourceName 资源名称
-   * @param nodeName 节点名称
-   * @param rename 重命名
-   */
-  static randomPosInCameraView(
-    minZ: number = 6,
-    maxZ: number = 10
-  ): Vec3 {
-    // 生成随机位置
-    const randomPos = getRandomPositionInCameraView(minZ, maxZ, DEFAULT_CAMERA);
-    
-    // 假设 sceneProxy 有 addNode 方法
-    // const node = await sceneProxy.addNode(resourceName, nodeName, rename);
-    // if (node) {
-    //   node.position = randomPos;
-    // }
-    // return node;
-    return randomPos;
-  }
-  
-  /**
-   * 批量添加物体到相机视野内
-   */
-  static async addMultipleNodesInCameraView(
-    count: number,
-    minDistance: number = 1.5
-  ): Promise<Vec3[]> {
-    return getMultipleRandomPositionsInCameraView(count, 6, 10, minDistance, DEFAULT_CAMERA);
-  }
-}
+// export class LayoutHelper {
+//   /**
+//    * 添加物体到相机视野内的随机位置
+//    * @param sceneProxy SceneProxy 实例
+//    * @param resourceName 资源名称
+//    * @param nodeName 节点名称
+//    * @param rename 重命名
+//    */
+//   static randomPosInCameraView(
+//     minZ: number = 6,
+//     maxZ: number = 10
+//   ): Vec3 {
+//     // 生成随机位置
+//     const randomPos = getRandomPositionInCameraView(minZ, maxZ, );
+//
+//     // 假设 sceneProxy 有 addNode 方法
+//     // const node = await sceneProxy.addNode(resourceName, nodeName, rename);
+//     // if (node) {
+//     //   node.position = randomPos;
+//     // }
+//     // return node;
+//     return randomPos;
+//   }
+//
+//   /**
+//    * 批量添加物体到相机视野内
+//    */
+//   static async addMultipleNodesInCameraView(
+//     count: number,
+//     minDistance: number = 1.5
+//   ): Promise<Vec3[]> {
+//     return getMultipleRandomPositionsInCameraView(count, 6, 10, minDistance, DEFAULT_CAMERA);
+//   }
+// }
 
-// ==================== 测试代码 ====================
-if (false) {
-  // 测试单个随机位置
-  console.log("=== 测试单个随机位置 ===");
-  for (let i = 0; i < 5; i++) {
-    const pos = getRandomPositionInCameraView(6, 10);
-    console.log(`位置 ${i}: (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)})`);
-    console.log(`  是否在视野内：${isPointInCameraView(pos)}`);
-  }
-  
-  // 测试多个位置
-  console.log("\n=== 测试 5 个不重叠位置 ===");
-  const positions = getMultipleRandomPositionsInCameraView(5, 6, 10, 1.5);
-  positions.forEach((pos, i) => {
-    console.log(`位置 ${i}: (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)})`);
-  });
-}
+

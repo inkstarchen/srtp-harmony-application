@@ -31,12 +31,6 @@ public:
 
     // 是否启用了布局系统
     bool isLayoutEnabled() const { return layoutManager != nullptr; }
-    
-    // 添加节点并自动布局（如果启用了布局系统）
-    uint32_t addNodeWithLayout();
-    
-    // 在指定格子位置添加节点
-    uint32_t addNodeAtCell(uint32_t cellIndex);
 
     void updateInvInertia(uint32_t id) {
         if (invMass[id] <= 1e-6f) return;
@@ -58,6 +52,7 @@ public:
     PhysicsSystem(size_t capacity);
     ~PhysicsSystem();
 
+    static napi_value AddNodeInLayoutSys(napi_env env, napi_callback_info info);
     static napi_value AddNode(napi_env env, napi_callback_info info);
     static napi_value Update(napi_env env, napi_callback_info info);
     static napi_value Release(napi_env env, napi_callback_info info);
@@ -102,6 +97,7 @@ public:
     float *impulse_x, *impulse_y, *impulse_z;
     float *invInertial_xx, *invInertial_yy, *invInertial_zz;
     float *extent_x, *extent_y, *extent_z;
+    float *base_extent_x, *base_extent_y, *base_extent_z;
     float *invMass, *restitution, *friction;
     
     int32_t *shapeType;
@@ -129,25 +125,28 @@ private:
     napi_value getEventResults(napi_env env){
         return toJsEventResults(env,eventResults);
     }
-    void ReleaseScene(){
-        count = 0;
-        OH_LOG_INFO(LOG_APP,"Release Scene %{public}d", count);
+    void ReleaseScene(){ // 需要联动 New 做好空间释放
+        OH_LOG_INFO(LOG_APP,"Release Scene");
         free_list.clear(); // 清空原有元素
         for (int32_t i = capacity-1; i >= 0; i--) {
             free_list.push_back(static_cast<uint32_t>(i));
         }
         
         // 计算 float / int / byte 数量
-        const size_t floatCount = 
-            3 + 4 + 3 + 3 + 3 + 6 + 3;
-        // pos + rot + vel + acc + force + bounds + material
+        const size_t floatCount =
+            3  +  4  +  3  +   3    +   3   +   3
+        // pos + rot + vel + angVel + force + torque
+        +   3  +  3 +  + 3 + 3 + 3  +  3 + 3
+        // impulse + invInertial + scale + scale + extent + base_extent + material
+        +   4  +  2; // restRot(4) + rotSpringK/D(2)
         
-        size_t bytes = 
-            capacity * (
-                floatCount * sizeof(float) +
-                sizeof(int32_t) +   // shapeType
-                sizeof(uint8_t)     // isStatic
-            );
+        size_t bytes =
+        capacity * (
+            floatCount * sizeof(float) +
+            sizeof(int32_t) +   // shapeType
+            sizeof(uint8_t) +   // isStatic
+            sizeof(uint8_t)     // canRotate
+        );
         std::memset(base_ptr, 0, bytes);
     }
     void setGravity(Vector3 g){
@@ -179,6 +178,9 @@ private:
         scale_x[id] = scale.x;
         scale_y[id] = scale.y;
         scale_z[id] = scale.z;
+        extent_x[id] = scale.x * base_extent_x[id];
+        extent_y[id] = scale.y * base_extent_y[id];
+        extent_z[id] = scale.z * base_extent_z[id];
     }
     void setMass(uint32_t id, float m){
         if(m < 1e-6f) {
@@ -187,10 +189,12 @@ private:
             invMass[id] = 1.0f / m;
         }
     }
+
+
     void setExtent(uint32_t id, Vector3 extent){
-        extent_x[id] = extent.x;
-        extent_y[id] = extent.y;
-        extent_z[id] = extent.z;
+        base_extent_x[id] = extent.x;
+        base_extent_y[id] = extent.y;
+        base_extent_z[id] = extent.z;
         OH_LOG_INFO(LOG_APP, "setExtent: id=%{public}u extent=(%{public}.6f,%{public}.6f,%{public}.6f)", id, extent.x, extent.y, extent.z);
     }
     void setRestitution(uint32_t id, float r){
@@ -325,11 +329,17 @@ private:
     }
     
     void handleRotateRequest(const EventCommand& e){
+        
         uint32_t id = e.nodeId;
         if(id == capacity) return;
-        
+        OH_LOG_INFO(LOG_APP,"ROTATE%{public}d",e.nodeId);
         // 检查节点是否可旋转
-        if(!canRotate[id]) return;
+        if(!canRotate[id]){
+            OH_LOG_INFO(LOG_APP,"CANNOT ROTATE%{public}d %{public}d",e.nodeId,canRotate[id]);
+            return;   
+        }
+        
+        
         
         Vector2 distance = touchCur - touchLast;
         touchLast.x = touchCur.x;

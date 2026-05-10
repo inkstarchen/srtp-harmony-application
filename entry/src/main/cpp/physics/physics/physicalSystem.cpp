@@ -109,8 +109,8 @@ PhysicsSystem::PhysicsSystem(size_t cap)
     const size_t floatCount =
         3  +  4  +  3  +   3    +   3   +   3
     // pos + rot + vel + angVel + force + torque
-    +   3  +  3 +  + 3 + 3 + 3 + 3
-    // impulse + invInertial + scale + scale + extent + material
+    +   3  +  3 +  + 3 + 3 + 3  +  3 + 3
+    // impulse + invInertial + scale + scale + extent + base_extent + material
     +   4  +  2; // restRot(4) + rotSpringK/D(2)
 
     size_t bytes =
@@ -184,6 +184,11 @@ PhysicsSystem::PhysicsSystem(size_t cap)
     ALLOC_FLOAT(extent_y)
     ALLOC_FLOAT(extent_z)
 
+    // base bounds
+    ALLOC_FLOAT(base_extent_x)
+    ALLOC_FLOAT(base_extent_y)
+    ALLOC_FLOAT(base_extent_z)
+
     // material
     ALLOC_FLOAT(invMass)
     ALLOC_FLOAT(restitution)
@@ -226,8 +231,7 @@ uint32_t PhysicsSystem::newNode()
         free_list.pop_back();
         count++;
     } else {
-        id = count++;
-        assert(id < capacity && "Exceed capacity");
+        assert("Exceed capacity");
     }
     return id;
 }
@@ -456,7 +460,7 @@ inline bool raycastOBB(
             if (tmin > tmax) return false;
         }
     }
-
+    OH_LOG_INFO(LOG_APP,"T_CHECK %{public}.3f %{public}.3f",tmin, tmax);
     t = tmin;
     return tmin >= 0;
 }
@@ -467,9 +471,10 @@ void PhysicsSystem::processRaycast(float touchX, float touchY) {
     Vector3 right = Vector3(-1.0, 0.0, 0.0);
 
     // 将屏幕坐标转换为世界空间射线方向
-    Vector3 virtual_pos = (up * touchY + right * touchX * ratio) * (-cameraPos.z);
+    Vector3 virtual_pos = (up * touchY + right * touchX * ratio) * (-cameraPos.z * std::tan(fov / 2));
+    OH_LOG_INFO(LOG_APP,"tan fov is %{public}.3f fov is %{public}.3f", std::tan(fov / 2),fov / 2);
     Vector3 rayDir = (virtual_pos - cameraPos).normalized();
-
+    
     uint32_t closestId = capacity;
     double closestT = FLT_MAX;
 //    setPosition(6, 2 * rayDir + cameraPos);
@@ -480,7 +485,7 @@ void PhysicsSystem::processRaycast(float touchX, float touchY) {
 
         if(i == 6) continue;
         Vector3 center(pos_x[i], pos_y[i], pos_z[i]);
-        double t;
+        double t_2;
         bool hit = false;
 
         // 根据 shapeType 选择检测函数
@@ -488,26 +493,35 @@ void PhysicsSystem::processRaycast(float touchX, float touchY) {
             case SHAPE_SPHERE: {
                 // 球体：使用 extent_x 作为半径
                 float radius = extent_x[i];
-//                OH_LOG_INFO(LOG_APP, "Raycast hit test | cameraPos:%{public}.3f , %{public}.3f, %{public}.3f \n rayDir : %{public}.3f, %{public}.3f, %{public}.3f, \n center: %{public}.3f,%{public}.3f,%{public}.3f"
-//                            , cameraPos.x, cameraPos.y, cameraPos.z, rayDir.x, rayDir.y, rayDir.z, center.x, center.y, center.z);
-                hit = raycastSphere(cameraPos, rayDir, center, radius, t);
+                OH_LOG_INFO(LOG_APP, "Raycast hit test | cameraPos:%{public}.3f , %{public}.3f, %{public}.3f \n rayDir : %{public}.3f, %{public}.3f, %{public}.3f, \n center: %{public}.3f,%{public}.3f,%{public}.3f "
+                            , cameraPos.x, cameraPos.y, cameraPos.z, rayDir.x, rayDir.y, rayDir.z, center.x, center.y, center.z);
+                hit = raycastSphere(cameraPos, rayDir, center, radius, t_2);
                 break;
             }
             case SHAPE_BOX: {
                 // OBB：使用旋转和半长轴
+                double t = (-1.0 - cameraPos.z) / rayDir.z;
+                Vector3 result;    
+                result.x = cameraPos.x + t * rayDir.x;
+                result.y = cameraPos.y + t * rayDir.y;
+                result.z = -1.0;
+//                pos_x[2] = result.x;
+//                pos_y[2] = result.y;
+//                pos_z[2] = result.z;
                 Vector3 halfExtent(extent_x[i], extent_y[i], extent_z[i]);
                 Quaternion rot(rot_x[i], rot_y[i], rot_z[i], rot_w[i]);
-//                OH_LOG_INFO(LOG_APP, "Raycast hit test | cameraPos:%{public}.3f , %{public}.3f, %{public}.3f \n rayDir : %{public}.3f, %{public}.3f, %{public}.3f, \n center: %{public}.3f,%{public}.3f,%{public}.3f"
-//                , cameraPos.x, cameraPos.y, cameraPos.z, rayDir.x, rayDir.y, rayDir.z, center.x, center.y, center.z);
-                hit = raycastOBB(cameraPos, rayDir, center, rot, halfExtent, t);
+                OH_LOG_INFO(LOG_APP, "Raycast hit test | cameraPos:%{public}.3f , %{public}.3f, %{public}.3f \n rayDir : %{public}.3f, %{public}.3f, %{public}.3f, \n center: %{public}.3f,%{public}.3f,%{public}.3f \n broad: %{public}.3f,%{public}.3f,%{public}.3f \n result: %{public}.3f,%{public}.3f,%{public}.3f "
+                , cameraPos.x, cameraPos.y, cameraPos.z, rayDir.x, rayDir.y, rayDir.z, center.x , center.y, center.z, halfExtent.x, halfExtent.y, halfExtent.z,result.x,result.y,result.z);
+                hit = raycastOBB(cameraPos, rayDir, center, rot, halfExtent, t_2);
                 break;
             }
             default:
                 break;
         }
 
-        if (hit && t > 0 && t < closestT) {
-            closestT = t;
+        if (hit && t_2 > 0 && t_2 < closestT) {
+//            OH_LOG_INFO(LOG_APP,"HIT ID:%{public}d %{public}.3f %{public}.3f", i,t_2,closestT);
+            closestT = t_2;
             closestId = i;
         }
     }
@@ -971,7 +985,7 @@ void PhysicsSystem::integrateVelocity(float dt) {
                 angVel_x[i] = angVel_y[i] = angVel_z[i] = 0.0f;
                 continue;
             }
-            OH_LOG_INFO(LOG_APP, "integrateVelocity: id=%{public}u is static but canRotate, processing angular velocity", i);
+//            OH_LOG_INFO(LOG_APP, "integrateVelocity: id=%{public}u is static but canRotate, processing angular velocity", i);
         }
 
         // 1. 线性速度积分（外力 + 重力）
@@ -1160,13 +1174,83 @@ napi_value PhysicsSystem::AddNode(napi_env env, napi_callback_info info) {
         obj->setRotation(id, rotation);
     }
     
-    // ===== scale =====
+    // ===== extent =====
+    {
+        napi_value extent_value;
+        Vector3 extent;
+        napi_get_named_property(env, data_value, "extent", &extent_value);
+        extent = napi_helpers::parse_vector3(env, extent_value);
+        obj->setExtent(id, extent);
+    }
+
+        // ===== scale =====
     {
         napi_value scale_value;
         Vector3 scale;
         napi_get_named_property(env, data_value, "scale", &scale_value);
         scale = napi_helpers::parse_vector3(env, scale_value);
         obj->setScale(id, scale);
+    }
+    
+    // ===== shapeType =====
+    {
+        napi_value shape_type_value;
+        int32_t shapeType;
+        napi_get_named_property(env, data_value, "shapeType", &shape_type_value);
+        napi_get_value_int32(env, shape_type_value, &shapeType);
+        obj->setShapeType(id, shapeType);
+    }
+    
+    // ===== isStatic =====
+    {
+        napi_value is_static_value;
+        uint32_t isStatic;
+        napi_get_named_property(env, data_value, "isStatic", &is_static_value);
+        napi_get_value_uint32(env, is_static_value, &isStatic);
+        obj->setIsStatic(id, isStatic);
+        OH_LOG_INFO(LOG_APP, "AddNode: id=%{public}u isStatic=%{public}u", id, isStatic);
+    }
+
+    // setMass 必须在 setIsStatic 之后调用，确保 invMass 正确设置
+    obj->setMass(id, 1.0f);
+    // ===== 布局系统覆盖 =====
+
+    OH_LOG_INFO(LOG_APP, "AddNode: id=%{public}u invMass=%{public}f", id, obj->invMass[id]);
+
+    napi_value id_val;
+    napi_create_int32(env, id, &id_val);
+    
+    return id_val;
+}
+
+napi_value PhysicsSystem::AddNodeInLayoutSys(napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value argv[1];
+    napi_value jsThis;
+    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
+    
+    PhysicsSystem* obj;
+    napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
+    uint32_t id = obj->newNode();
+    
+    napi_value data_value = argv[0];
+    
+        // ===== position =====
+    {
+        napi_value position_value;
+        Vector3 position;
+        napi_get_named_property(env, data_value, "position", &position_value);
+        position = napi_helpers::parse_vector3(env, position_value);
+        obj->setPosition(id, position);
+    }
+    
+    // ===== rotation =====
+    {
+        napi_value rotation_value;
+        Vector4 rotation;
+        napi_get_named_property(env, data_value, "rotation", &rotation_value);
+        rotation = napi_helpers::parse_vector4(env, rotation_value);
+        obj->setRotation(id, rotation);
     }
     
     // ===== extent =====
@@ -1176,6 +1260,15 @@ napi_value PhysicsSystem::AddNode(napi_env env, napi_callback_info info) {
         napi_get_named_property(env, data_value, "extent", &extent_value);
         extent = napi_helpers::parse_vector3(env, extent_value);
         obj->setExtent(id, extent);
+    }
+
+        // ===== scale =====
+    {
+        napi_value scale_value;
+        Vector3 scale;
+        napi_get_named_property(env, data_value, "scale", &scale_value);
+        scale = napi_helpers::parse_vector3(env, scale_value);
+        obj->setScale(id, scale);
     }
     
     // ===== shapeType =====
@@ -1202,17 +1295,18 @@ napi_value PhysicsSystem::AddNode(napi_env env, napi_callback_info info) {
     // ===== 布局系统覆盖 =====
     if (obj->layoutManager) {
         Vector3 layoutPos;
-        if (obj->layoutManager->getNextPosition(layoutPos)) {
+        uint32_t cell_id = obj->layoutManager->getNextPosition(layoutPos);
+        if (cell_id != -1) {
             // 用布局位置覆盖 JS 传入的 position
             obj->setPosition(id, layoutPos);
 
             // 用格子尺寸覆盖 JS 传入的 extent（取半长轴）
             const auto& cfg = obj->layoutManager->getConfig();
-            Vector3 layoutExtent(cfg.cellWidth / 2.0f, cfg.cellHeight / 2.0f, cfg.cellDepth / 2.0f);
-            obj->setExtent(id, layoutExtent);
+            Vector3 layoutScale(cfg.cellWidth, cfg.cellHeight, 1.0);
+            obj->setScale(id, layoutScale);
 
             // 标记格子已占用
-            obj->layoutManager->occupyCell(id);
+            obj->layoutManager->occupyCell(cell_id);
 
             OH_LOG_INFO(LOG_APP,
                 "AddNode: id=%{public}u overridden by layout at (%{public}f, %{public}f, %{public}f)",
@@ -1236,7 +1330,6 @@ napi_value PhysicsSystem::AddNode(napi_env env, napi_callback_info info) {
     
     return id_val;
 }
-
 
 
 
@@ -1286,6 +1379,7 @@ void PhysicsSystem::clearForce(uint32_t id)
 napi_value PhysicsSystem::Init(napi_env env, napi_value exports)
 {
     napi_property_descriptor properties[] = {
+        { "addNodeInLayoutSys", nullptr, AddNodeInLayoutSys, nullptr, nullptr, nullptr, napi_default, nullptr},
         { "addNode", nullptr, AddNode, nullptr, nullptr, nullptr, napi_default, nullptr},
         { "update", nullptr, Update, nullptr, nullptr, nullptr, napi_default, nullptr},
         { "release", nullptr, PhysicsSystem::Release, nullptr, nullptr, nullptr, napi_default, nullptr},
@@ -1293,7 +1387,7 @@ napi_value PhysicsSystem::Init(napi_env env, napi_value exports)
     };
 
     napi_value cons;
-    napi_define_class(env, "PhysicsSystem", NAPI_AUTO_LENGTH, New, nullptr, 4, properties, &cons);
+    napi_define_class(env, "PhysicsSystem", NAPI_AUTO_LENGTH, New, nullptr, 5, properties, &cons);
 
     napi_set_named_property(env, exports, "PhysicsSystem", cons);
     return exports;
@@ -1328,51 +1422,6 @@ void PhysicsSystem::disableLayout() {
     layoutManager = nullptr;
 }
 
-
-// 添加节点并自动布局
-uint32_t PhysicsSystem::addNodeWithLayout() {
-    uint32_t id = newNode();
-    
-    if (layoutManager) {
-        Vector3 pos;
-        if (layoutManager->getNextPosition(pos)) {
-            setPosition(id, pos);
-            // 设置物体 extent 为格子大小
-            setExtent(id, Vector3(
-                layoutManager->getConfig().cellWidth / 2,
-                layoutManager->getConfig().cellHeight / 2,
-                layoutManager->getConfig().cellDepth / 2
-            ));
-        } else {
-            // 布局已满，使用默认位置
-            setPosition(id, Vector3(0, 0, 0));
-        }
-    } else {
-        // 未启用布局系统，使用默认位置
-        setPosition(id, Vector3(0, 0, 0));
-    }
-    
-    return id;
-}
-
-// 在指定格子位置添加节点
-uint32_t PhysicsSystem::addNodeAtCell(uint32_t cellIndex) {
-    uint32_t id = newNode();
-    
-    if (layoutManager) {
-        Vector3 pos;
-        if (layoutManager->getPositionAt(cellIndex, pos)) {
-            setPosition(id, pos);
-            setExtent(id, Vector3(
-                layoutManager->getConfig().cellWidth / 2,
-                layoutManager->getConfig().cellHeight / 2,
-                layoutManager->getConfig().cellDepth / 2
-            ));
-        }
-    }
-
-    return id;
-}
 
 // ================= 旋转弹簧系统实现 =================
 

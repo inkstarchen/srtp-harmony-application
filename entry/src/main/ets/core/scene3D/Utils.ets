@@ -111,3 +111,18 @@ export function lookAt(node: Node, eye: Vec3, center: Vec3, up: Vec3) {
   node.position = eye;
   node.rotation = Mul(q, 0.5 / Math.sqrt(t));
 }
+
+export function getAdaptiveFovy(aspect:number) {
+  // aspect = width / height
+  // 横屏 aspect > 1，竖屏 < 1
+
+  const minFovy = 50;  // 横屏时（如 16:9）
+  const maxFovy = 80;  // 竖屏时（如 9:16）
+
+  // 映射：aspect=2.0时fovy=50，aspect=0.5时fovy=80
+  // 使用对数或线性映射
+  const t = Math.min(1, Math.max(0, (1 / aspect - 1) / 3));
+  console.info("adapt fovy is" + ((minFovy + (maxFovy - minFovy) * t) / 180 * Math.PI).toFixed(2));
+  // return (minFovy + (maxFovy - minFovy) * t) / 180 * Math.PI;
+  return Math.PI / 2;
+}

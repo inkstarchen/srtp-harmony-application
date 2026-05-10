@@ -37,9 +37,9 @@
             "floating-window-resource-uri": "project://assets/default.scene",
             "floating-window-class-id": "com.huawei.editor.SceneWindowDockContainer",
             "floating-window-instance-id": "com.huawei.editor.SceneWindowDockContainer#OxhKDTO35k",
-            "floating-window-title": "3D View [default.scene]",
+            "floating-window-title": "3D View [default.scene *]",
             "floating-window-state": "docked",
-            "floating-window-splitter-layout": "AAAA/wAAAAEAAAADAAABXgAAAhYAAAI7Af////8BAAAAAQA=",
+            "floating-window-splitter-layout": "AAAA/wAAAAEAAAADAAABXgAAAdYAAAJ7Af////8BAAAAAQA=",
             "panes": [
               {
                 "pane-class-id": "com.huawei.editor.UiHierarchyPane",
@@ -71,15 +71,15 @@
                 "view3d-enable-directional-light-pivot-point-aid": true,
                 "view3d-enable-spot-light-pivot-point-aid": true,
                 "view3d-camera-rotation": [
-                  -4.3711391839451608e-08,
-                  1,
-                  -4.3711391839451608e-08,
-                  -4.371138473402425e-08
+                  0.06259743869304657,
+                  0.90314680337905884,
+                  0.14111967384815216,
+                  -0.400615394115448
                 ],
                 "view3d-camera-position": [
-                  0,
-                  0,
-                  -6
+                  -3.4611499309539795,
+                  1.5230085849761963,
+                  -4.7371482849121094
                 ],
                 "view3d-camera-scale": [
                   1,
@@ -103,7 +103,7 @@
       "setting-key": "MainWindow",
       "setting-val": {
         "size": [
-          1428,
+          1479,
           930
         ],
         "position": [

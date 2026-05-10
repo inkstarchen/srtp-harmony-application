@@ -1,16 +1,27 @@
 import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { window } from '@kit.ArkUI';
+import { display, window } from '@kit.ArkUI';
 import { SceneProxy } from '../core/scene3D/GlobalSceneProxy';
 import { ThemeManager } from '../theme/core/ThemeManager';
 import { DeviceAdapter } from '../theme/core/DeviceAdapter';
 import { initDb } from '../feature/DataStorage/datastore';
+
 
 const DOMAIN = 0x0000;
 
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     SceneProxy.getInstance(this.context);
+
+    let displayClass: display.Display | null = null;
+    try {
+      displayClass = display.getDefaultDisplaySync();
+      console.info("get display size " + displayClass.width.toFixed(2) + " | " + displayClass.height.toFixed(2));
+      SceneProxy.screenRatio = displayClass.width / displayClass.height;
+      console.info("get display ratio " + SceneProxy.screenRatio.toFixed(2));
+    } catch (exception) {
+      console.error(`Failed to get default display. Code: ${exception.code}, message: ${exception.message}`);
+    }
     ThemeManager.getInstance();
     DeviceAdapter.getInstance();
     

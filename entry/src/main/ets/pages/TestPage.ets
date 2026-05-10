@@ -225,7 +225,7 @@ export struct TestPage {
           y: 10 * relativeFactor.y
         } as Vec2;
         if(!this.nodeInit){
-          this.sceneProxy.addUIPlane('ui',scale);
+          // this.sceneProxy.addUIPlane('ui',scale);
           this.sceneProxy.addBall('ball');
           this.nodeInit = true;
           // 初始化完成后立即同步一次

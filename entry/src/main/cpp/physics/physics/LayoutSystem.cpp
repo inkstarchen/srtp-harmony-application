@@ -26,14 +26,14 @@ Vector3 LayoutSystem::computePosition(uint32_t cellIndex) const {
 
     // 计算坐标
     // 假设 Y 轴向上，行号越大 Y 越小（从上到下）
-    float x = config.origin.x + col * (config.cellWidth + config.spacingX);
-    float y = config.origin.y - row * (config.cellHeight + config.spacingY);
+    float x = config.origin.x - (2 * col + 1) * config.cellWidth / 2 - config.spacingX * (col  + 1);
+    float y = config.origin.y - (2 * row + 1) * config.cellHeight / 2 - config.spacingY * (row + 1);
     float z = config.zPosition;
 
     return Vector3(x, y, z);
 }
 
-bool LayoutSystem::getNextPosition(Vector3& outPos) {
+uint32_t LayoutSystem::getNextPosition(Vector3& outPos) {
     if (!hasSpace()) return false;
 
     // 从 nextIndex 开始查找
@@ -41,7 +41,7 @@ bool LayoutSystem::getNextPosition(Vector3& outPos) {
         if (!occupied[i]) {
             nextIndex = i + 1;
             outPos = computePosition(i);
-            return true;
+            return i;
         }
     }
 
@@ -50,11 +50,11 @@ bool LayoutSystem::getNextPosition(Vector3& outPos) {
         if (!occupied[i]) {
             nextIndex = i + 1;
             outPos = computePosition(i);
-            return true;
+            return i;
         }
     }
 
-    return false;
+    return -1;
 }
 
 bool LayoutSystem::getPositionAt(uint32_t cellIndex, Vector3& outPos) const {

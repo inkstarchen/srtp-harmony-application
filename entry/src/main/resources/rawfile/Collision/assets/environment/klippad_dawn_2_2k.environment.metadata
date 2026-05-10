@@ -6,7 +6,7 @@
     "metainfo": {
         "iid": "1dcbe649-58e2-4600-93ea-ac773a781e51",
         "uri": "project://assets/environment/klippad_dawn_2_2k.environment",
-        "xxh3": "e9edec89d5e3b73d80103c38e588e0ea",
+        "xxh3": "27022e0340b6d6e76ce6d928a7c86ec2",
         "spec": {
             "$meta": {
                 "meta-version": "2.0"
@@ -14,7 +14,7 @@
             "$root": {
                 "$classId": "168c580f-a962-40de-8809-ff91e0b5a1dd",
                 "$className": "EnvironmentAsset",
-                "$instanceId": "0000fe1f-cb76-0658-b716-dcb7b908a917",
+                "$instanceId": "00029801-740b-d410-845e-750136611c76",
                 "__attachments": [
                     {
                         "$classId": "14366762-0c46-4225-8bfc-1240aba457c6",

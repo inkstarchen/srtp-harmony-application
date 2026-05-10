@@ -5,11 +5,7 @@
   "main": "",
   "author": "",
   "license": "",
-//  "dependencies": {
-//    "libentry.so": "file:./src/main/cpp/types/libentry"
-//  }
   "devDependencies": {
     "libphysics.so": "file:./src/main/cpp/physics/libphysics",
-    "libnativerender.so": "file:./src/main/cpp/nativerender/libnativerender"
   }
 }
