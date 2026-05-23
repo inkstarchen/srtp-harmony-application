@@ -1,25 +1,18 @@
-import { getScreenSize, SHADOW_FLOAT } from "../shared/ui/uiUtils";
-import {
-  getTouchDefault,
-  HandleTouch,
-  Touch,
-} from "../shared/utils/TouchManager";
-import { PageId, PhysicsScroller } from "../shared/utils/PosLimiter";
-import { mainDisplay } from "../feature/mainDisplay/mainDisplay";
-import { NoteType, NoteViewModel } from "../feature/note/NoteViewModel";
-import { ColorUtil } from "../shared/utils/ColorUtil";
-import { AnimatorResult, Prompt, SymbolGlyphModifier } from "@kit.ArkUI";
-import { Test } from "../feature/TestComponent";
-import { TestPage } from "./TestPage";
-import { ThemeManager, ThemeState } from "../theme/core/ThemeManager";
-import { DeviceAdapter } from "../theme/core/DeviceAdapter";
-import { DeviceType } from "../theme/config/DeviceConfig";
-import { SceneProxy } from "../core/scene3D/GlobalSceneProxy";
-import { SlideList } from "../feature/SlideList/SlideList";
-import { DateItem, SlidingDateModel } from "../shared/utils/Time/SlideTimeModel";
-import { NoteAction, NoteInfo, NotePageParams } from "../feature/note/NoteState";
-import { rdbDataPersistence } from "../feature/DataStorage/datastore";
-import { ArticlePage } from "./ArticlePage";
+import { getScreenSize, SHADOW_FLOAT } from "../../shared/ui/uiUtils";
+import { ColorUtil } from "../../shared/utils/ColorUtil";
+import { DateItem, SlidingDateModel } from "../../shared/utils/Time/SlideTimeModel";
+import { getTouchDefault, HandleTouch, Touch } from "../../shared/utils/TouchManager";
+import { DeviceType } from "../../theme/config/DeviceConfig";
+import { DeviceAdapter } from "../../theme/core/DeviceAdapter";
+import { ThemeManager, ThemeState } from "../../theme/core/ThemeManager";
+import { AnimatorResult, SymbolGlyphModifier } from "@kit.ArkUI";
+import { PageId, PhysicsScroller } from "../../shared/utils/PosLimiter";
+import { NoteType, NoteViewModel } from "../note/NoteViewModel";
+import { TestPage } from "../../pages/TestPage";
+import { mainDisplay } from "./mainDisplay";
+import { SlideList } from "../SlideList/SlideList";
+import { NoteAction, NoteInfo, NotePageParams } from "../note/NoteState";
+
 
 /**
  * 页面状态枚举
@@ -34,15 +27,10 @@ enum PageState {
   SWITCHING = 1
 }
 
-@Entry
 @ComponentV2
-export struct PadMainPage {
+export struct SingleColumnLayoutMain{
   // Variable for head time
-  @Local slideTime:SlidingDateModel = new SlidingDateModel();
-  @Local selectedData: DateItem = this.slideTime.createItem(new Date(),0);
-  @Local weekStr:string = this.selectedData.weekStr;
-  @Local dayStr:string = this.selectedData.dayStr;
-  @Local slideDisplay: boolean = false;
+  @Local selectedData: DateItem = SlidingDateModel.createItem(new Date(), 0);
   @Local TimeLineOpacity: number = 0;
   @Local needFreshDate: boolean = false;
 
@@ -127,7 +115,7 @@ export struct PadMainPage {
     clearInterval(this.backId);
   }
 
-  build() {
+  build(){
     Stack({ alignContent: Alignment.Center}) {
       if(true){
         Stack(){}
@@ -206,57 +194,13 @@ export struct PadMainPage {
           if(this.pageCurrent == PageId.MAIN && (this.pageState == PageState.READY || this.pageState == PageState.SWITCHING))
           {
             Stack({ alignContent: Alignment.Center }) {
+
               SlideList({
-                display: this.slideDisplay,
                 setItem: (item: DateItem) => {
                   this.selectedData.timestamp = item.timestamp;
-                  this.weekStr = item.weekStr;
-                  this.dayStr = item.dayStr;
                   this.needFreshDate = true;
-                },
-                setOpacity: () => {
-                  this.slideDisplay = false;
-                  if (this.TimeLineOpacity) {
-                    this.TimeLineOpacity = 0;
-                  } else {
-                    this.TimeLineOpacity = 0.5;
-                  }
                 }
               })
-              Stack({ alignContent: Alignment.Center }) {
-                Column() {
-                  Text(this.weekStr)
-                    .fontSize(12)
-                  Text(this.dayStr)
-                    .fontSize(20)
-                    .fontWeight(500)
-                }
-                .animation({
-                  duration: 500,
-                  iterations: 0,
-                  curve: Curve.Linear,
-                  delay: 0
-                })
-              }
-              .width("100%")
-              .height(50)
-              .opacity(this.TimeLineOpacity ? 0 : 1)
-              .backgroundColor("#00ffffff")
-              .animation({
-                duration: 500,
-                iterations: 1,
-                delay: 0,
-                curve: Curve.Linear
-              })
-              .onClick(() => {
-                this.slideDisplay = true;
-                if (this.TimeLineOpacity) {
-                  this.TimeLineOpacity = 0;
-                } else {
-                  this.TimeLineOpacity = 0.5;
-                }
-              })
-              .hitTestBehavior(this.slideDisplay ? HitTestMode.BLOCK_DESCENDANTS : HitTestMode.Default)
             }
             .hitTestBehavior(HitTestMode.None)
             .margin({ bottom: 20, top: 20 })
@@ -427,12 +371,5 @@ export struct PadMainPage {
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
     .width('100%')
     .height('100%')
-
-  }
-  pageTransition() {
-    PageTransitionEnter({delay:500, duration:250,curve:Curve.Linear})
-      .opacity(0)
-    PageTransitionExit({delay:0, duration:250,curve:Curve.Linear})
-      .opacity(0)
   }
 }

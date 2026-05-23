@@ -13,10 +13,10 @@ import { getAdaptiveFovy, lookAt, NodeUtil } from "./Utils";
 import { Prompt } from "@kit.ArkUI";
 import { EventQueueManager } from "./EventQueue";
 import { PhysicsSystemManager } from "./PhysicsSystemManager";
-import { getScreenSize } from "../../shared/ui/uiUtils";
+import { getScreenSize, UIInfo } from "../../shared/ui/uiUtils";
 import { Property } from "./EventTypes";
 import { CameraConfig } from "./layout/CameraViewUtils";
-import { UIInfo } from "../../feature/demo/Render1";
+
 
 interface NodeInfo{
   position: Vec3 | undefined;
@@ -37,9 +37,11 @@ const TAG = "SceneProxy"
 @ObservedV2
 export class SceneProxy {
   private static instance: SceneProxy | null = null;
-  static ratio: number = 1.5;
+  static safeOffset: number = 0;
+  static ratio: number = 1.0;
   static screenSizeInit: boolean = false;
   static screenRatio: number = 1.5;
+  static uiPos: Vec2 = {x:0,y:0};
   static center: Vec2 = {x:0,y:0};
   static sceneSize: Size = {width:1600, height:2500};
   static getInstance(context?:Context): SceneProxy {
@@ -70,7 +72,7 @@ export class SceneProxy {
   private renderId: number | undefined;
   private context: Context;
   // 2D UI ID → 3D Node ID 映射
-  private uiToNodeIdMap: Map<string, number> = new Map();
+  static uiToNodeIdMap: Map<string, Node> = new Map();
 
   // ================= 构造函数私有化 =================
   private constructor(context: Context) {
@@ -125,6 +127,7 @@ export class SceneProxy {
       clearInterval(this.renderId);
       this.renderId = undefined;
     }
+    SceneProxy.uiToNodeIdMap.clear();
     this.scene = undefined;
     this.camera = undefined;
     this.options = undefined;
@@ -160,7 +163,39 @@ export class SceneProxy {
     return config;
   }
 
+  setRotation(name:string,rotation:Quaternion){
+    let id = this.physicalSystem.getIdWithName(name);
+    if(id != undefined){
+      this.eventQueue.pushSetRequest(id,Property.ROTATION,
+        [rotation.x,rotation.y,rotation.z,rotation.w]);
+    }else{
+      console.info("can't find " + name);
+    }
+  }
 
+  static removeNode(node:Node){
+    let instance = SceneProxy.getInstance();
+    let id = instance.physicalSystem.idMap.get(node.path + '/' + node.name);
+    if(id){
+      instance.physicalSystem.idMap.delete(node.path + '/' + node.name);
+      instance.physicalSystem.nodeMap.delete(node.name);
+      instance.physicalSystem.unregisterNode(id);
+      let parent = node.parent;
+      if(parent){
+        parent.children.remove(node);
+      }
+    }
+
+  }
+
+  setPosition(name:string,pos:Vec3){
+    let id = this.physicalSystem.getIdWithName(name);
+    if(id != undefined){
+      this.eventQueue.pushSetRequest(id,Property.POS,[pos.x,pos.y,pos.z]);
+    }else{
+      console.info("can't find " + name);
+    }
+  }
 
   async LoadPhotoWall(){
     const resource = $rawfile("PhotoWall/assets/default.scene");
@@ -173,13 +208,16 @@ export class SceneProxy {
     }
     this.camera = camera;
     camera.enabled = true;
+
+    this.scene.environment.backgroundType = EnvironmentBackgroundType.BACKGROUND_NONE;
+    camera.clearColor = null;
     camera.fov = getAdaptiveFovy(SceneProxy.screenRatio);
     camera.postProcess = {
       toneMapping: { type: ToneMappingType.ACES, exposure: 1 }
     } as PostProcessSettings;
 
     if (this.scene.root) this.traversal(this.scene.root);
-    Prompt.showToast({ message: 'Scene Loaded' });
+    // Prompt.showToast({ message: 'Scene Loaded' });
     this.physicalSystem.setAvailable();
     this.physicalSystem
     this.startRenderLoop();
@@ -197,6 +235,7 @@ export class SceneProxy {
     this.camera = camera;
     this.scene.environment.backgroundType = EnvironmentBackgroundType.BACKGROUND_NONE;
     camera.enabled = true;
+
     camera.fov = getAdaptiveFovy(SceneProxy.screenRatio);
     camera.clearColor = null;
     // camera.clearColor = {r:0,g:0,b:0,a:0};
@@ -205,7 +244,7 @@ export class SceneProxy {
     } as PostProcessSettings;
 
     if (this.scene.root) this.traversal(this.scene.root);
-    Prompt.showToast({ message: 'Scene Loaded' });
+    // Prompt.showToast({ message: 'Scene Loaded' });
     this.physicalSystem.setAvailable();
     this.physicalSystem
     this.startRenderLoop();
@@ -231,7 +270,7 @@ export class SceneProxy {
     } as PostProcessSettings;
 
     if (this.scene.root) this.traversal(this.scene.root);
-    Prompt.showToast({ message: 'Scene Loaded' });
+    // Prompt.showToast({ message: 'Scene Loaded' });
     this.physicalSystem.setAvailable();
     this.physicalSystem
     this.startRenderLoop();
@@ -255,7 +294,7 @@ export class SceneProxy {
 
     if (this.scene.root) this.traversal(this.scene.root);
 
-    Prompt.showToast({ message: 'Scene Loaded' });
+    // Prompt.showToast({ message: 'Scene Loaded' });
     this.physicalSystem.setAvailable();
     this.startRenderLoop();
   }
@@ -277,7 +316,6 @@ export class SceneProxy {
 
     if (this.scene.root) this.traversal(this.scene.root);
 
-    Prompt.showToast({ message: 'Scene Loaded' });
     this.physicalSystem.setAvailable();
     this.startRenderLoop();
   }
@@ -286,7 +324,7 @@ export class SceneProxy {
     if (this.renderId !== undefined) return;
     this.renderId = setInterval(() => {
       this.update();
-      this.eventQueue.ResetGravity(this.physicalSystem.angle);
+      // this.eventQueue.ResetGravity(this.physicalSystem.angle);
     }, 20);
   }
 
@@ -335,29 +373,51 @@ export class SceneProxy {
   }
 
 
-  async syncUI(uiId:string, uiInfo:UIInfo){
+
+
+  static async syncUI(uiId:string, uiInfo:UIInfo){
     let nodeInfo = SceneProxy.transUI(uiInfo);
-    let nodeId = this.uiToNodeIdMap.get(uiId);
+    let instance = SceneProxy.getInstance();
+    let nodeId = instance.physicalSystem.getIdWithName(uiId);
     if(nodeId){
       if(nodeInfo.position)
-        this.eventQueue.pushSetRequest(nodeId,Property.POS,[nodeInfo.position.x,nodeInfo.position.y,nodeInfo.position.z]);
+        instance.eventQueue.pushSetRequest(nodeId,Property.POS,[nodeInfo.position.x,nodeInfo.position.y,nodeInfo.position.z]);
       if(nodeInfo.scale)
-        this.eventQueue.pushSetRequest(nodeId,Property.SCALE,[nodeInfo.scale.x,nodeInfo.scale.y,nodeInfo.scale.z]);
+        instance.eventQueue.pushSetRequest(nodeId,Property.SCALE,[nodeInfo.scale.x,nodeInfo.scale.y,nodeInfo.scale.z]);
       if(nodeInfo.rotation)
-        this.eventQueue.pushSetRequest(nodeId,Property.ROTATION,[nodeInfo.rotation.x,nodeInfo.rotation.y,nodeInfo.rotation.z,nodeInfo.rotation.w]);
+        instance.eventQueue.pushSetRequest(nodeId,Property.ROTATION,[nodeInfo.rotation.x,nodeInfo.rotation.y,nodeInfo.rotation.z,nodeInfo.rotation.w]);
     }
   }
 
-  async addUIPlane(uiId:string,uiInfo:UIInfo){
+  static async addUIPlane(uiId:string,uiInfo:UIInfo){
     let nodeInfo = SceneProxy.transUI(uiInfo);
-    let info = await this.addNodeWithInfo('card','Plane',uiId,nodeInfo);
+    let info = await SceneProxy.getInstance().addNodeWithInfo('card','Plane',uiId,nodeInfo);
     if(!info) return;
-    this.uiToNodeIdMap.set(uiId,info.id);
+    SceneProxy.uiToNodeIdMap.set(uiId,info.node);
   }
 
-  async addBall(name:string){
-    let info = await this.addNodeWithOutInfo('ball','ball','ball');
+  async addBall(){
+    let info = await this.addNodeWithOutInfo('ball','ball','VELBALL');
+    let id = info?.id;
+    let initialVel:Vec3 = {x:2,y:0,z:0};
+    let initialPos:Vec3 = {x:-20,y:2,z:-1};
+    if(id){
+      this.eventQueue.pushSetRequest(id,Property.STATIC,[0]);
+      this.eventQueue.pushSetRequest(id,Property.VELOCITY,[initialVel.x,initialVel.y,initialVel.z])
+      this.eventQueue.pushSetRequest(id,Property.POS,[initialPos.x,initialPos.y,initialPos.z]);
+    }
+  }
 
+  async addCube(){
+    let info = await this.addNodeWithOutInfo('cube','Cube','Cube');
+    let id = info?.id;
+    let initialVel:Vec3 = {x:0,y:0,z:0};
+    let initialPos:Vec3 = {x:0,y:-10,z:-0.6};
+    if(id){
+      this.eventQueue.pushSetRequest(id,Property.STATIC,[0]);
+      this.eventQueue.pushSetRequest(id,Property.VELOCITY,[initialVel.x,initialVel.y,initialVel.z])
+      this.eventQueue.pushSetRequest(id,Property.POS,[initialPos.x,initialPos.y,initialPos.z]);
+    }
   }
 
   async addImage(imageUri:string,  imageName:string){
@@ -465,25 +525,33 @@ export class SceneProxy {
     return;
   }
 
-  rayCast(pos:Vec2,ui:UIContext){
+  static SceneProxyInit(ui:UIContext){
     if(!SceneProxy.screenSizeInit){
       let info = ui.getComponentUtils().getRectangleById("3D");
       console.info("ScreenTest | component position x " + info.windowOffset.x.toFixed(2) + " y " + info.windowOffset.y.toFixed(2));
       console.info("ScreenTest | component size | width " + info.size.width.toFixed(2) + " height " + info.size.height.toFixed(2));
       SceneProxy.center = {
-        x: info.windowOffset.x + SceneProxy.sceneSize.width / 2,
+        x: info.windowOffset.x + info.size.width / 2,
         y: info.windowOffset.y + SceneProxy.sceneSize.height / 2
+      };
+      SceneProxy.uiPos = {
+        x: info.windowOffset.x,
+        y: info.windowOffset.y
       };
 
       SceneProxy.screenSizeInit = true;
-      if(this.camera) {
-        this.camera.fov = getAdaptiveFovy(SceneProxy.ratio);
-        let pos = this.camera.position;
-        this.eventQueue.pushSetRequest(0, Property.CAMERA, [pos.x , pos.y,pos.z, this.camera.fov ,SceneProxy.ratio])
+      let instance = SceneProxy.getInstance();
+      if(instance && instance.camera) {
+        instance.camera.fov = getAdaptiveFovy(SceneProxy.ratio);
+        let pos = instance.camera.position;
+        instance.eventQueue.pushSetRequest(0, Property.CAMERA, [pos.x , pos.y,pos.z, instance.camera.fov ,SceneProxy.ratio])
       }
     }
-    let fx =  (2 * ui.vp2px(pos.x) / SceneProxy.sceneSize.width) - 1;
-    let fy = 1 - (2 * ui.vp2px(pos.y) / SceneProxy.sceneSize.height);
+  }
+
+  rayCast(pos:Vec2,ui:UIContext){
+    let fx = SceneProxy.disToFrac(ui.vp2px(pos.x) - SceneProxy.center.x);
+    let fy = SceneProxy.disToFrac(SceneProxy.center.y - ui.vp2px(pos.y));
     Prompt.showToast({message:"touchFrac" + fx.toFixed(2) + '/' + fy.toFixed(2)});
     this.eventQueue.pushRayCastRequest(fx,fy);
   }
@@ -510,16 +578,17 @@ export class SceneProxy {
   /**
    * 注册 2D UI ID 到 3D Node ID 的映射
    */
-  registerUI2DTo3D(uiId: string, nodeId: number) {
-    this.uiToNodeIdMap.set(uiId, nodeId);
-    console.info(`[UI2D→3D] 注册映射: '${uiId}' → nodeId ${nodeId}`);
+  registerUI2DTo3D(uiId: string, node: Node) {
+    SceneProxy.uiToNodeIdMap.set(uiId, node);
+    // console.info(`[UI2D→3D] 注册映射: '${uiId}' → nodeId ${nodeId}`);
   }
 
   /**
    * 获取 2D UI 对应的 3D Node ID
    */
   get3DNodeId(uiId: string): number | undefined {
-    return this.uiToNodeIdMap.get(uiId);
+    let instance = SceneProxy.getInstance();
+    return instance.physicalSystem.getIdWithName(uiId);;
   }
 
   async traversal(node: Node) {
@@ -546,7 +615,11 @@ export class SceneProxy {
 
   // 由于当前的默认平面位置在z=-1，所以我们先固定
   static pxTo3D(v:number):number{
-    return 10 * v / SceneProxy.sceneSize.height;
+    return 5 * SceneProxy.disToFrac(v);
+  }
+
+  static disToFrac(v:number):number {
+    return 2 * v / SceneProxy.sceneSize.height;
   }
 
   static transUI(uiInfo:UIInfo):NodeInfo{

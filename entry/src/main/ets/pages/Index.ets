@@ -1,6 +1,7 @@
-import { SceneProxy } from '../core/scene3D/GlobalSceneProxy';
 import { display, mediaquery, Prompt } from '@kit.ArkUI';
-import { Vec2 } from '@kit.ArkGraphics3D';
+import { SceneProxy } from '../core/scene3D/GlobalSceneProxy';
+import { BreakpointConstants } from '../shared/BreakPoint/BreakpointConstants';
+import { BreakpointManager } from '../shared/BreakPoint/BreakpointManager';
 
 
 function onPortrait(mediaQueryResult: mediaquery.MediaQueryResult) {
@@ -12,8 +13,9 @@ function onPortrait(mediaQueryResult: mediaquery.MediaQueryResult) {
       displayClass = display.getDefaultDisplaySync();
       console.info("get display size " + displayClass.width.toFixed(2) + " | " + displayClass.height.toFixed(2));
       SceneProxy.screenRatio = displayClass.width / displayClass.height;
+      SceneProxy.ratio = 1.0;
       SceneProxy.screenSizeInit = false;
-      SceneProxy.sceneSize.width = displayClass.height;
+      SceneProxy.sceneSize.width = displayClass.width;
       SceneProxy.sceneSize.height = displayClass.height;
       console.info("get display ratio " + SceneProxy.screenRatio.toFixed(2));
     } catch (exception) {
@@ -25,6 +27,7 @@ function onPortrait(mediaQueryResult: mediaquery.MediaQueryResult) {
     let displayClass: display.Display | null = null;
     try {
       displayClass = display.getDefaultDisplaySync();
+      SceneProxy.ratio = 1.0;
       console.info("get display size " + displayClass.width.toFixed(2) + " | " + displayClass.height.toFixed(2));
       SceneProxy.screenRatio = displayClass.width / displayClass.height;
       SceneProxy.screenSizeInit = false;
@@ -41,51 +44,43 @@ function onPortrait(mediaQueryResult: mediaquery.MediaQueryResult) {
 @Entry
 @ComponentV2
 struct Index{
+  @Local currentBreakpoint: string = BreakpointConstants.TYPE_MD;
   @Local uiContext: UIContext = this.getUIContext();
-  @Local sceneProxy: SceneProxy = SceneProxy.getInstance();
+
   @Local Debug: boolean = true;
+
+  aboutToAppear(): void {
+    BreakpointManager.getInstance(this.getUIContext()).startListening((breakpoint:string) => {
+      this.currentBreakpoint = breakpoint;
+      console.info(`当前断点: ${breakpoint}`);
+    })
+  }
+
   async onPageShow(): Promise<void> {
     let listener = this.getUIContext().getMediaQuery().matchMediaSync('(orientation: landscape)'); // Listen to landscape events
     listener.on('change', onPortrait) // Register callback
-    // await this.sceneProxy.LoadCollision();
-    // this.sceneProxy.eventQueue.setStatic(3,false);
   }
 
   onPageHide(): void {
-    // this.sceneProxy.releaseScene();
   }
   build(){
-    // Stack({alignContent:Alignment.Center}){
-    //   Column(){
-    //
-    //   }
-    //   .width("100%")
-    //   .height("100%")
-    //   .onTouch((event) => {
-    //     if(!SceneProxy.screenSizeInit){
-    //       let info = this.getUIContext().getComponentUtils().getRectangleById("3D");
-    //       console.info("ScreenTest | component position x " + info.windowOffset.x.toFixed(2) + " y " + info.windowOffset.y.toFixed(2));
-    //       console.info("ScreenTest | component size | width " + info.size.width.toFixed(2) + " height " + info.size.height.toFixed(2));
-    //       SceneProxy.sceneSize = info.size;
-    //       SceneProxy.screenSizeInit = true;
-    //     }
-    //     let uiContext = this.uiContext;
-    //     // Prompt.showToast({message:"TouchTest |  x " +  event.touches[0].x.toFixed(2) + " y " + event.touches[0].y.toFixed(2)})
-    //     let TouchPos:Vec2 = {x: event.touches[0].x, y:event.touches[0].y};
-    //     this.sceneProxy.rayCast(TouchPos,this.uiContext);
-    //   })
-    //   if(this.sceneProxy.options){
-    //     Component3D(this.sceneProxy.options)
-    //       .renderWidth("100%")
-    //       .renderHeight("100%")
-    //       .hitTestBehavior(HitTestMode.None)
-    //       .backgroundColor("#00ffffff")
-    //       .id("3D")
-    //   }
-    // }
-    // .width("100%")
-    // .height("100%")
-    // .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    Row(){
+      if(this.currentBreakpoint === BreakpointConstants.TYPE_SM){
+        this.SingleColumLayout()
+      }else{
+        this.TwoColumnLayout()
+      }
+    }
+    .width("100%")
+    .height("100%")
+    .onTouch(() => {
+      SceneProxy.safeOffset = this.getUIContext().getComponentUtils().getRectangleById('Safe').windowOffset.y;
+    })
+    .id('Safe')
+  }
+
+  @Builder
+  SingleColumLayout() {
     Stack({alignContent:Alignment.Bottom}){
       Column(){
       }
@@ -128,7 +123,8 @@ struct Index{
         .width("100%")
         .height(60)
 
-      }else{
+      }
+      else{
         Button("开始记录")
           .width(200)
           .backgroundColor("#ff9eb7af")
@@ -143,17 +139,74 @@ struct Index{
           })
       }
     }
-    .onTouch(() => {
-      let info = this.getUIContext().getComponentUtils().getRectangleById("size");
-      let componentSize: Size = info.size;
-      SceneProxy.sceneSize.width = componentSize.width;
-      SceneProxy.sceneSize.height = componentSize.height;
-      SceneProxy.ratio =  componentSize.width / componentSize.height;
-    })
     .width("100%")
     .height("100%")
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
   }
+
+  @Builder
+  TwoColumnLayout(){
+    Column(){
+      Image($r("app.media.IndexBack"))
+        .width("100%")
+        .height("100%")
+    }
+    .width("60%")
+    .height("100%")
+    Column(){
+      if(this.Debug){
+        Column({space:40}){
+          Button("开始记录")
+            .width("50%")
+            .backgroundColor("#ff9eb7af")
+            .fontColor("#fff")
+            .fontSize(40)
+            .border({radius:15})
+            .height("20%")
+            .onClick(() =>{
+              this.getUIContext().getRouter().pushUrl({
+                url:"pages/MainPage"
+              })
+            })
+
+          Button("Demos")
+            .width("50%")
+            .backgroundColor("#ff9eb7af")
+            .fontColor("#fff")
+            .fontSize(40)
+            .border({radius:15})
+            .height("20%")
+            .onClick(() =>{
+              this.getUIContext().getRouter().pushUrl({
+                url:"pages/DemoPage"
+              })
+            })
+        }
+        .justifyContent(FlexAlign.Center)
+        .width("100%")
+        .height("100%")
+
+      }
+      else{
+        Button("开始记录")
+          .width(200)
+          .backgroundColor("#ff9eb7af")
+          .fontColor("#fff")
+          .fontSize(17)
+          .border({radius:15})
+          .height(50)
+          .onClick(() =>{
+            this.getUIContext().getRouter().pushUrl({
+              url:"pages/MainPage"
+            })
+          })
+      }
+    }
+    .justifyContent(FlexAlign.Center)
+    .width("40%")
+    .height("100%")
+  }
+
   pageTransition() {
     PageTransitionEnter({delay:500, duration:250,curve:Curve.Linear})
       .opacity(0)

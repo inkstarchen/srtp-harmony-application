@@ -1,7 +1,6 @@
 {
   "src": [
     "pages/Index",
-    "pages/PadMain",
     "pages/MainPage",
     "pages/NotePage",
     "pages/DiaryHomePage",

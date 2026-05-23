@@ -4,8 +4,12 @@ import { CalendarDayState } from "./day/CalendarDayState";
 
 @ObservedV2
 export class CalendarViewModel{
-  @Trace calendarState: CalendarState = new CalendarState();
+  @Trace calendarState: CalendarState;
   calendarService: CalendarService = new CalendarService();
+
+  constructor(currentDate:Date | undefined = undefined) {
+    this.calendarState = new CalendarState(currentDate);
+  }
 
   getDays(): CalendarDayState[] {
     return this.calendarState.days;

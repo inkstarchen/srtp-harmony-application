@@ -226,7 +226,7 @@ export struct TestPage {
         } as Vec2;
         if(!this.nodeInit){
           // this.sceneProxy.addUIPlane('ui',scale);
-          this.sceneProxy.addBall('ball');
+          this.sceneProxy.addBall();
           this.nodeInit = true;
           // 初始化完成后立即同步一次
           setTimeout(() => {

@@ -1,4 +1,21 @@
 import { display, Size } from "@kit.ArkUI";
+import { TraceVec2 } from "../../core/math/vec";
+import { Vec2 } from "@kit.ArkGraphics3D";
+
+@ObservedV2
+export class UIInfo{
+  @Trace pos: TraceVec2 = new TraceVec2();
+  @Trace size: TraceVec2 = new TraceVec2();
+  id: string = '';
+  constructor(pos:Vec2, size:Vec2, id:string) {
+    this.pos.x = pos.x;
+    this.pos.y = pos.y;
+    this.size.x = size.x;
+    this.size.y = size.y;
+    this.id = id;
+  }
+}
+
 export const SHADOW_FLOAT = {radius:15,offsetY:10,color: "#ffc8c8c8" } as ShadowOptions;
 /**
  * 获取屏幕尺寸

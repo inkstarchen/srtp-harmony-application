@@ -156,6 +156,7 @@ inline void generateContactOBBOBBSOA(
 
     float R[3][3], AbsR[3][3];
     const float EPSILON = 1e-6f;
+    const float MIN_PENETRATION = 0.001f;  // 新增：最小有效穿透阈值
     for(int i=0;i<3;i++)
         for(int j=0;j<3;j++){
             R[i][j] = axisA[i].dot(axisB[j]);
@@ -178,8 +179,8 @@ inline void generateContactOBBOBBSOA(
         float ra = extentA[i];
         float rb = extentB[0]*AbsR[i][0]+extentB[1]*AbsR[i][1]+extentB[2]*AbsR[i][2];
         float pen = ra+rb - fabsf(t[i]);
-        if(pen<0) return; // 分离轴，无碰撞
-        if(pen<minPen){
+        if(pen < -EPSILON) return; // 修改：使用 EPSILON 容差
+        if(pen > 0 && pen < minPen){ // 修改：只考虑正穿透
             minPen=pen;
             bestAxis = t[i]>0 ? axisA[i]*-1.0f : axisA[i];
             bestAxisType = 0;
@@ -193,8 +194,8 @@ inline void generateContactOBBOBBSOA(
         float rb = extentB[i];
         float val = t[0]*R[0][i]+t[1]*R[1][i]+t[2]*R[2][i];
         float pen = ra+rb - fabsf(val);
-        if(pen<0) return;
-        if(pen<minPen){
+        if(pen < -EPSILON) return;
+        if(pen > 0 && pen < minPen){
             minPen=pen;
             bestAxis = val>0 ? axisB[i]*-1.0f : axisB[i];
             bestAxisType = 1;
@@ -207,28 +208,33 @@ inline void generateContactOBBOBBSOA(
         for(int j=0;j<3;j++){
             Vector3 cross = axisA[i].cross(axisB[j]);
             float crossLen = cross.length();
-            if(crossLen < EPSILON) continue; // 平行轴，跳过
+            if(crossLen < EPSILON) continue;
             cross = cross / crossLen;
 
-            // 投影到交叉轴
             float ra = extentA[(i+1)%3]*AbsR[(i+2)%3][j] + extentA[(i+2)%3]*AbsR[(i+1)%3][j];
             float rb = extentB[(j+1)%3]*AbsR[i][(j+2)%3] + extentB[(j+2)%3]*AbsR[i][(j+1)%3];
             
-            // 计算 t 在交叉轴上的投影
             float val = fabsf(
                 t[(i+2)%3]*R[(i+1)%3][j] - t[(i+1)%3]*R[(i+2)%3][j]
             );
             float pen = ra+rb - val;
-            if(pen<0) return;
-            if(pen<minPen){
+            
+            // 关键修改：交叉轴的穿透阈值要更严格
+            if(pen < -EPSILON) return;
+            if(pen > MIN_PENETRATION && pen < minPen){ // 忽略过小的穿透
                 minPen=pen;
-                // 法线方向：确保指向 A
                 float dot = cross.dot(tVec);
                 bestAxis = dot>0 ? cross*-1.0f : cross;
                 bestAxisType = 2;
                 bestAxisIndex = i*3+j;
             }
         }
+    }
+
+    // 新增：最终检查最小穿透是否有效
+    if(minPen < MIN_PENETRATION) {
+        // 穿透太小，无有效碰撞
+        return;
     }
 
     c.normal = bestAxis;
@@ -239,27 +245,21 @@ inline void generateContactOBBOBBSOA(
     getOBBVerticesSOA(physics, idA, vertsA);
     getOBBVerticesSOA(physics, idB, vertsB);
 
-    // 确定参考面（reference face）和入射面（incident face）
-    // 参考面是法线方向上面积最大的面
-    Vector3 refAxis[4]; // 参考面的 4 条边方向
     Vector3 incidentVerts[8];
     int incidentCount = 0;
 
     if(bestAxisType == 0){
-        // A 的面作为参考面
         int idx = bestAxisIndex;
         Vector3 refNormal = axisA[idx];
         float refDist = refNormal.dot(centerA) - extentA[idx];
 
-        // 找出 B 在参考面法线方向上穿透的顶点
         for(int i=0;i<8;i++){
             float dist = refNormal.dot(vertsB[i]) - refDist;
-            if(dist > 0){ // 穿透参考面
+            if(dist > EPSILON){ // 使用 EPSILON 容差
                 incidentVerts[incidentCount++] = vertsB[i];
             }
         }
 
-        // 如果没找到穿透顶点，使用最近顶点
         if(incidentCount == 0){
             float minDist = FLT_MAX;
             for(int i=0;i<8;i++){
@@ -271,16 +271,14 @@ inline void generateContactOBBOBBSOA(
                 }
             }
         }
-    } else {
-        // B 的面作为参考面
+    } else if(bestAxisType == 1) {  // 修改：明确 else if
         int idx = bestAxisIndex;
         Vector3 refNormal = axisB[idx];
         float refDist = refNormal.dot(centerB) - extentB[idx];
 
-        // 找出 A 在参考面法线方向上穿透的顶点
         for(int i=0;i<8;i++){
             float dist = refNormal.dot(vertsA[i]) - refDist;
-            if(dist > 0){
+            if(dist > EPSILON){
                 incidentVerts[incidentCount++] = vertsA[i];
             }
         }
@@ -296,9 +294,57 @@ inline void generateContactOBBOBBSOA(
                 }
             }
         }
+    } else {
+        // 交叉轴情况：使用最深的穿透点
+        float maxDist = -FLT_MAX;
+        Vector3 contactPoint;
+        bool found = false;
+        
+        // 找出 A 的顶点在 B 内部最深的点
+        for(int i=0;i<8;i++){
+            Vector3 local = vertsA[i] - centerB;
+            float dx = fabsf(local.dot(axisB[0]));
+            float dy = fabsf(local.dot(axisB[1]));
+            float dz = fabsf(local.dot(axisB[2]));
+            if(dx <= extentB[0] + EPSILON && 
+               dy <= extentB[1] + EPSILON && 
+               dz <= extentB[2] + EPSILON) {
+                float dist = c.normal.dot(vertsA[i] - centerA);
+                if(dist > maxDist){
+                    maxDist = dist;
+                    contactPoint = vertsA[i];
+                    found = true;
+                }
+            }
+        }
+        
+        // 找出 B 的顶点在 A 内部最深的点
+        for(int i=0;i<8;i++){
+            Vector3 local = vertsB[i] - centerA;
+            float dx = fabsf(local.dot(axisA[0]));
+            float dy = fabsf(local.dot(axisA[1]));
+            float dz = fabsf(local.dot(axisA[2]));
+            if(dx <= extentA[0] + EPSILON && 
+               dy <= extentA[1] + EPSILON && 
+               dz <= extentA[2] + EPSILON) {
+                float dist = -c.normal.dot(vertsB[i] - centerB);
+                if(dist > maxDist){
+                    maxDist = dist;
+                    contactPoint = vertsB[i];
+                    found = true;
+                }
+            }
+        }
+        
+        if(found){
+            c.point = contactPoint;
+        } else {
+            c.point = (centerA + centerB) * 0.5f;
+        }
+        return;
     }
 
-    // 3. 计算接触点 - 取穿透顶点的平均
+    // 3. 计算接触点
     if(incidentCount > 0){
         Vector3 avg{0,0,0};
         for(int i=0;i<incidentCount;i++){
@@ -306,7 +352,6 @@ inline void generateContactOBBOBBSOA(
         }
         c.point = avg * (1.0f / (float)incidentCount);
     } else {
-        // fallback: 两个 OBB 中心的中间点
         c.point = (centerA + centerB) * 0.5f;
     }
 }

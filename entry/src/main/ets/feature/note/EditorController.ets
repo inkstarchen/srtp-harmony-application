@@ -12,6 +12,7 @@ const FONT_WEIGHT_BOLD_LEVEL: number = 9;
 
 @ObservedV2
 export class EditorController{
+  private imageMap:Map<string, number> = new Map();
   @Trace controller: RichEditorController = new RichEditorController();
   private selectionStart: number = 0;
   private selectionEnd: number = 0;
@@ -298,7 +299,6 @@ export class EditorController{
           }
         }
       });
-
     } catch (error) {
       hilog.error(DOMAIN_NUMBER, TAG, `插入图片失败: ${error.message}`);
       Prompt.showToast({ message: '插入图片失败', duration: 2000 });
@@ -429,7 +429,8 @@ export class EditorController{
 
     // 从本地文件加载图片
     const pixelMap = await ImageUtils.loadPixelMapFromFile(item.imageInfo.localPath);
-    this.controller.addImageSpan(pixelMap, {
+    const uniqueId = `img_${Date.now()}_${Math.random().toString(36).substring(2,8)}`;
+    let spanNum = this.controller.addImageSpan(pixelMap, {
       imageStyle: {
         size: [425, 325],     // 先给常数   以后要图片改尺寸再说
         //size: item.style?.size,
@@ -443,7 +444,7 @@ export class EditorController{
       },
       gesture: {
         onClick: () => {
-          Prompt.showToast({ message: '点击了图片', duration: 1000 });
+          Prompt.showToast({ message: '点击了图片 span at ' + this.imageMap.get(uniqueId)?.toString()});
         },
         onLongPress: () => {
           this.showImageOptions();
@@ -451,6 +452,7 @@ export class EditorController{
       }
 
     });
+    this.imageMap.set(uniqueId,spanNum);
   }
   async rebuildLocalImageSpanMain(item: NoteSpanData): Promise<void> {
     if (!item.imageInfo?.localPath) {

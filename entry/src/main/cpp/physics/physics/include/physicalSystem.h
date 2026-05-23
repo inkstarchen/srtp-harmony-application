@@ -54,6 +54,7 @@ public:
 
     static napi_value AddNodeInLayoutSys(napi_env env, napi_callback_info info);
     static napi_value AddNode(napi_env env, napi_callback_info info);
+    static napi_value RemoveNode(napi_env env, napi_callback_info info);
     static napi_value Update(napi_env env, napi_callback_info info);
     static napi_value Release(napi_env env, napi_callback_info info);
     void processEventQueueFromJS(const std::vector<std::vector<EventCommand>> &events);
@@ -73,6 +74,8 @@ public:
 
     std::vector<std::pair<uint32_t, uint32_t>> possiblePairs;
     std::vector<uint32_t> free_list;
+    std::vector<uint32_t> valid_list;
+    std::unordered_map<uint32_t, bool> occupyList;
     std::vector<EventResult> eventResults;
 
     void clearEventResults() {
@@ -121,6 +124,7 @@ private:
         handlers[static_cast<uint8_t>(EventType::RAYCAST_REQUEST)] = &PhysicsSystem::handleRayCast;
     }
     uint32_t newNode();
+    bool removeNodeId(uint32_t id);
     napi_value update(napi_env env, napi_callback_info info);
     napi_value getEventResults(napi_env env){
         return toJsEventResults(env,eventResults);
@@ -367,7 +371,8 @@ void handleSetProperty(const EventCommand& e) {
             break;
         }
         case static_cast<int>(Property::ROTATION): {
-            setRotation(e.nodeId, Vector4(values[0], values[1], values[2],values[4]));
+            OH_LOG_INFO(LOG_APP,"set id = %{public}d, rotation: %{public}.3f %{public}.3f %{public}.3f %{public}.3f",e.nodeId,values[0],values[1],values[2],values[3]);
+            setRotation(e.nodeId, Vector4(values[0], values[1], values[2],values[3]));
             break;
         }
         case static_cast<int>(Property::VELOCITY): {
@@ -417,6 +422,7 @@ void handleSetProperty(const EventCommand& e) {
         }
         case static_cast<int>(Property::REST_ROTATION): {
             // values[0..3] = x, y, z, w
+            
             setRestRotation(e.nodeId, Vector4(values[0], values[1], values[2], values[3]));
             break;
         }

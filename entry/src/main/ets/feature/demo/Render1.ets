@@ -2,22 +2,10 @@ import { SceneProxy } from '../../core/scene3D/GlobalSceneProxy'
 import { captureAndDisplay } from '../../core/scene3D/ImageTo3D';
 import { Camera, Vec2 } from '@kit.ArkGraphics3D';
 import { TraceVec2 } from '../../core/math/vec';
-import { AnimatorResult } from '@kit.ArkUI';
+import { AnimatorResult, Prompt } from '@kit.ArkUI';
 import { Constants } from '../../shared/constants';
+import { UIInfo } from '../../shared/ui/uiUtils';
 
-@ObservedV2
-export class UIInfo{
-  @Trace pos: TraceVec2 = new TraceVec2();
-  @Trace size: TraceVec2 = new TraceVec2();
-  id: string = '';
-  constructor(pos:Vec2, size:Vec2, id:string) {
-    this.pos.x = pos.x;
-    this.pos.y = pos.y;
-    this.size.x = size.x;
-    this.size.y = size.y;
-    this.id = id;
-  }
-}
 
 @Entry
 @ComponentV2
@@ -27,6 +15,7 @@ struct Render1{
   @Local temp_x: number = 0;
   @Local anim: AnimatorResult = this.getUIContext().createAnimator(Constants.ANIMATION_OPTION_2);
   async aboutToAppear(): Promise<void> {
+    // if(this.sceneProxy.scene) Prompt.showToast({message:"already have scene"});
     await this.sceneProxy.LoadPhotoWall();
     // await this.sceneProxy.addBall("ball");
     let config = this.sceneProxy.getCameraConfig()
@@ -63,7 +52,7 @@ struct Render1{
               this.anim.onFrame = (progress) => {
                 this.uiEntities[0].size.x = 400 + 200 * progress;
                 this.uiEntities[0].pos.x = this.temp_x + 200 * progress;
-                this.sceneProxy.syncUI(this.uiEntities[0].id,this.uiEntities[0])
+                SceneProxy.syncUI(this.uiEntities[0].id,this.uiEntities[0])
               }
               this.anim.play();
             }
@@ -78,7 +67,7 @@ struct Render1{
             if(this.uiEntities.length == 0){
               let info = this.getUIContext().getComponentUtils().getRectangleById("3D");
               let infoTemp: UIInfo = new UIInfo({x:info.screenOffset.x + 200,y:info.screenOffset.y + 100},{x:400,y:400},'uid');
-              this.sceneProxy.addUIPlane("uid",infoTemp);
+              SceneProxy.addUIPlane("uid",infoTemp);
               this.uiEntities.push(infoTemp);
             }
           })

@@ -15,7 +15,7 @@ export function copyDateItem(left:DateItem,right:DateItem){
 export class SlidingDateModel {
 
   private dates: DateItem[] = []
-  private weekMap = ["周日","周一","周二","周三","周四","周五","周六"]
+  static weekMap = ["周日","周一","周二","周三","周四","周五","周六"]
   private visibleCount: number = 7
   private bufferCount: number = 1
 
@@ -32,18 +32,18 @@ export class SlidingDateModel {
     const half = Math.floor(total / 2)
 
     for (let i = -half; i <= half; i++) {
-      this.dates.push(this.createItem(center, i))
+      this.dates.push(SlidingDateModel.createItem(center, i))
     }
   }
 
-  createItem(base: Date, offset: number): DateItem {
+  static createItem(base: Date, offset: number): DateItem {
     const d = new Date(base.getTime())
     d.setDate(base.getDate() + offset)
     console.info(`createItem${base.getDate()}/${d.getDate()}`);
     return {
       date: d,
       timestamp: d.getTime(),
-      weekStr: this.weekMap[d.getDay()],
+      weekStr: SlidingDateModel.weekMap[d.getDay()],
       dayStr: d.getDate() < 10
         ? `0${d.getDate()}`
         : `${d.getDate()}`
@@ -67,7 +67,7 @@ export class SlidingDateModel {
     this.dates.push({
       date: base,
       timestamp: base.getTime(),
-      weekStr: this.weekMap[base.getDay()],
+      weekStr: SlidingDateModel.weekMap[base.getDay()],
       dayStr: base.getDate() < 10
         ? `0${base.getDate()}`
         : `${base.getDate()}`
@@ -87,7 +87,7 @@ export class SlidingDateModel {
     this.dates.unshift({
       date: base,
       timestamp: base.getTime(),
-      weekStr: this.weekMap[base.getDay()],
+      weekStr: SlidingDateModel.weekMap[base.getDay()],
       dayStr: base.getDate() < 10
         ? `0${base.getDate()}`
         : `${base.getDate()}`

@@ -8,8 +8,8 @@ import { EventCommand, EventType, ReturnData } from "./EventTypes";
 import { CameraConfig, generateLayoutConfigForCameraView, LayoutConfig } from "./layout/CameraViewUtils";
 
 export class PhysicsSystemManager {
-  private idMap: Map<string, number> = new Map();
-  private nodeMap: Map<string, Node> = new Map();
+  idMap: Map<string, number> = new Map();
+  nodeMap: Map<string, Node> = new Map();
   selectId: number = 0;
   available: boolean = false;
   private capacity: number = 128;
@@ -47,6 +47,12 @@ export class PhysicsSystemManager {
     this.lastTime = systemDateTime.getUptime(systemDateTime.TimeType.ACTIVE,false);
   }
 
+  getIdWithName(name:string): number | undefined{
+    let node = this.nodeMap.get(name);
+    if(!node) return undefined;
+    return this.idMap.get(node.path + '/' + node.name);
+  }
+
   getId(path:string) :number |undefined{
     return this.idMap.get(path);
   }
@@ -58,6 +64,10 @@ export class PhysicsSystemManager {
     this.nodeMap.set(node.name, node);
     console.info("RegisterNode | " + node.name + '/' + id.toString());
     return id;
+  }
+
+  unregisterNode(id:number): boolean {
+    return this.physicsSystem.removeNode(id);
   }
 
   registerNodeWithLayout(node: Node, isStatic: boolean = true): number {

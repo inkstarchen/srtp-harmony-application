@@ -37,9 +37,9 @@
             "floating-window-resource-uri": "project://assets/default.scene",
             "floating-window-class-id": "com.huawei.editor.SceneWindowDockContainer",
             "floating-window-instance-id": "com.huawei.editor.SceneWindowDockContainer#OxhKDTO35k",
-            "floating-window-title": "3D View [default.scene]",
+            "floating-window-title": "3D View [default.scene *]",
             "floating-window-state": "docked",
-            "floating-window-splitter-layout": "AAAA/wAAAAEAAAADAAABXgAAAcYAAAI+Af////8BAAAAAQA=",
+            "floating-window-splitter-layout": "AAAA/wAAAAEAAAADAAABXgAAAfQAAAJdAf////8BAAAAAQA=",
             "panes": [
               {
                 "pane-class-id": "com.huawei.editor.UiHierarchyPane",
@@ -96,21 +96,21 @@
             ]
           }
         ],
-        "docking-layout": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPFF0QWR2YW5jZWREb2NraW5nU3lzdGVtIFZlcnNpb249IjEiIFVzZXJWZXJzaW9uPSIwIiBDb250YWluZXJzPSIxIiBDZW50cmFsV2lkZ2V0PSJDZW50cmFsV2lkZ2V0Ij4KICAgIDxDb250YWluZXIgRmxvYXRpbmc9IjAiPgogICAgICAgIDxTcGxpdHRlciBPcmllbnRhdGlvbj0iLSIgQ291bnQ9IjIiPgogICAgICAgICAgICA8QXJlYSBUYWJzPSIyIiBDdXJyZW50PSJjb20uaHVhd2VpLmVkaXRvci5TY2VuZVdpbmRvd0RvY2tDb250YWluZXIjT3hoS0RUTzM1ayIgRmxhZ3M9IjEiPgogICAgICAgICAgICAgICAgPFdpZGdldCBOYW1lPSJDZW50cmFsV2lkZ2V0IiBDbG9zZWQ9IjAiLz4KICAgICAgICAgICAgICAgIDxXaWRnZXQgTmFtZT0iY29tLmh1YXdlaS5lZGl0b3IuU2NlbmVXaW5kb3dEb2NrQ29udGFpbmVyI094aEtEVE8zNWsiIENsb3NlZD0iMCIvPgogICAgICAgICAgICA8L0FyZWE+CiAgICAgICAgICAgIDxBcmVhIFRhYnM9IjIiIEN1cnJlbnQ9ImNvbS5odWF3ZWkuZWRpdG9yLlByb2plY3RXaW5kb3dEb2NrQ29udGFpbmVyI2JxZGh0bTBZRGQiPgogICAgICAgICAgICAgICAgPFdpZGdldCBOYW1lPSJjb20uaHVhd2VpLmVkaXRvci5Qcm9qZWN0V2luZG93RG9ja0NvbnRhaW5lciNicWRodG0wWURkIiBDbG9zZWQ9IjAiLz4KICAgICAgICAgICAgICAgIDxXaWRnZXQgTmFtZT0iY29tLmh1YXdlaS5lZGl0b3IuTG9nV2luZG93RG9ja0NvbnRhaW5lciNDbnpXYlJxaFpxIiBDbG9zZWQ9IjAiLz4KICAgICAgICAgICAgPC9BcmVhPgogICAgICAgICAgICA8U2l6ZXM+NDYyIDQwMSA8L1NpemVzPgogICAgICAgIDwvU3BsaXR0ZXI+CiAgICA8L0NvbnRhaW5lcj4KPC9RdEFkdmFuY2VkRG9ja2luZ1N5c3RlbT4K"
+        "docking-layout": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPFF0QWR2YW5jZWREb2NraW5nU3lzdGVtIFZlcnNpb249IjEiIFVzZXJWZXJzaW9uPSIwIiBDb250YWluZXJzPSIxIiBDZW50cmFsV2lkZ2V0PSJDZW50cmFsV2lkZ2V0Ij4KICAgIDxDb250YWluZXIgRmxvYXRpbmc9IjAiPgogICAgICAgIDxTcGxpdHRlciBPcmllbnRhdGlvbj0iLSIgQ291bnQ9IjIiPgogICAgICAgICAgICA8QXJlYSBUYWJzPSIyIiBDdXJyZW50PSJjb20uaHVhd2VpLmVkaXRvci5TY2VuZVdpbmRvd0RvY2tDb250YWluZXIjT3hoS0RUTzM1ayIgRmxhZ3M9IjEiPgogICAgICAgICAgICAgICAgPFdpZGdldCBOYW1lPSJDZW50cmFsV2lkZ2V0IiBDbG9zZWQ9IjAiLz4KICAgICAgICAgICAgICAgIDxXaWRnZXQgTmFtZT0iY29tLmh1YXdlaS5lZGl0b3IuU2NlbmVXaW5kb3dEb2NrQ29udGFpbmVyI094aEtEVE8zNWsiIENsb3NlZD0iMCIvPgogICAgICAgICAgICA8L0FyZWE+CiAgICAgICAgICAgIDxBcmVhIFRhYnM9IjIiIEN1cnJlbnQ9ImNvbS5odWF3ZWkuZWRpdG9yLlByb2plY3RXaW5kb3dEb2NrQ29udGFpbmVyI2JxZGh0bTBZRGQiPgogICAgICAgICAgICAgICAgPFdpZGdldCBOYW1lPSJjb20uaHVhd2VpLmVkaXRvci5Qcm9qZWN0V2luZG93RG9ja0NvbnRhaW5lciNicWRodG0wWURkIiBDbG9zZWQ9IjAiLz4KICAgICAgICAgICAgICAgIDxXaWRnZXQgTmFtZT0iY29tLmh1YXdlaS5lZGl0b3IuTG9nV2luZG93RG9ja0NvbnRhaW5lciNDbnpXYlJxaFpxIiBDbG9zZWQ9IjAiLz4KICAgICAgICAgICAgPC9BcmVhPgogICAgICAgICAgICA8U2l6ZXM+Nzg0IDM2IDwvU2l6ZXM+CiAgICAgICAgPC9TcGxpdHRlcj4KICAgIDwvQ29udGFpbmVyPgo8L1F0QWR2YW5jZWREb2NraW5nU3lzdGVtPgo="
       }
     },
     {
       "setting-key": "MainWindow",
       "setting-val": {
         "size": [
-          1386,
-          923
+          1400,
+          930
         ],
         "position": [
           21,
           0
         ],
-        "maximize": false
+        "maximize": true
       }
     }
   ],

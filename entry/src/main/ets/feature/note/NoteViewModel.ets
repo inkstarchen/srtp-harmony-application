@@ -256,7 +256,7 @@ export class NoteViewModel {
 
       setTimeout(() => { this.saveStatus = ''; }, 2000);
 
-      Prompt.showToast({ message: '笔记已保存', duration: 1500 });
+      // Prompt.showToast({ message: '笔记已保存', duration: 1500 });
     } catch (error) {
       hilog.error(Constants.DOMAIN_SERVICE_NOTE, "SERVICE-NOTE-SAVE", `保存笔记失败: ${error.message}`);
       this.saveStatus = '保存失败!';

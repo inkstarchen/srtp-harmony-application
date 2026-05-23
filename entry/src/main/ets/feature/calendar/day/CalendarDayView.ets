@@ -18,8 +18,8 @@ export struct CalendarDayView{
   build() {
     Stack(){
       Text(this.state.date.getDate().toString())
-        .width(40)
-        .height(40)
+        .width(35)
+        .height(35)
         .fontSize(15)
         .textAlign(TextAlign.Center)
         .fontColor(this.fontColor)
@@ -27,8 +27,8 @@ export struct CalendarDayView{
 
         })
     }
-    .width(40)
-    .height(40)
+    .width(35)
+    .height(35)
     .border({radius: 20, width: 1, color: '#00ffffff'})
     .backgroundColor(this.backColor)
   }

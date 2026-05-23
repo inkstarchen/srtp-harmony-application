@@ -96,7 +96,7 @@ napi_value PhysicsSystem::Release(napi_env env, napi_callback_info info){
 
 // 初始化获取足够的内存空间
 PhysicsSystem::PhysicsSystem(size_t cap)
-    : count(0), env_(nullptr), wrapper_(nullptr), gravity(Vector3(0.0f,0.0f,1.0f)), cameraPos(Vector3(0.0f,0.0f,-6.0f)), fov(1.57f),ratio(1.0f)
+    : count(0), env_(nullptr), wrapper_(nullptr), gravity(Vector3(0.0f,0.0f,0.0f)), cameraPos(Vector3(0.0f,0.0f,-6.0f)), fov(1.57f),ratio(1.0f)
 {
     initHandlers();
     capacity = alignCapacity(cap);
@@ -228,12 +228,26 @@ uint32_t PhysicsSystem::newNode()
     uint32_t id;
     if(!free_list.empty()) {
         id = free_list.back();
+        occupyList[id] = true;
+        valid_list.push_back(id);
         free_list.pop_back();
         count++;
     } else {
         assert("Exceed capacity");
     }
     return id;
+}
+
+bool PhysicsSystem::removeNodeId(uint32_t id) {
+    if(!occupyList.count(id) || !occupyList[id]) return false;
+    occupyList[id] = false;
+    auto it = std::find(valid_list.begin(), valid_list.end(), id);
+    if(it != valid_list.end()){
+        valid_list.erase(it);
+    }
+    free_list.push_back(id);
+    count--;
+    return true;
 }
 
 // 结构体销毁入口
@@ -472,7 +486,7 @@ void PhysicsSystem::processRaycast(float touchX, float touchY) {
 
     // 将屏幕坐标转换为世界空间射线方向
     Vector3 virtual_pos = (up * touchY + right * touchX * ratio) * (-cameraPos.z * std::tan(fov / 2));
-    OH_LOG_INFO(LOG_APP,"tan fov is %{public}.3f fov is %{public}.3f", std::tan(fov / 2),fov / 2);
+    OH_LOG_INFO(LOG_APP,"tan fov is %{public}.3f fov is %{public}.3f ratio is %{public}", std::tan(fov / 2),fov / 2, ratio);
     Vector3 rayDir = (virtual_pos - cameraPos).normalized();
     
     uint32_t closestId = capacity;
@@ -480,7 +494,8 @@ void PhysicsSystem::processRaycast(float touchX, float touchY) {
 //    setPosition(6, 2 * rayDir + cameraPos);
 //    OH_LOG_INFO(LOG_APP,"RAYTEST | POS %{public}.3f %{public}.3f", virtual_pos.y, virtual_pos.x);
     // 遍历所有物体
-    for (uint32_t i = 0; i < count; ++i) {
+    for (uint32_t k = 0; k < count; ++k) {
+        uint32_t i = valid_list[k];
 //        if (isStatic[i]) continue;
 
         if(i == 6) continue;
@@ -711,8 +726,9 @@ int PhysicsSystem::computeSubSteps(float dt)
 
     int maxNeeded = 1;
 
-    for (uint32_t i = 0; i < count; ++i)
+    for (uint32_t k = 0; k < count; ++k)
     {
+        uint32_t i = valid_list[k];
         if (isStatic[i]) continue;
 
         // 计算速度
@@ -742,8 +758,9 @@ void PhysicsSystem::clampVelocity(float dt)
 {
     const float SAFETY_FACTOR = 0.4f;
 
-    for (uint32_t i = 0; i < count; ++i)
+    for (uint32_t k = 0; k < count; ++k)
     {
+        uint32_t i = valid_list[k];
         if (isStatic[i]) continue;
 
         float speed = sqrtf(vel_x[i]*vel_x[i] + vel_y[i]*vel_y[i] + vel_z[i]*vel_z[i]);
@@ -774,17 +791,19 @@ void PhysicsSystem::clampVelocity(float dt)
 
 void PhysicsSystem::detectCollisions() {
     possiblePairs.clear();
-    for(uint32_t i = 0 ; i < count; ++i){
-        for(uint32_t j = i + 1 ; j < count; ++j){
+    for(uint32_t k = 0 ; k < count; ++k){
+        uint32_t i = valid_list[k];
+        for(uint32_t l = i + 1 ; l < count; ++l){
+            uint32_t j = valid_list[l];
             if(isStatic[i] && isStatic[j]) continue;
             
             // 调试日志：输出每个物体的位置和尺寸
-//            OH_LOG_INFO(LOG_APP, 
-//                "Debug: i=%{public}u pos=(%{public}.3f,%{public}.3f,%{public}.3f) extent=(%{public}.3f,%{public}.3f,%{public}.3f) shape=%{public}d static=%{public}d",
-//                i, pos_x[i], pos_y[i], pos_z[i], extent_x[i], extent_y[i], extent_z[i], shapeType[i], isStatic[i]);
-//            OH_LOG_INFO(LOG_APP, 
-//                "Debug: j=%{public}u pos=(%{public}.3f,%{public}.3f,%{public}.3f) extent=(%{public}.3f,%{public}.3f,%{public}.3f) shape=%{public}d static=%{public}d",
-//                j, pos_x[j], pos_y[j], pos_z[j], extent_x[j], extent_y[j], extent_z[j], shapeType[j], isStatic[j]);
+            OH_LOG_INFO(LOG_APP, 
+                "Debug: i=%{public}u pos=(%{public}.3f,%{public}.3f,%{public}.3f) extent=(%{public}.3f,%{public}.3f,%{public}.3f) shape=%{public}d static=%{public}d, vel:%{public}.3f %{public}.3f %{public}.3f",
+                i, pos_x[i], pos_y[i], pos_z[i], extent_x[i], extent_y[i], extent_z[i], shapeType[i], isStatic[i], vel_x[i], vel_y[i], vel_z[i]);
+            OH_LOG_INFO(LOG_APP, 
+                "Debug: j=%{public}u pos=(%{public}.3f,%{public}.3f,%{public}.3f) extent=(%{public}.3f,%{public}.3f,%{public}.3f) shape=%{public}d static=%{public}d, vel:%{public}.3f %{public}.3f %{public}.3f",
+                j, pos_x[j], pos_y[j], pos_z[j], extent_x[j], extent_y[j], extent_z[j], shapeType[j], isStatic[j], vel_x[j], vel_y[j], vel_z[j]);
             
             if(testCollision(i, j)){
                 OH_LOG_INFO(LOG_APP, "CollisionTest: A=%{public}u B=%{public}u",i,j);
@@ -977,7 +996,8 @@ void PhysicsSystem::solveContacts() {
     }
 }
 void PhysicsSystem::integrateVelocity(float dt) {
-    for (uint32_t i = 0; i < count; ++i) {
+    for (uint32_t k = 0; k < count; ++k) {
+        uint32_t i = valid_list[k];
         if (isStatic[i]) {
             vel_x[i] = vel_y[i] = vel_z[i] = 0.0f;
             // 修改：如果允许旋转，则不清零角速度，允许弹簧力矩驱动
@@ -991,7 +1011,8 @@ void PhysicsSystem::integrateVelocity(float dt) {
         // 1. 线性速度积分（外力 + 重力）
         vel_x[i] += (force_x[i] * invMass[i] + gravity.x) * dt;
         vel_y[i] += (force_y[i] * invMass[i] + gravity.y) * dt;
-        vel_z[i] += (force_z[i] * invMass[i] + gravity.z) * dt;
+//        vel_z[i] += (force_z[i] * invMass[i] + gravity.z) * dt;
+        vel_z[i] += 0;
 
         // 2. 角速度积分（简化版：忽略陀螺项，适用于低速/主轴对齐物体）
         float oldAngVelX = angVel_x[i];
@@ -1066,21 +1087,24 @@ void PhysicsSystem::positionalCorrection(){
         {
             pos_x[a] += dx * invMassA;
             pos_y[a] += dy * invMassA;
-            pos_z[a] += dz * invMassA;
+//            pos_z[a] += dz * invMassA;
+            pos_z[a] += 0;
         }
 
         if (!isStatic[b])
         {
             pos_x[b] -= dx * invMassB;
             pos_y[b] -= dy * invMassB;
-            pos_z[b] -= dz * invMassB;
+//            pos_z[b] -= dz * invMassB;
+            pos_z[b] -= 0;
         }
     }
 }
 void PhysicsSystem::integratePosition(float dt)
 {
-    for (uint32_t i = 0; i < count; ++i)
+    for (uint32_t k = 0; k < count; ++k)
     {
+        uint32_t i = valid_list[k];
         // 静态物体默认跳过位置更新，但如果允许旋转，则仍需更新旋转
         bool isStaticObj = isStatic[i];
         bool canRot = canRotate[i];
@@ -1128,7 +1152,8 @@ void PhysicsSystem::integratePosition(float dt)
 }
 
 void PhysicsSystem::clearForceAll() {
-    for(uint32_t i = 0 ; i < count; i++){
+    for(uint32_t k = 0 ; k < count; k++){
+        uint32_t i = valid_list[k];
         force_x[i] = 0.0f;
         force_y[i] = 0.0f;
         force_z[i] = 0.0f;
@@ -1210,6 +1235,11 @@ napi_value PhysicsSystem::AddNode(napi_env env, napi_callback_info info) {
         obj->setIsStatic(id, isStatic);
         OH_LOG_INFO(LOG_APP, "AddNode: id=%{public}u isStatic=%{public}u", id, isStatic);
     }
+    
+    // ===== restitution =====
+    {
+        obj->setRestitution(id, 0.8);
+    }
 
     // setMass 必须在 setIsStatic 之后调用，确保 invMass 正确设置
     obj->setMass(id, 1.0f);
@@ -1221,6 +1251,23 @@ napi_value PhysicsSystem::AddNode(napi_env env, napi_callback_info info) {
     napi_create_int32(env, id, &id_val);
     
     return id_val;
+}
+
+napi_value PhysicsSystem::RemoveNode(napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value argv[1];
+    napi_value jsThis;
+    napi_get_cb_info(env, info, &argc, argv, &jsThis, nullptr);
+    
+    PhysicsSystem* obj;
+    napi_unwrap(env, jsThis, reinterpret_cast<void**>(&obj));
+    uint32_t id;
+    napi_value data_value = argv[0];
+    napi_get_value_uint32(env, data_value, &id);
+    bool status = obj->removeNodeId(id);
+    napi_value result;
+    napi_get_boolean(env, status, &result);
+    return result;
 }
 
 napi_value PhysicsSystem::AddNodeInLayoutSys(napi_env env, napi_callback_info info) {
@@ -1381,6 +1428,7 @@ napi_value PhysicsSystem::Init(napi_env env, napi_value exports)
     napi_property_descriptor properties[] = {
         { "addNodeInLayoutSys", nullptr, AddNodeInLayoutSys, nullptr, nullptr, nullptr, napi_default, nullptr},
         { "addNode", nullptr, AddNode, nullptr, nullptr, nullptr, napi_default, nullptr},
+        { "removeNode", nullptr, RemoveNode, nullptr, nullptr, nullptr, napi_default, nullptr},
         { "update", nullptr, Update, nullptr, nullptr, nullptr, napi_default, nullptr},
         { "release", nullptr, PhysicsSystem::Release, nullptr, nullptr, nullptr, napi_default, nullptr},
         { "enableLayout", nullptr, PhysicsSystem::EnableLayout, nullptr, nullptr, nullptr, napi_default,nullptr}
@@ -1441,7 +1489,8 @@ void PhysicsSystem::applyRotationSprings(float dt) {
     // 仅在布局系统启用时应用旋转弹簧
     if (layoutManager == nullptr) return;
 
-    for (uint32_t i = 0; i < count; ++i) {
+    for (uint32_t z = 0; z < count; ++z) {
+        uint32_t i = valid_list[z];
         // 核心条件：只对允许旋转的物体生效（无论是否静态）
         if (!canRotate[i]) continue;
 

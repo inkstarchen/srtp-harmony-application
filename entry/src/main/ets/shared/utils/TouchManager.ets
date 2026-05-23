@@ -66,3 +66,22 @@ export function TouchMove(event:TouchEvent, touch: Touch){
   touch.phase = 2;
   // Prompt.showToast({message:'move'});
 }
+
+export interface RotationState {
+  latitude: number;
+  longitude: number;
+}
+
+@ObservedV2
+export class RotationTouchManager{
+  startPos:Vec2 = {x:0,y:0};
+  start(startPos:Vec2){
+    this.startPos.x = startPos.x;
+    this.startPos.y = startPos.y;
+  }
+
+  move(curPos:Vec2):Vec2{
+    return {x:curPos.x - this.startPos.x, y:curPos.y - this.startPos.y};
+  }
+
+}
